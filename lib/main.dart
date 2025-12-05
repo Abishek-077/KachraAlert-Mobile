@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
-import '/home_screen.dart';
+import 'package:kachra_alert/splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const KacharaAlertApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class KacharaAlertApp extends StatelessWidget {
+  const KacharaAlertApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Auth App',
+      title: 'KacharaAlert',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        primaryColor: const Color(0xFF2DD4BF),
+        scaffoldBackgroundColor: const Color(0xFFF0FDF9),
+        fontFamily: 'Inter',
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2DD4BF), width: 2),
+          ),
+        ),
       ),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignupScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
+      home: const SplashScreen(),
     );
   }
 }
