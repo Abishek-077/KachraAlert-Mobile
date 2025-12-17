@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'splash_screen.dart';
-import 'onboarding_screen.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
-import 'home_screen.dart';
+import 'package:kachra_alert/screens/home_screen.dart';
+import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
 
 void main() {
   runApp(const KacharaAlertApp());
