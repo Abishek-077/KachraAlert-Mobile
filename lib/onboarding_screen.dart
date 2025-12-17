@@ -1,5 +1,6 @@
 // Onboarding Screen
 import 'package:flutter/material.dart';
+import 'package:kachra_alert/widget/onboardingPage.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -27,19 +28,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   });
                 },
                 children: [
-                  _buildOnboardingPage(
+                  OnbordingPageWidget(
                     icon: Icons.notifications_active_rounded,
                     title: 'Never Miss Your Garbage Collection',
                     description:
                         'Get timely alerts and manage schedules efficiently',
                   ),
-                  _buildOnboardingPage(
+                  OnbordingPageWidget(
                     icon: Icons.schedule_rounded,
                     title: 'Smart Schedule Management',
                     description:
                         'Track collection times and never miss a pickup',
                   ),
-                  _buildOnboardingPage(
+                  OnbordingPageWidget(
                     icon: Icons.eco_rounded,
                     title: 'Contribute to Cleaner Environment',
                     description:
@@ -118,50 +119,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildOnboardingPage({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2DD4BF).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Icon(icon, size: 60, color: const Color(0xFF2DD4BF)),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6B7280),
-              height: 1.5,
-            ),
-          ),
-        ],
       ),
     );
   }
