@@ -7,6 +7,7 @@ import 'package:kachra_alert/features/auth/data/models/user_hive_model.dart';
 import 'package:kachra_alert/features/collection/data/models/collection_schedule_hive_model.dart';
 import 'package:kachra_alert/features/comment/data/models/comment_hive_model.dart';
 import 'package:kachra_alert/features/reward/data/models/reward_hive_model.dart';
+import 'package:kachra_alert/features/waste_bin/data/models/waste_bin_hive_model.dart';
 import 'package:kachra_alert/features/waste_category/data/models/waste_category_hive_model.dart';
 import 'package:kachra_alert/features/waste_report/data/models/waste_report_hive_model.dart';
 

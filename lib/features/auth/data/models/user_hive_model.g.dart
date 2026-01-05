@@ -17,22 +17,21 @@ class UserHiveModelAdapter extends TypeAdapter<UserHiveModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UserHiveModel(
-      userId: fields[0] as String?,
+      userId: fields[0] as String,
       fullName: fields[1] as String,
       email: fields[2] as String,
       password: fields[3] as String,
-      phone: fields[4] as String?,
-      address: fields[5] as String?,
+      phone: fields[4] as String,
+      address: fields[5] as String,
       role: fields[6] as String,
-      profilePicPath: fields[7] as String?,
-      createdAt: fields[8] as DateTime?,
+      joinedDate: fields[7] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserHiveModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -48,9 +47,7 @@ class UserHiveModelAdapter extends TypeAdapter<UserHiveModel> {
       ..writeByte(6)
       ..write(obj.role)
       ..writeByte(7)
-      ..write(obj.profilePicPath)
-      ..writeByte(8)
-      ..write(obj.createdAt);
+      ..write(obj.joinedDate);
   }
 
   @override

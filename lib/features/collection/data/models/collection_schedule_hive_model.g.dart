@@ -23,6 +23,7 @@ class CollectionScheduleHiveModelAdapter
       days: fields[2] as String,
       time: fields[3] as String,
       wasteTypes: (fields[4] as List).cast<String>(),
+      dayOfWeek: '',
     );
   }
 

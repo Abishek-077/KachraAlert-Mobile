@@ -25,5 +25,6 @@ class CollectionScheduleHiveModel extends HiveObject {
     required this.days,
     required this.time,
     required this.wasteTypes,
+    required String dayOfWeek,
   });
 }
