@@ -1,63 +1,80 @@
-// main.dart
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kachra_alert/core/providers/shared_prefs_provider.dart';
-import 'package:kachra_alert/core/services/hive/hive_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/splash_screen.dart';
-import 'screens/onboarding_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/signup_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:kachra_alert/features/auth/data/models/user_hive_model.dart';
+
+import 'package:kachra_alert/features/auth/presentation/pages/login_screen.dart';
+import 'package:kachra_alert/features/auth/presentation/pages/signup_screen.dart';
+import 'package:kachra_alert/features/dashboard/presentation/pages/dashboard_screen.dart';
+import 'package:kachra_alert/screens/login_screen.dart';
+import 'package:kachra_alert/screens/signup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize SharedPreferences
-  final sharedPreferences = await SharedPreferences.getInstance();
+  // Initialize Hive
+  await Hive.initFlutter();
 
-  // Initialize Hive (critical for local data)
-  final container = ProviderContainer();
-  await container.read(hiveServiceProvider).init();
-  // Dispose container to avoid leaks in main()
-  container.dispose();
+  // Register Hive Adapters
+  Hive.registerAdapter(UserHiveModelAdapter());
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      ],
-      child: const KachraAlertApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class KachraAlertApp extends StatelessWidget {
-  const KachraAlertApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'KachraAlert',
+      title: 'KacharaAlert',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.teal,
-        primaryColor: const Color(0xFF2DD4BF), // Teal accent
-        scaffoldBackgroundColor: const Color(0xFFF0FDF9),
-        fontFamily: 'Inter', // Make sure to add Inter in pubspec.yaml
+        primarySwatch: Colors.blue,
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2DD4BF),
-          foregroundColor: Colors.white,
-          elevation: 0,
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFFF3F4F6),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2DD4BF), width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Color(0xFF2DD4BF),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2DD4BF),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          iconTheme: IconThemeData(color: Color(0xFF111827)),
+          titleTextStyle: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF111827),
+          ),
         ),
       ),
-      initialRoute: '/splash',
+      home: const SplashScreen(),
       routes: {
-        '/splash': (context) => const SplashScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
