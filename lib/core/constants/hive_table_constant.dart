@@ -1,38 +1,21 @@
 class HiveTableConstant {
-  HiveTableConstant._();
+  // Settings
+  static const settingsBox = 'settings_box';
 
-  // Database name
-  static const String dbName = 'kachraAlert_db';
+  // Session
+  static const sessionBox = 'session_box';
 
-  // User Table (for citizens, admins, collectors)
-  static const int userTypeId = 0;
-  static const String userTable = 'user_table';
+  // Alerts (citizen alerts)
+  static const alertsBox = 'alerts_box';
 
-  // Waste Report Table (user-submitted waste issues: illegal dumping, full bins, etc.)
-  static const int wasteReportTypeId = 1;
-  static const String wasteReportTable = 'waste_report_table';
+  // User accounts (signup/login)
+  static const accountsBox = 'accounts_box';
 
-  // Waste Bin Table (smart bins or regular bins with location/status)
-  static const int wasteBinTypeId = 2;
-  static const String wasteBinTable = 'waste_bin_table';
+  // Admin broadcasts
+  static const adminAlertsBox = 'admin_alerts_box';
 
-  // Collection Schedule Table (scheduled pickups/routes)
-  static const int collectionScheduleTypeId = 3;
-  static const String collectionScheduleTable = 'collection_schedule_table';
+  // ✅ Schedule (THIS WAS MISSING)
+  static const schedulesBox = 'schedules_box';
 
-  // Alert/Notification Table (overflow alerts, pickup reminders, etc.)
-  static const int alertTypeId = 4;
-  static const String alertTable = 'alert_table';
-
-  // Waste Category Table (recyclable, organic, hazardous, general)
-  static const int wasteCategoryTypeId = 5;
-  static const String wasteCategoryTable = 'waste_category_table';
-
-  // Report Comment Table (optional: comments on reports by admins/users)
-  static const int commentTypeId = 6;
-  static const String commentTable = 'comment_table';
-
-  // Optional: Reward/Points Table (gamification for reporting/recycling)
-  static const int rewardTypeId = 7;
-  static const String rewardTable = 'reward_table';
+  static const reportsBox = 'reports_box';
 }

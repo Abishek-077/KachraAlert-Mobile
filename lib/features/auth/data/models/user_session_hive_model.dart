@@ -1,0 +1,42 @@
+import 'package:hive/hive.dart';
+
+part 'user_session_hive_model.g.dart';
+
+@HiveType(typeId: 11)
+class UserSessionHiveModel extends HiveObject {
+  @HiveField(0)
+  final String userId;
+
+  @HiveField(1)
+  final String email;
+
+  @HiveField(2)
+  final String role; // citizen | admin
+
+  @HiveField(3)
+  final int lastHeardBroadcastAt; // epoch millis
+
+  UserSessionHiveModel({
+    required this.userId,
+    required this.email,
+    this.role = 'citizen',
+    this.lastHeardBroadcastAt = 0,
+  });
+
+  /// ✅ REQUIRED (fixes your error)
+  UserSessionHiveModel copyWith({
+    String? userId,
+    String? email,
+    String? role,
+    int? lastHeardBroadcastAt,
+  }) {
+    return UserSessionHiveModel(
+      userId: userId ?? this.userId,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      lastHeardBroadcastAt: lastHeardBroadcastAt ?? this.lastHeardBroadcastAt,
+    );
+  }
+
+  bool get isAdmin => role == 'admin';
+}
