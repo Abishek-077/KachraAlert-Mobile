@@ -24,11 +24,11 @@ class HiveService {
     await Hive.initFlutter();
 
     // ✅ Register adapters (ONLY for boxes that store models)
-    _registerAdapter<UserSessionHiveModel>(1, UserSessionHiveModelAdapter());
-    _registerAdapter<AlertHiveModel>(2, AlertHiveModelAdapter());
-    _registerAdapter<UserAccountHiveModel>(3, UserAccountHiveModelAdapter());
-    _registerAdapter<AdminAlertHiveModel>(4, AdminAlertHiveModelAdapter());
-    _registerAdapter<ScheduleHiveModel>(5, ScheduleHiveModelAdapter());
+    _registerAdapter<UserSessionHiveModel>(11, UserSessionHiveModelAdapter());
+    _registerAdapter<AlertHiveModel>(12, AlertHiveModelAdapter());
+    _registerAdapter<UserAccountHiveModel>(13, UserAccountHiveModelAdapter());
+    _registerAdapter<AdminAlertHiveModel>(14, AdminAlertHiveModelAdapter());
+    _registerAdapter<ScheduleHiveModel>(21, ScheduleHiveModelAdapter());
     _registerAdapter<ReportHiveModel>(31, ReportHiveModelAdapter());
 
     // ✅ Open settings_box as untyped Box (because you store bools/strings)

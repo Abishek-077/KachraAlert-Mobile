@@ -13,6 +13,7 @@ import 'package:smart_waste_app/features/alerts/presentation/pages/alerts_hub_sc
 
 // Reports
 import 'package:smart_waste_app/features/reports/presentation/pages/report_form_screen.dart';
+import 'package:smart_waste_app/features/reports/presentation/pages/reports_screen.dart';
 import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
 
 // Auth
@@ -49,10 +50,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAdmin = loc.startsWith('/admin');
       final isAlertsCreate = loc == '/alerts/create';
       final isReportsCreate = loc == '/reports/create';
+      final isReportsList = loc == '/reports';
       final isShell =
           loc == '/home' ||
+          loc == '/schedule' ||
           loc == '/alerts' ||
-          loc.startsWith('/schedule') ||
           loc.startsWith('/profile');
       final isSettings = loc == '/settings';
 
@@ -93,6 +95,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 6) Allowed routes
       if (isShell ||
           isSettings ||
+          isReportsList ||
           (isAdmin && userIsAdmin) ||
           isAlertsCreate ||
           isReportsCreate) {
@@ -107,6 +110,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/auth/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/auth/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
+
+      // NOTE: Schedule is a bottom-tab route (see shell branches).
 
       GoRoute(
         path: '/admin/broadcast',
@@ -149,17 +155,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/alerts',
-                builder: (_, __) => const AlertsHubScreen(),
+                path: '/schedule',
+                builder: (_, __) => const ScheduleScreen(),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/schedule',
-                builder: (_, __) => const ScheduleScreen(),
-              ),
+              GoRoute(path: '/alerts', builder: (_, __) => const AlertsHubScreen()),
             ],
           ),
           StatefulShellBranch(
