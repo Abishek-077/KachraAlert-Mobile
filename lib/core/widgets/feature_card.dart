@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smart_waste_app/core/theme/app_colors.dart';
+import 'package:smart_waste_app/app/theme/app_colors.dart';
 
 class FeatureCard extends StatelessWidget {
   const FeatureCard({super.key, required this.icon, required this.label});

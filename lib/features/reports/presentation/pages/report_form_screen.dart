@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/widgets/k_widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/report_providers.dart';
 import '../../data/models/report_hive_model.dart';
@@ -107,48 +109,186 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
+    final cs = Theme.of(context).colorScheme;
+
+    final categories = const <String>[
+      'Missed Pickup',
+      'Overflowing Bin',
+      'Bad Smell',
+      'Other',
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit Report' : 'New Report')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          DropdownButtonFormField<String>(
-            value: _category,
-            decoration: const InputDecoration(labelText: 'Category'),
-            items: const [
-              DropdownMenuItem(
-                value: 'Missed Pickup',
-                child: Text('Missed Pickup'),
-              ),
-              DropdownMenuItem(
-                value: 'Overflowing Bin',
-                child: Text('Overflowing Bin'),
-              ),
-              DropdownMenuItem(value: 'Bad Smell', child: Text('Bad Smell')),
-              DropdownMenuItem(value: 'Other', child: Text('Other')),
-            ],
-            onChanged: (v) => setState(() => _category = v ?? 'Missed Pickup'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _location,
-            decoration: const InputDecoration(
-              labelText: 'Location (e.g. Ward 10, Baneshwor)',
-              prefixIcon: Icon(Icons.place_rounded),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 140),
+          children: [
+            Row(
+              children: [
+                Text(
+                  isEdit ? 'Edit Report' : 'New Report',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _message,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Describe the issue',
-              prefixIcon: Icon(Icons.edit_note_rounded),
+            const SizedBox(height: 14),
+
+            // Category chips
+            Text(
+              'CATEGORY',
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.55),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+                fontSize: 12,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final c in categories) ...[
+                    KChip(
+                      label: c,
+                      selected: _category == c,
+                      onTap: () => setState(() => _category = c),
+                    ),
+                    const SizedBox(width: 10),
+                  ]
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Location
+            Text(
+              'LOCATION',
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.55),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 10),
+            KCard(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Row(
+                children: [
+                  KIconCircle(
+                    icon: Icons.place_rounded,
+                    background: cs.primary.withOpacity(0.10),
+                    foreground: cs.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _location,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Ward 10, Baneshwor',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.45)),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Description
+            Text(
+              'DETAILS',
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.55),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 10),
+            KCard(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  KIconCircle(
+                    icon: Icons.edit_note_rounded,
+                    background: cs.primary.withOpacity(0.10),
+                    foreground: cs.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _message,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        hintText: 'Describe the issue (what, where, how urgent)',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.45)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Photo placeholder (optional, no extra plugins)
+            KCard(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  KIconCircle(
+                    icon: Icons.photo_camera_outlined,
+                    background: cs.onSurface.withOpacity(0.06),
+                    foreground: cs.onSurface.withOpacity(0.65),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add photo (optional)',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Coming soon — we will enable camera/gallery upload.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          height: 56,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            ),
             onPressed: _saving ? null : _save,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -161,11 +301,16 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                   ),
                   const SizedBox(width: 12),
                 ],
-                Text(isEdit ? 'Save Changes' : 'Submit Report'),
+                Text(
+                  isEdit ? 'Save Changes' : 'Submit Report',
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                ),
+                const SizedBox(width: 10),
+                Icon(isEdit ? Icons.check_rounded : Icons.arrow_forward_rounded),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

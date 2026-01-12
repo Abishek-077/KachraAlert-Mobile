@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:smart_waste_app/core/theme/app_colors.dart';
+
 import '../../../settings/presentation/providers/settings_providers.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
@@ -12,190 +12,203 @@ class OnboardingPage extends ConsumerStatefulWidget {
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
-  final _controller = PageController();
+  late final PageController _page;
   int _index = 0;
 
-  final _pages = const [
-    _OnboardData(
-      icon: Icons.notifications_active_rounded,
-      title: 'Never Miss Your Garbage\nCollection',
-      subtitle: 'Get timely alerts and manage schedules efficiently',
-    ),
-    _OnboardData(
-      icon: Icons.schedule_rounded,
-      title: 'Smart Schedule\nManagement',
-      subtitle: 'Track collection times and never miss a pickup',
-    ),
-    _OnboardData(
-      icon: Icons.eco_rounded,
-      title: 'Contribute to Cleaner\nEnvironment',
-      subtitle: 'Join us in making waste management effortless',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _page = PageController();
+  }
+
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
 
   Future<void> _finish() async {
     await ref.read(settingsProvider.notifier).setOnboarded();
     if (mounted) context.go('/auth/login');
   }
 
-  void _next() {
-    if (_index < _pages.length - 1) {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    } else {
-      _finish();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isLast = _index == _pages.length - 1;
+    final pages = _pages();
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: _pages.length,
-                onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (_, i) => _OnboardPage(data: _pages[i]),
-              ),
-            ),
-
-            // Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _pages.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _index == i ? 22 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _index == i
-                        ? AppColors.primary
-                        : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(99),
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _page,
+            itemCount: pages.length,
+            onPageChanged: (i) => setState(() => _index = i),
+            itemBuilder: (context, i) {
+              final p = pages[i];
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [p.bgTop, p.bgBottom],
                   ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: TextButton(
+                          onPressed: _finish,
+                          child: Text('Skip', style: TextStyle(color: cs.onSurface.withOpacity(0.6), fontWeight: FontWeight.w700)),
                         ),
                       ),
-                      onPressed: _next,
-                      child: Text(
-                        isLast ? 'Get Started' : 'Next',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                      const Spacer(),
+                      Container(
+                        width: 108,
+                        height: 108,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.70),
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 28,
+                              offset: const Offset(0, 18),
+                              color: Colors.black.withOpacity(0.12),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: p.iconBg,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(p.icon, color: Colors.white, size: 34),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      Text(
+                        p.title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.4),
+                      ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        child: Text(
+                          p.subtitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w600, fontSize: 16, height: 1.45),
+                        ),
+                      ),
+                      const Spacer(),
+
+                      // Page dots
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          pages.length,
+                          (d) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            width: d == _index ? 28 : 10,
+                            height: 10,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            decoration: BoxDecoration(
+                              color: d == _index ? const Color(0xFF0E6E66) : Colors.black.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0E6E66),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            ),
+                            onPressed: () {
+                              if (_index < pages.length - 1) {
+                                _page.nextPage(duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+                              } else {
+                                _finish();
+                              }
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(_index == pages.length - 1 ? 'Get Started' : 'Continue', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                                const SizedBox(width: 10),
+                                Icon(_index == pages.length - 1 ? Icons.check_rounded : Icons.arrow_forward_rounded),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  if (!isLast)
-                    TextButton(
-                      onPressed: _finish,
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(color: AppColors.subText),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OnboardData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _OnboardData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-}
-
-class _OnboardPage extends StatelessWidget {
-  const _OnboardPage({required this.data});
-
-  final _OnboardData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(26),
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Icon(data.icon, size: 46, color: AppColors.primary),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            data.title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: AppColors.text,
-              height: 1.25,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            data.subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.subText,
-              height: 1.45,
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
+}
+
+List<_OnboardData> _pages() => const [
+      _OnboardData(
+        bgTop: Color(0xFF0F7B73),
+        bgBottom: Color(0xFF0B5D56),
+        icon: Icons.eco_outlined,
+        iconBg: Color(0xFF1ECA92),
+        title: 'Kachra Alert',
+        subtitle: 'Cleaner streets. Smarter city.',
+      ),
+      _OnboardData(
+        bgTop: Color(0xFFD8FFF1),
+        bgBottom: Color(0xFFF3FFFA),
+        icon: Icons.camera_alt_outlined,
+        iconBg: Color(0xFF1ECA92),
+        title: 'Report Waste Instantly',
+        subtitle: 'Snap a photo, mark the location, and help keep your neighborhood clean. It takes just 30 seconds.',
+      ),
+      _OnboardData(
+        bgTop: Color(0xFFD3E9FF),
+        bgBottom: Color(0xFFF5FBFF),
+        icon: Icons.notifications_none_rounded,
+        iconBg: Color(0xFF1B8EF2),
+        title: 'Stay Informed',
+        subtitle: 'Get alerts about pickup schedules, weather warnings, and community updates. Never miss a collection day.',
+      ),
+    ];
+
+class _OnboardData {
+  final Color bgTop;
+  final Color bgBottom;
+  final IconData icon;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  const _OnboardData({
+    required this.bgTop,
+    required this.bgBottom,
+    required this.icon,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+  });
 }

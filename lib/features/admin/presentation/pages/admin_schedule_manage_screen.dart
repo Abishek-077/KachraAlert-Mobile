@@ -1,7 +1,7 @@
 // lib/features/admin/presentation/pages/admin_schedule_manage_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:smart_waste_app/core/theme/app_colors.dart';
+import 'package:smart_waste_app/app/theme/app_colors.dart';
 
 import '../../../schedule/data/models/schedule_hive_model.dart';
 import '../../../schedule/presentation/providers/schedule_providers.dart';

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../../core/widgets/k_widgets.dart';
 import '../../../admin/presentation/providers/admin_alert_providers.dart';
-import '../../../reports/presentation/providers/report_providers.dart';
-import '../../../reports/data/models/report_hive_model.dart';
 
 class AlertsHubScreen extends ConsumerStatefulWidget {
   const AlertsHubScreen({super.key});
@@ -14,494 +11,280 @@ class AlertsHubScreen extends ConsumerStatefulWidget {
   ConsumerState<AlertsHubScreen> createState() => _AlertsHubScreenState();
 }
 
-class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
+class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
+  int _filterIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
+  final _filters = const ['All', 'Urgent', 'Pickup', 'Weather', 'Community'];
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authStateProvider).valueOrNull;
-    final isAdmin = auth?.isAdmin ?? false;
+    final cs = Theme.of(context).colorScheme;
+    final alertsAsync = ref.watch(adminAlertsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Alerts'),
-        bottom: TabBar(
-          controller: _tab,
-          tabs: const [
-            Tab(text: 'Announcements'),
-            Tab(text: 'Reports'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _AnnouncementsTab(isAdmin: isAdmin),
-          _ReportsAlertsTab(isAdmin: isAdmin, userId: auth?.session?.userId),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnnouncementsTab extends ConsumerWidget {
-  const _AnnouncementsTab({required this.isAdmin});
-  final bool isAdmin;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final alerts = ref.watch(adminAlertsProvider);
-
-    return Scaffold(
-      floatingActionButton: isAdmin
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push('/alerts/create'),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Alert'),
-            )
-          : null,
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(adminAlertsProvider.notifier).load(),
-        child: alerts.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const SizedBox(height: 80),
-              const Icon(Icons.error_outline_rounded, size: 40),
-              const SizedBox(height: 12),
-              Text(
-                'Failed to load announcements\n$e',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          data: (list) {
-            if (list.isEmpty) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const SizedBox(height: 80),
-                  const Icon(Icons.notifications_none_rounded, size: 42),
-                  const SizedBox(height: 10),
-                  Text(
-                    isAdmin
-                        ? 'No announcements yet'
-                        : 'No announcements from admin',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            final sorted = [...list]
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: sorted.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) {
-                final a = sorted[i];
-
-                return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.campaign_rounded),
-                    title: Text(
-                      a.title,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(a.message),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatDate(a.createdAt),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                    trailing: isAdmin
-                        ? PopupMenuButton<String>(
-                            onSelected: (v) async {
-                              if (v == 'edit') {
-                                // no async gap needed here
-                                context.push('/alerts/create', extra: a);
-                              }
-
-                              if (v == 'delete') {
-                                _confirmDeleteAlert(context, ref, a.id);
-                              }
-                            },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, size: 18),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete,
-                                      size: 18,
-                                      color: Colors.red,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : null,
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  void _confirmDeleteAlert(BuildContext context, WidgetRef ref, String id) {
-    // Capture navigator & messenger so we don't rely on context after await
-    final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Alert?'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => nav.pop(), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              nav.pop(); // close dialog first (no context needed later)
-
-              try {
-                await ref.read(adminAlertsProvider.notifier).delete(id);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: const Text('Alert deleted'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              } catch (_) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: const Text('Failed to delete alert'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(int millis) {
-    final date = DateTime.fromMillisecondsSinceEpoch(millis);
-    return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-class _ReportsAlertsTab extends ConsumerWidget {
-  const _ReportsAlertsTab({required this.isAdmin, this.userId});
-
-  final bool isAdmin;
-  final String? userId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final reportsAsync = ref.watch(reportsProvider);
-
-    return Scaffold(
-      floatingActionButton: (!isAdmin && userId != null)
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push('/reports/create'),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Report'),
-            )
-          : null,
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(reportsProvider.notifier).load(),
-        child: reportsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const SizedBox(height: 80),
-              const Icon(Icons.error_outline_rounded, size: 40),
-              const SizedBox(height: 12),
-              Text('Failed to load reports\n$e', textAlign: TextAlign.center),
-            ],
-          ),
-          data: (allReports) {
-            final reports = isAdmin
-                ? allReports
-                : (userId == null)
-                ? <ReportHiveModel>[]
-                : allReports.where((r) => r.userId == userId).toList();
-
-            if (reports.isEmpty) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const SizedBox(height: 80),
-                  const Icon(Icons.report_problem_rounded, size: 42),
-                  const SizedBox(height: 10),
-                  Text(
-                    'No reports yet',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (!isAdmin) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create a report to help keep your area clean',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ],
-              );
-            }
-
-            reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: reports.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) {
-                final report = reports[i];
-
-                return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.report_problem_rounded),
-                    title: Text(
-                      report.category,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(report.location),
-                        const SizedBox(height: 4),
-                        Text(
-                          report.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _ReportStatusChip(status: report.status),
-                        PopupMenuButton<String>(
-                          onSelected: (v) {
-                            if (isAdmin) {
-                              if (v == 'status') {
-                                _showStatusUpdateDialog(context, ref, report);
-                              }
-                            } else {
-                              if (v == 'edit') {
-                                context.push('/reports/create', extra: report);
-                              }
-                              if (v == 'delete') {
-                                _confirmDeleteReport(context, ref, report.id);
-                              }
-                            }
-                          },
-                          itemBuilder: (_) {
-                            if (isAdmin) {
-                              return const [
-                                PopupMenuItem(
-                                  value: 'status',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.update, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Update Status'),
-                                    ],
-                                  ),
-                                ),
-                              ];
-                            }
-                            return const [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, size: 18),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete,
-                                      size: 18,
-                                      color: Colors.red,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ];
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  void _showStatusUpdateDialog(
-    BuildContext context,
-    WidgetRef ref,
-    ReportHiveModel report,
-  ) {
-    final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Update Report Status'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
-            const Text('Select new status:'),
-            const SizedBox(height: 16),
-            ...['pending', 'in_progress', 'resolved'].map((status) {
-              final label =
-                  status[0].toUpperCase() +
-                  status.substring(1).replaceAll('_', ' ');
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Row(
+                children: [
+                  const Text('Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                  const Spacer(),
+                  _CircleIcon(icon: Icons.search_rounded, onTap: () {}),
+                  const SizedBox(width: 12),
+                  _CircleIcon(icon: Icons.filter_alt_outlined, onTap: () {}),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
 
-              return ListTile(
-                title: Text(label),
-                trailing: report.status == status
-                    ? const Icon(Icons.check)
-                    : null,
-                onTap: () async {
-                  nav.pop(); // close first
+            // Filter chips
+            SizedBox(
+              height: 46,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, i) {
+                  return KChip(
+                    label: _filters[i],
+                    selected: i == _filterIndex,
+                    showDot: _filters[i] == 'Urgent',
+                    onTap: () => setState(() => _filterIndex = i),
+                  );
+                },
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemCount: _filters.length,
+              ),
+            ),
 
-                  try {
-                    await ref
-                        .read(reportsProvider.notifier)
-                        .adminUpdateStatus(report.id, status);
+            const SizedBox(height: 12),
 
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: const Text('Status updated'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
+            Expanded(
+              child: alertsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Failed to load alerts: $e')),
+                data: (alerts) {
+                  // Seeded “reference-like” alerts at top
+                  final seeded = _seededAlerts();
+                  final dynamicAlerts = alerts.map((a) {
+                    final type = _inferType(a.title, a.message);
+                    return _AlertItem(
+                      type: type,
+                      title: a.title,
+                      message: a.message,
+                      meta: 'Municipal Office',
+                      timeAgo: _timeAgo(a.createdAt),
                     );
-                  } catch (_) {
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: const Text('Failed to update status'),
-                        behavior: SnackBarBehavior.floating,
+                  }).toList();
+
+                  final combined = [...seeded, ...dynamicAlerts];
+                  final filtered = combined.where((a) {
+                    final f = _filters[_filterIndex];
+                    if (f == 'All') return true;
+                    return a.type == f;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: KCard(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_off_outlined, size: 46, color: cs.onSurface.withOpacity(0.55)),
+                            const SizedBox(height: 12),
+                            const Text('No alerts', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                            const SizedBox(height: 6),
+                            Text('You’re all caught up.', style: TextStyle(color: cs.onSurface.withOpacity(0.62))),
+                          ],
+                        ),
                       ),
                     );
                   }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final item = filtered[index];
+                      return _AlertCard(item: item);
+                    },
+                  );
                 },
-              );
-            }),
+              ),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => nav.pop(), child: const Text('Cancel')),
-        ],
       ),
     );
   }
+}
 
-  void _confirmDeleteReport(BuildContext context, WidgetRef ref, String id) {
-    final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+class _CircleIcon extends StatelessWidget {
+  const _CircleIcon({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Report?'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => nav.pop(), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              nav.pop(); // close first
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: cs.surface,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 22,
+              offset: const Offset(0, 12),
+              color: Colors.black.withOpacity(0.08),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: cs.onSurface.withOpacity(0.72)),
+      ),
+    );
+  }
+}
 
-              try {
-                await ref.read(reportsProvider.notifier).delete(id);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: const Text('Report deleted'),
-                    behavior: SnackBarBehavior.floating,
+class _AlertItem {
+  final String type; // Urgent | Pickup | Weather | Community
+  final String title;
+  final String message;
+  final String timeAgo;
+  final String meta;
+  late final Color accent;
+  late final IconData icon;
+
+  _AlertItem({
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.timeAgo,
+    required this.meta,
+  }) {
+    final ui = _typeUi(type);
+    accent = ui.accent;
+    icon = ui.icon;
+  }
+}
+
+({Color accent, IconData icon}) _typeUi(String type) {
+  switch (type) {
+    case 'Urgent':
+      return (accent: const Color(0xFFEF4444), icon: Icons.warning_amber_rounded);
+    case 'Pickup':
+      return (accent: const Color(0xFF1ECA92), icon: Icons.local_shipping_outlined);
+    case 'Weather':
+      return (accent: const Color(0xFF1B8EF2), icon: Icons.water_drop_outlined);
+    case 'Community':
+    default:
+      return (accent: const Color(0xFF0E6E66), icon: Icons.people_outline_rounded);
+  }
+}
+
+class _AlertCard extends StatelessWidget {
+  const _AlertCard({required this.item});
+  final _AlertItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.08),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 5,
+            height: 116,
+            decoration: BoxDecoration(
+              color: item.accent,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(22),
+                bottomLeft: Radius.circular(22),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: item.accent.withOpacity(0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(item.icon, color: item.accent),
                   ),
-                );
-              } catch (_) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: const Text('Failed to delete report'),
-                    behavior: SnackBarBehavior.floating,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.title,
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.45)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.message,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Text(
+                              item.timeAgo,
+                              style: TextStyle(color: cs.onSurface.withOpacity(0.50), fontWeight: FontWeight.w700, fontSize: 12),
+                            ),
+                            const SizedBox(width: 10),
+                            Text('•', style: TextStyle(color: cs.onSurface.withOpacity(0.35))),
+                            const SizedBox(width: 10),
+                            Text(
+                              item.meta,
+                              style: TextStyle(color: cs.onSurface.withOpacity(0.50), fontWeight: FontWeight.w800, fontSize: 12),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(Icons.open_in_new_rounded, size: 14, color: cs.onSurface.withOpacity(0.45)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }
-            },
-            child: const Text('Delete'),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -509,34 +292,64 @@ class _ReportsAlertsTab extends ConsumerWidget {
   }
 }
 
-class _ReportStatusChip extends StatelessWidget {
-  const _ReportStatusChip({required this.status});
-  final String status;
+List<_AlertItem> _seededAlerts() {
+  return [
+    _AlertItem(
+      type: 'Urgent',
+      title: 'Illegal Dumping Reported',
+      message: 'Large waste pile near Ratnapark area requires immediate attention. Avoid the area if possible.',
+      timeAgo: '15 min ago',
+      meta: 'Municipal Office',
+    ),
+    _AlertItem(
+      type: 'Pickup',
+      title: "Tomorrow's Collection",
+      message: 'Regular waste collection scheduled for Zone A (Thamel, New Road, Ason). Please place bins outside by 6:30 AM.',
+      timeAgo: '1h ago',
+      meta: 'KMC Waste Dept',
+    ),
+    _AlertItem(
+      type: 'Weather',
+      title: 'Heavy Rain Expected',
+      message: 'Monsoon rains expected this afternoon. Secure your waste bins to prevent overflow and water contamination.',
+      timeAgo: '3h ago',
+      meta: 'Met Department',
+    ),
+    _AlertItem(
+      type: 'Community',
+      title: 'Community Cleanup Drive',
+      message: 'Join us this Saturday at Tundikhel for a city-wide cleanup initiative. Volunteers welcome! Refreshments provided.',
+      timeAgo: '5h ago',
+      meta: 'Clean Kathmandu',
+    ),
+    _AlertItem(
+      type: 'Community',
+      title: 'Road Closure Notice',
+      message: 'Durbar Marg closed for maintenance work. Waste trucks will use alternate route via Putalisadak. Expect slight delays.',
+      timeAgo: '1d ago',
+      meta: 'Traffic Police',
+    ),
+  ];
+}
 
-  Color _getColor() {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'in_progress':
-        return Colors.blue;
-      case 'resolved':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
+String _inferType(String title, String message) {
+  final t = '${title.toLowerCase()} ${message.toLowerCase()}';
+  if (t.contains('urgent') || t.contains('illegal') || t.contains('hazard') || t.contains('danger')) {
+    return 'Urgent';
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final label =
-        status[0].toUpperCase() + status.substring(1).replaceAll('_', ' ');
-    final c = _getColor();
-
-    return Chip(
-      label: Text(label),
-      backgroundColor: c.withAlpha(45),
-      labelStyle: TextStyle(color: c, fontWeight: FontWeight.w700),
-      visualDensity: VisualDensity.compact,
-    );
+  if (t.contains('pickup') || t.contains('collection') || t.contains('schedule') || t.contains('tomorrow')) {
+    return 'Pickup';
   }
+  if (t.contains('rain') || t.contains('storm') || t.contains('weather') || t.contains('monsoon')) {
+    return 'Weather';
+  }
+  return 'Community';
+}
+
+String _timeAgo(int millis) {
+  final dt = DateTime.fromMillisecondsSinceEpoch(millis);
+  final diff = DateTime.now().difference(dt);
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
 }
