@@ -12,7 +12,7 @@ The app helps citizens report waste issues, view alerts, track report status, an
 ## 📱 Key Features
 
 ### Mobile App (Flutter)
-- ✅ **Authentication flow** (login/signup)
+- ✅ **Authentication flow** (login/signup) .
 - ✅ **Home Dashboard** with stats, quick actions, and recent reports
 - ✅ **Report Waste** flow (category, description, photo/location optional)
 - ✅ **Alerts system** (user alerts + admin alerts)
@@ -22,9 +22,9 @@ The app helps citizens report waste issues, view alerts, track report status, an
 - ✅ Loading / empty / error states
 
 ### Admin (Web + Mobile)
-- ✅ Admin can view reports and update status  
-- ✅ Admin can broadcast alerts (reflected on user alerts screen)
-- 🔜 Admin Web Panel (Next.js) planned for production-ready dashboard usage
+- ✅ Admin can view reports and update status  .
+- ✅ Admin can broadcast alerts (reflected on user alerts screen) .
+- 🔜 Admin Web Panel (Next.js) planned for production-ready dashboard usage .
 
 ---
 
