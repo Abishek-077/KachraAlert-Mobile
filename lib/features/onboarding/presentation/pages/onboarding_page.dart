@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../settings/presentation/providers/settings_providers.dart';
 
@@ -35,135 +36,218 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final pages = _pages();
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _page,
-            itemCount: pages.length,
-            onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (context, i) {
-              final p = pages[i];
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [p.bgTop, p.bgBottom],
-                  ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [cs.surface, theme.scaffoldBackgroundColor]
+                : [const Color(0xFFE6F7EF), Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kachra Alert',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _finish,
+                      child: Text(
+                        'Skip',
+                        style: TextStyle(
+                          color: cs.onSurface.withOpacity(0.6),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: TextButton(
-                          onPressed: _finish,
-                          child: Text('Skip', style: TextStyle(color: cs.onSurface.withOpacity(0.6), fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: 108,
-                        height: 108,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.70),
-                          borderRadius: BorderRadius.circular(26),
-                          boxShadow: [
-                            BoxShadow(
-                              blurRadius: 28,
-                              offset: const Offset(0, 18),
-                              color: Colors.black.withOpacity(0.12),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: p.iconBg,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(p.icon, color: Colors.white, size: 34),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        p.title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.4),
-                      ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
-                        child: Text(
-                          p.subtitle,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w600, fontSize: 16, height: 1.45),
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // Page dots
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          pages.length,
-                          (d) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
-                            width: d == _index ? 28 : 10,
-                            height: 10,
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _page,
+                  itemCount: pages.length,
+                  onPageChanged: (i) => setState(() => _index = i),
+                  itemBuilder: (context, i) {
+                    final p = pages[i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          const Spacer(),
+                          Container(
+                            width: 110,
+                            height: 110,
                             decoration: BoxDecoration(
-                              color: d == _index ? const Color(0xFF0E6E66) : Colors.black.withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0E6E66),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            ),
-                            onPressed: () {
-                              if (_index < pages.length - 1) {
-                                _page.nextPage(duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
-                              } else {
-                                _finish();
-                              }
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(_index == pages.length - 1 ? 'Get Started' : 'Continue', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                                const SizedBox(width: 10),
-                                Icon(_index == pages.length - 1 ? Icons.check_rounded : Icons.arrow_forward_rounded),
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(
+                                    isDark ? 0.35 : 0.08,
+                                  ),
+                                  blurRadius: 26,
+                                  offset: const Offset(0, 12),
+                                ),
                               ],
                             ),
+                            child: Center(
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: p.iconBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  p.icon,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 26),
+                          Text(
+                            p.title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            p.subtitle,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: cs.outlineVariant,
+                              ),
+                            ),
+                            child: Column(
+                              children: p.highlights
+                                  .map(
+                                    (text) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: cs.primary.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              Icons.check_rounded,
+                                              color: cs.primary,
+                                              size: 18,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              text,
+                                              style: TextStyle(
+                                                color: cs.onSurface,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                          const Spacer(),
+                        ],
                       ),
-                    ],
+                    );
+                  },
+                ),
+              ),
+              SmoothPageIndicator(
+                controller: _page,
+                count: pages.length,
+                effect: ExpandingDotsEffect(
+                  dotHeight: 8,
+                  dotWidth: 8,
+                  activeDotColor: cs.primary,
+                  dotColor: cs.outlineVariant,
+                  expansionFactor: 3.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      if (_index < pages.length - 1) {
+                        _page.nextPage(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOut,
+                        );
+                      } else {
+                        _finish();
+                      }
+                    },
+                    icon: Icon(
+                      _index == pages.length - 1
+                          ? Icons.check_rounded
+                          : Icons.arrow_forward_rounded,
+                    ),
+                    label: Text(
+                      _index == pages.length - 1
+                          ? 'Get Started'
+                          : 'Continue',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -171,44 +255,51 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
 List<_OnboardData> _pages() => const [
       _OnboardData(
-        bgTop: Color(0xFF0F7B73),
-        bgBottom: Color(0xFF0B5D56),
         icon: Icons.eco_outlined,
-        iconBg: Color(0xFF1ECA92),
-        title: 'Kachra Alert',
-        subtitle: 'Cleaner streets. Smarter city.',
+        iconBg: Color(0xFF12B76A),
+        title: 'Smarter Waste Pickup',
+        subtitle: 'A cleaner city starts with better coordination.',
+        highlights: [
+          'Real-time waste pickup alerts for your area.',
+          'Personalized schedules tailored to your community.',
+          'Trusted notifications from city operators.',
+        ],
       ),
       _OnboardData(
-        bgTop: Color(0xFFD8FFF1),
-        bgBottom: Color(0xFFF3FFFA),
         icon: Icons.camera_alt_outlined,
-        iconBg: Color(0xFF1ECA92),
-        title: 'Report Waste Instantly',
-        subtitle: 'Snap a photo, mark the location, and help keep your neighborhood clean. It takes just 30 seconds.',
+        iconBg: Color(0xFF2DD4BF),
+        title: 'Report in Seconds',
+        subtitle: 'Snap, tag, and send waste reports instantly.',
+        highlights: [
+          'Attach location and photos in one tap.',
+          'Track report status with clear updates.',
+          'Help keep neighborhoods spotless.',
+        ],
       ),
       _OnboardData(
-        bgTop: Color(0xFFD3E9FF),
-        bgBottom: Color(0xFFF5FBFF),
         icon: Icons.notifications_none_rounded,
-        iconBg: Color(0xFF1B8EF2),
-        title: 'Stay Informed',
-        subtitle: 'Get alerts about pickup schedules, weather warnings, and community updates. Never miss a collection day.',
+        iconBg: Color(0xFF16A34A),
+        title: 'Never Miss a Pickup',
+        subtitle: 'Stay informed with smart reminders.',
+        highlights: [
+          'Daily, weekly, and holiday schedules.',
+          'Instant alerts for route changes.',
+          'Optional reminders before pickup time.',
+        ],
       ),
     ];
 
 class _OnboardData {
-  final Color bgTop;
-  final Color bgBottom;
   final IconData icon;
   final Color iconBg;
   final String title;
   final String subtitle;
+  final List<String> highlights;
   const _OnboardData({
-    required this.bgTop,
-    required this.bgBottom,
     required this.icon,
     required this.iconBg,
     required this.title,
     required this.subtitle,
+    required this.highlights,
   });
 }

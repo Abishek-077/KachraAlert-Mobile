@@ -7,39 +7,39 @@ class AppColors {
   // Brand Core (Premium)
   // =========================
 
-  /// Primary: Midnight Indigo (premium, calm, trustworthy)
-  static const Color primary = Color(0xFF1F2AFF); // Indigo Blue
-  static const Color primaryDark = Color(0xFF141A8A); // Deep Indigo
-  static const Color primaryLight = Color(0xFF6B7CFF); // Soft Indigo Glow
+  /// Primary: Eco Green (clean, fresh, trustworthy)
+  static const Color primary = Color(0xFF12B76A); // Emerald Green
+  static const Color primaryDark = Color(0xFF0B8B52); // Deep Green
+  static const Color primaryLight = Color(0xFF6DE2B0); // Soft Mint
 
-  /// Secondary: Electric Cyan (modern tech accent)
-  static const Color secondary = Color(0xFF00D4FF);
-  static const Color secondaryLight = Color(0xFF7AE8FF);
+  /// Secondary: Teal Mist (fresh accent)
+  static const Color secondary = Color(0xFF2DD4BF);
+  static const Color secondaryLight = Color(0xFF7AE8D9);
 
-  /// Luxury Accent: Champagne Gold (use sparingly for highlights)
-  static const Color accentGold = Color(0xFFD6B25E);
-  static const Color accentGoldSoft = Color(0xFFF1E2B8);
+  /// Luxury Accent: Warm Sand (use sparingly for highlights)
+  static const Color accentGold = Color(0xFFE3C27A);
+  static const Color accentGoldSoft = Color(0xFFF6E7C1);
 
-  /// Supporting accents (subtle, premium)
-  static const Color accentMint = Color(0xFF2EE6A6);
-  static const Color accentCoral = Color(0xFFFF6B6B);
+  /// Supporting accents
+  static const Color accentMint = Color(0xFF22C55E);
+  static const Color accentCoral = Color(0xFFFF7A7A);
 
   // =========================
   // Neutrals (Porcelain / Slate)
   // =========================
-  static const Color background = Color(0xFFF6F7FB); // Porcelain
+  static const Color background = Color(0xFFF3FBF7); // Soft green wash
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF0F2F7);
-  static const Color inputFill = Color(0xFFF2F4F8);
+  static const Color surfaceVariant = Color(0xFFE9F5EF);
+  static const Color inputFill = Color(0xFFF0F7F3);
 
   // Premium dark neutrals
-  static const Color textPrimary = Color(0xFF0F172A); // Slate 900
-  static const Color textSecondary = Color(0xFF475569); // Slate 600
-  static const Color textTertiary = Color(0xFF94A3B8); // Slate 400
+  static const Color textPrimary = Color(0xFF0B1F16); // Deep forest
+  static const Color textSecondary = Color(0xFF3E5B4D); // Muted green
+  static const Color textTertiary = Color(0xFF8AA196); // Soft sage
 
   // Borders & dividers
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color divider = Color(0xFFEAEFF6);
+  static const Color border = Color(0xFFD7E6DE);
+  static const Color divider = Color(0xFFE5F0EA);
 
   // =========================
   // Status (More premium tones)
@@ -47,10 +47,10 @@ class AppColors {
   static const Color success = Color(0xFF16A34A); // Emerald 600
   static const Color warning = Color(0xFFF59E0B); // Amber 500
   static const Color error = Color(0xFFEF4444); // Red 500
-  static const Color info = Color(0xFF2563EB); // Blue 600
+  static const Color info = Color(0xFF0EA5A5); // Teal 500
 
   // Auth Primary (keep aligned with brand)
-  static const Color authPrimary = Color(0xFF1F2AFF);
+  static const Color authPrimary = Color(0xFF12B76A);
 
   // =========================
   // Opacity helpers
@@ -74,9 +74,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF141A8A), // primaryDark
-      Color(0xFF1F2AFF), // primary
-      Color(0xFF00D4FF), // secondary
+      Color(0xFF0B8B52), // primaryDark
+      Color(0xFF12B76A), // primary
+      Color(0xFF2DD4BF), // secondary
     ],
     stops: [0.0, 0.55, 1.0],
   );
@@ -86,7 +86,7 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFFF7F8FC),
+      Color(0xFFF3FBF7),
       Color(0xFFFFFFFF),
     ],
   );
@@ -141,8 +141,8 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [
       Color(0xFF0B1020),
-      Color(0xFF141A8A),
-      Color(0xFF00D4FF),
+      Color(0xFF0B8B52),
+      Color(0xFF2DD4BF),
     ],
     stops: [0.0, 0.6, 1.0],
   );
