@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:logger/logger.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/constants/hive_table_constant.dart';
 import '../../../../core/services/hive/hive_service.dart';
 import '../../../admin/domain/services/admin_broadcast_sound_gate.dart';
