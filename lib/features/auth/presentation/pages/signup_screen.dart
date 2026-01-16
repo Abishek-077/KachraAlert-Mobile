@@ -85,6 +85,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   Future<void> _signup(bool loading) async {
     if (loading) return;
 
+    final stepOneError = _validateStepOne();
+    if (stepOneError != null) {
+      AppSnack.show(context, stepOneError);
+      setState(() => _step = 0);
+      return;
+    }
+
     final validationError = _validateStepTwo();
     if (validationError != null) {
       AppSnack.show(context, validationError);

@@ -46,12 +46,16 @@ class ApiClient {
         )
         .timeout(const Duration(seconds: 20));
 
+    if (response.statusCode == 204) {
+      return <String, dynamic>{};
+    }
+
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _decodeJson(body);
+    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
-        _extractMessage(json) ?? 'Unexpected server response.',
+        _extractMessage(json) ?? _fallbackMessage(body),
         statusCode: response.statusCode,
       );
     }
@@ -67,12 +71,16 @@ class ApiClient {
     return Uri.parse('$cleanBase$cleanPath');
   }
 
-  Map<String, dynamic> _decodeJson(String body) {
-    final decoded = jsonDecode(body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
+  Map<String, dynamic> _safeDecode(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'data': decoded};
+    } catch (_) {
+      return {'raw': body};
     }
-    return {'data': decoded};
   }
 
   String? _extractMessage(Map<String, dynamic> json) {
@@ -81,5 +89,10 @@ class ApiClient {
       return message.trim();
     }
     return null;
+  }
+
+  String _fallbackMessage(String body) {
+    if (body.isEmpty) return 'Unexpected server response.';
+    return body.length > 200 ? body.substring(0, 200) : body;
   }
 }
