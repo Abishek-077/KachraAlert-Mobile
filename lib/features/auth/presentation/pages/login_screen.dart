@@ -77,7 +77,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // ✅ Listen for auth error and show snackbar
     ref.listen<AsyncValue<AuthState>>(authStateProvider, (prev, next) {
       final msg = next.valueOrNull?.errorMessage;
       if (msg != null && msg.isNotEmpty) {
@@ -99,140 +98,162 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: AbsorbPointer(
-          absorbing: loading,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 48),
-
-                  FadeTransition(
-                    opacity: fadeAnimation,
-                    child: Column(
-                      children: [
-                        Text(
-                          'Welcome Back',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: scheme.onSurface,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Login to manage alerts & schedules',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: scheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  SlideTransition(
-                    position: slideAnimation,
-                    child: FadeTransition(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [scheme.surface, theme.scaffoldBackgroundColor]
+                : [const Color(0xFFE7F7EF), Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: AbsorbPointer(
+            absorbing: loading,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 40),
+                    FadeTransition(
                       opacity: fadeAnimation,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: scheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: scheme.outlineVariant,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(
-                                theme.brightness == Brightness.dark
-                                    ? 0.18
-                                    : 0.04,
-                              ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildRoleSelector(loading, scheme),
-                              const SizedBox(height: 24),
-
-                              _buildTextField(
-                                scheme: scheme,
-                                controller: _email,
-                                label: 'Email Address',
-                                icon: Icons.email_outlined,
-                                enabled: !loading,
-                                keyboardType: TextInputType.emailAddress,
-                              ),
-                              const SizedBox(height: 16),
-
-                              _buildPasswordField(
-                                scheme: scheme,
-                                controller: _pass,
-                                label: 'Password',
-                                enabled: !loading,
-                              ),
-                              const SizedBox(height: 24),
-
-                              _buildAuthButton(
-                                scheme: scheme,
-                                label: 'Login',
-                                loading: loading,
-                                onPressed: () => _login(loading),
-                              ),
-                              const SizedBox(height: 16),
-
-                              Center(
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: "Don't have an account? ",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text: 'Sign Up',
-                                        style: TextStyle(
-                                          color: scheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = loading
-                                              ? null
-                                              : () =>
-                                                    context.go('/auth/signup'),
-                                      ),
-                                    ],
-                                  ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: scheme.primary,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: scheme.primary.withOpacity(0.25),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
                                 ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.eco_rounded,
+                              color: Colors.white,
+                              size: 34,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Welcome Back',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: scheme.onSurface,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Login to manage alerts & schedules',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: scheme.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SlideTransition(
+                      position: slideAnimation,
+                      child: FadeTransition(
+                        opacity: fadeAnimation,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: scheme.surface,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: scheme.outlineVariant,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(
+                                  theme.brightness == Brightness.dark ? 0.18 : 0.06,
+                                ),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
                               ),
                             ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildRoleSelector(loading, scheme),
+                                const SizedBox(height: 20),
+                                _buildTextField(
+                                  scheme: scheme,
+                                  controller: _email,
+                                  label: 'Email Address',
+                                  icon: Icons.email_outlined,
+                                  enabled: !loading,
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildPasswordField(
+                                  scheme: scheme,
+                                  controller: _pass,
+                                  label: 'Password',
+                                  enabled: !loading,
+                                ),
+                                const SizedBox(height: 24),
+                                _buildAuthButton(
+                                  scheme: scheme,
+                                  label: 'Login',
+                                  loading: loading,
+                                  onPressed: () => _login(loading),
+                                ),
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: "Don't have an account? ",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: 'Sign Up',
+                                          style: TextStyle(
+                                            color: scheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = loading
+                                                ? null
+                                                : () => context.go('/auth/signup'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
           ),
@@ -246,7 +267,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Role',
+          'Account Type',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -254,56 +275,100 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: scheme.outlineVariant, width: 1),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildRoleSegment('Citizen', 'citizen', loading, scheme),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRoleCard(
+                title: 'Resident',
+                subtitle: 'Receive pickup alerts',
+                icon: Icons.home_work_outlined,
+                value: 'citizen',
+                loading: loading,
+                scheme: scheme,
               ),
-              Expanded(
-                child: _buildRoleSegment('Admin', 'admin', loading, scheme),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildRoleCard(
+                title: 'Admin/Driver',
+                subtitle: 'Manage schedules',
+                icon: Icons.local_shipping_outlined,
+                value: 'admin',
+                loading: loading,
+                scheme: scheme,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildRoleSegment(
-    String label,
-    String value,
-    bool loading,
-    ColorScheme scheme,
-  ) {
+  Widget _buildRoleCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required String value,
+    required bool loading,
+    required ColorScheme scheme,
+  }) {
     final isSelected = _role == value;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: loading ? null : () => setState(() => _role = value),
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? scheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: loading ? null : () => setState(() => _role = value),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? scheme.primary.withOpacity(0.12)
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? scheme.primary : scheme.outlineVariant,
+            width: isSelected ? 1.6 : 1,
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? scheme.onPrimary : scheme.onSurface,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected ? scheme.primary : scheme.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? scheme.onPrimary : scheme.primary,
+                size: 20,
               ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,13 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:logger/logger.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/hive_table_constant.dart';
 import '../../../../core/services/hive/hive_service.dart';
 import '../../../admin/domain/services/admin_broadcast_sound_gate.dart';
-import '../../data/models/user_account_hive_model.dart';
 import '../../data/models/user_session_hive_model.dart';
+import '../../data/services/auth_api_service.dart';
 
 final _logger = Logger();
 
@@ -81,16 +80,18 @@ class AuthState {
 /// ✅ Auth provider
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>((ref) {
-      return AuthNotifier();
+      return AuthNotifier(authApi: ref.watch(authApiServiceProvider));
     });
 
 class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
-  AuthNotifier() : super(const AsyncValue.loading()) {
+  AuthNotifier({required AuthApiService authApi})
+    : _authApi = authApi,
+      super(const AsyncValue.loading()) {
     _load();
   }
 
+  final AuthApiService _authApi;
   late final Box<UserSessionHiveModel> _sessionBox;
-  late final Box<UserAccountHiveModel> _accountsBox;
   bool _isInitialized = false;
 
   Future<void> _initBoxes() async {
@@ -98,9 +99,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
 
     _sessionBox = HiveService.box<UserSessionHiveModel>(
       HiveTableConstant.sessionBox,
-    );
-    _accountsBox = HiveService.box<UserAccountHiveModel>(
-      HiveTableConstant.accountsBox,
     );
 
     _isInitialized = true;
@@ -126,6 +124,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     required String email,
     required String password,
     required String role,
+    required String fullName,
+    required String phone,
+    required String society,
+    required String building,
+    required String apartment,
   }) async {
     state = const AsyncValue.loading();
 
@@ -137,22 +140,35 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (password.isEmpty) throw const InvalidInputException('Password');
       if (password.length < 6) throw const PasswordTooShortException();
+      if (fullName.trim().isEmpty) {
+        throw const InvalidInputException('Full name');
+      }
+      if (phone.trim().isEmpty) throw const InvalidInputException('Phone');
+      if (society.trim().isEmpty) {
+        throw const InvalidInputException('Society');
+      }
+      if (building.trim().isEmpty) {
+        throw const InvalidInputException('Building');
+      }
+      if (apartment.trim().isEmpty) {
+        throw const InvalidInputException('Apartment');
+      }
 
-      final exists = _accountsBox.values.any((u) => u.email == cleanEmail);
-      if (exists) throw const EmailAlreadyRegisteredException();
-
-      final account = UserAccountHiveModel(
-        userId: const Uuid().v4(),
+      final user = await _authApi.signup(
         email: cleanEmail,
         password: password,
         role: role,
+        fullName: fullName,
+        phone: phone,
+        society: society,
+        building: building,
+        apartment: apartment,
       );
-      await _accountsBox.put(account.userId, account);
 
       var session = UserSessionHiveModel(
-        userId: account.userId,
-        email: account.email,
-        role: account.role,
+        userId: user.userId,
+        email: user.email,
+        role: user.role,
         lastHeardBroadcastAt: 0,
       );
 
@@ -167,8 +183,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       state = AsyncValue.data(
         AuthState(isLoggedIn: true, session: session, errorMessage: null),
       );
+    } on ApiException catch (e) {
+      _logger.w('Signup API error: $e');
+      state = AsyncValue.data(
+        AuthState(isLoggedIn: false, session: null, errorMessage: e.message),
+      );
     } on AuthException catch (e) {
-      _logger.w('Signup error: $e');
+      _logger.w('Signup validation error: $e');
       state = AsyncValue.data(
         AuthState(isLoggedIn: false, session: null, errorMessage: e.message),
       );
@@ -201,17 +222,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       if (password.isEmpty) throw const InvalidInputException('Password');
       if (password.length < 6) throw const PasswordTooShortException();
 
-      final match = _accountsBox.values
-          .where((u) => u.email == cleanEmail)
-          .toList();
-      if (match.isEmpty) throw const UserNotFoundException();
-
-      final user = match.first;
-
-      if (user.password != password) throw const InvalidCredentialsException();
-      if (user.role != role) throw const RoleMismatchException();
-
       final previous = _sessionBox.get('session');
+      final user = await _authApi.login(
+        email: cleanEmail,
+        password: password,
+        role: role,
+      );
       var session = UserSessionHiveModel(
         userId: user.userId,
         email: user.email,
@@ -230,8 +246,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       state = AsyncValue.data(
         AuthState(isLoggedIn: true, session: session, errorMessage: null),
       );
+    } on ApiException catch (e) {
+      _logger.w('Login API error: $e');
+      state = AsyncValue.data(
+        AuthState(isLoggedIn: false, session: null, errorMessage: e.message),
+      );
     } on AuthException catch (e) {
-      _logger.w('Login error: $e');
+      _logger.w('Login validation error: $e');
       state = AsyncValue.data(
         AuthState(isLoggedIn: false, session: null, errorMessage: e.message),
       );
