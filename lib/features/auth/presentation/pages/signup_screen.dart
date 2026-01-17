@@ -25,7 +25,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
   bool _hide = true;
   bool _agreeTerms = false;
-  String _role = 'citizen';
+  String _role = 'resident';
   int _step = 0;
 
   late final AnimationController _controller;
@@ -107,6 +107,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           society: _society.text.trim(),
           building: _building.text.trim(),
           apartment: _apartment.text.trim(),
+          termsAccepted: _agreeTerms,
         );
 
     if (!mounted) return;
@@ -509,7 +510,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 title: 'Resident',
                 subtitle: 'Receive pickup alerts',
                 icon: Icons.home_work_outlined,
-                value: 'citizen',
+                value: 'resident',
                 loading: loading,
                 scheme: scheme,
               ),
@@ -520,7 +521,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 title: 'Admin/Driver',
                 subtitle: 'Manage schedules',
                 icon: Icons.local_shipping_outlined,
-                value: 'admin',
+                value: 'admin_driver',
                 loading: loading,
                 scheme: scheme,
               ),

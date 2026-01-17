@@ -28,7 +28,7 @@ class UserSessionService {
   static const String _keyUserAddress =
       'kachraalert_user_address'; // Locality/area for targeted alerts
   static const String _keyUserRole =
-      'kachraalert_user_role'; // 'citizen', 'collector', 'admin'
+      'kachraalert_user_role'; // 'resident', 'admin_driver'
   static const String _keyUserProfilePic =
       'kachraalert_user_profile_pic'; // Local file path or URL
 
@@ -41,7 +41,7 @@ class UserSessionService {
     required String email,
     String? phone,
     String? address,
-    String? role = 'citizen',
+    String? role = 'resident',
     String? profilePic,
   }) async {
     await _prefs.setBool(_keyIsLoggedIn, true);
@@ -61,7 +61,7 @@ class UserSessionService {
       await _prefs.remove(_keyUserAddress);
     }
 
-    await _prefs.setString(_keyUserRole, role ?? 'citizen');
+    await _prefs.setString(_keyUserRole, role ?? 'resident');
 
     if (profilePic != null && profilePic.isNotEmpty) {
       await _prefs.setString(_keyUserProfilePic, profilePic);
@@ -96,16 +96,16 @@ class UserSessionService {
 
   String? getUserAddress() => _prefs.getString(_keyUserAddress);
 
-  String getUserRole() => _prefs.getString(_keyUserRole) ?? 'citizen';
+  String getUserRole() => _prefs.getString(_keyUserRole) ?? 'resident';
 
   String? getUserProfilePic() => _prefs.getString(_keyUserProfilePic);
 
   // Role helpers
-  bool isAdmin() => getUserRole() == 'admin';
+  bool isAdmin() => getUserRole() == 'admin_driver';
 
   bool isCollector() => getUserRole() == 'collector';
 
-  bool isCitizen() => getUserRole() == 'citizen';
+  bool isCitizen() => getUserRole() == 'resident';
 
   // Logout – clears login data but preserves onboarding
   Future<void> logout() async {

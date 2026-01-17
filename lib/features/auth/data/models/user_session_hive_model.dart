@@ -11,7 +11,7 @@ class UserSessionHiveModel extends HiveObject {
   final String email;
 
   @HiveField(2)
-  final String role; // citizen | admin
+  final String role; // resident | admin_driver
 
   @HiveField(3)
   final int lastHeardBroadcastAt; // epoch millis
@@ -19,7 +19,7 @@ class UserSessionHiveModel extends HiveObject {
   UserSessionHiveModel({
     required this.userId,
     required this.email,
-    this.role = 'citizen',
+    this.role = 'resident',
     this.lastHeardBroadcastAt = 0,
   });
 
@@ -38,5 +38,5 @@ class UserSessionHiveModel extends HiveObject {
     );
   }
 
-  bool get isAdmin => role == 'admin';
+  bool get isAdmin => role == 'admin_driver';
 }

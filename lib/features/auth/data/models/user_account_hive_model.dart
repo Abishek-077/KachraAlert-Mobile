@@ -14,7 +14,7 @@ class UserAccountHiveModel extends HiveObject {
   final String password; // local-only for now (later hash in backend)
 
   @HiveField(3)
-  final String role; // 'citizen' | 'admin'
+  final String role; // 'resident' | 'admin_driver'
 
   UserAccountHiveModel({
     required this.userId,

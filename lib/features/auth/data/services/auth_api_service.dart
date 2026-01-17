@@ -23,28 +23,44 @@ class AuthApiService {
   Future<AuthUser> signup({
     required String email,
     required String password,
-    required String role,
-    required String fullName,
+    String? accountType,
+    String? name,
     required String phone,
     required String society,
     required String building,
     required String apartment,
+    bool termsAccepted = false,
+    @Deprecated('Use accountType instead.')
+    String? role,
+    @Deprecated('Use name instead.')
+    String? fullName,
   }) async {
+    final resolvedAccountType = accountType ?? role;
+    final resolvedName = name ?? fullName;
+
+    if (resolvedAccountType == null || resolvedAccountType.isEmpty) {
+      throw const ApiException('Account type is required.');
+    }
+    if (resolvedName == null || resolvedName.isEmpty) {
+      throw const ApiException('Name is required.');
+    }
+
     final response = await _client.postJson(ApiEndpoints.signup, {
       'email': email,
       'password': password,
-      'role': role,
-      'fullName': fullName,
+      'accountType': resolvedAccountType,
+      'name': resolvedName,
       'phone': phone,
       'society': society,
       'building': building,
       'apartment': apartment,
+      'terms': termsAccepted,
     });
 
     return _parseUser(
       response,
       fallbackEmail: email,
-      fallbackRole: role,
+      fallbackRole: resolvedAccountType,
     );
   }
 
@@ -56,7 +72,6 @@ class AuthApiService {
     final response = await _client.postJson(ApiEndpoints.login, {
       'email': email,
       'password': password,
-      'role': role,
     });
 
     return _parseUser(
