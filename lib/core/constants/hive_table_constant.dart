@@ -5,7 +5,7 @@ class HiveTableConstant {
   // Session
   static const sessionBox = 'session_box';
 
-  // Alerts (citizen alerts)
+  // Alerts (resident alerts)
   static const alertsBox = 'alerts_box';
 
   // User accounts (signup/login)

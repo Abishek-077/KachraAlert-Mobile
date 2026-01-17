@@ -15,7 +15,7 @@ class ProfileScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final email = (auth?.session?.email ?? '').trim();
-    final isAdmin = auth?.session?.role == 'admin';
+    final isAdmin = auth?.session?.role == 'admin_driver';
     final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 

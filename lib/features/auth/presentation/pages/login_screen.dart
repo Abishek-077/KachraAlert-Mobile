@@ -18,7 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _email = TextEditingController();
   final _pass = TextEditingController();
   bool _hide = true;
-  String _role = 'citizen';
+  String _role = 'resident';
 
   late final AnimationController _animationController;
   bool _initialized = false;
@@ -282,7 +282,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 title: 'Resident',
                 subtitle: 'Receive pickup alerts',
                 icon: Icons.home_work_outlined,
-                value: 'citizen',
+                value: 'resident',
                 loading: loading,
                 scheme: scheme,
               ),
@@ -293,7 +293,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 title: 'Admin/Driver',
                 subtitle: 'Manage schedules',
                 icon: Icons.local_shipping_outlined,
-                value: 'admin',
+                value: 'admin_driver',
                 loading: loading,
                 scheme: scheme,
               ),

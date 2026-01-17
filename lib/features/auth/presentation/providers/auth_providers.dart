@@ -60,7 +60,7 @@ class AuthState {
 
   const AuthState({required this.isLoggedIn, this.session, this.errorMessage});
 
-  bool get isAdmin => (session?.role == 'admin');
+  bool get isAdmin => (session?.role == 'admin_driver');
 
   AuthState copyWith({
     bool? isLoggedIn,
@@ -129,6 +129,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     required String society,
     required String building,
     required String apartment,
+    required bool termsAccepted,
   }) async {
     state = const AsyncValue.loading();
 
@@ -157,12 +158,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final user = await _authApi.signup(
         email: cleanEmail,
         password: password,
-        role: role,
-        fullName: fullName,
+        accountType: role,
+        name: fullName,
         phone: phone,
         society: society,
         building: building,
         apartment: apartment,
+        termsAccepted: termsAccepted,
       );
 
       var session = UserSessionHiveModel(
@@ -209,7 +211,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
   Future<void> login({
     required String email,
     required String password,
-    String role = 'citizen',
+    String role = 'resident',
   }) async {
     state = const AsyncValue.loading();
 
