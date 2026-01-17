@@ -8,8 +8,8 @@ class AdminBroadcastSoundGate {
   static Future<UserSessionHiveModel> playIfNeeded({
     required UserSessionHiveModel session,
   }) async {
-    // Only citizens should "receive" broadcast sound
-    if (session.role == 'admin') return session;
+    // Only residents should "receive" broadcast sound
+    if (session.role == 'admin_driver') return session;
 
     final box = HiveService.box<AdminAlertHiveModel>(
       HiveTableConstant.adminAlertsBox,
