@@ -231,6 +231,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         password: password,
         role: role,
       );
+
+      if (user.role != role) {
+        throw const RoleMismatchException();
+      }
+
       var session = UserSessionHiveModel(
         userId: user.userId,
         email: user.email,

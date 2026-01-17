@@ -78,6 +78,8 @@ class AuthApiService {
     final response = await _client.postJson(ApiEndpoints.login, {
       'email': email,
       'password': password,
+      'accountType': role,
+      'role': role,
     });
 
     return _parseUser(
