@@ -23,20 +23,26 @@ class AuthApiService {
   Future<AuthUser> signup({
     required String email,
     required String password,
+
+    // New preferred fields
     String? accountType,
     String? name,
+    bool termsAccepted = false,
+
+    // Existing fields
     required String phone,
     required String society,
     required String building,
     required String apartment,
-    bool termsAccepted = false,
+
+    // Backward-compat (old call sites)
     @Deprecated('Use accountType instead.')
     String? role,
     @Deprecated('Use name instead.')
     String? fullName,
   }) async {
-    final resolvedAccountType = accountType ?? role;
-    final resolvedName = name ?? fullName;
+    final resolvedAccountType = (accountType ?? role)?.trim();
+    final resolvedName = (name ?? fullName)?.trim();
 
     if (resolvedAccountType == null || resolvedAccountType.isEmpty) {
       throw const ApiException('Account type is required.');
