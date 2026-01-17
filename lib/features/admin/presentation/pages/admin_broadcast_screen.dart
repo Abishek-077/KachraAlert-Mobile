@@ -38,7 +38,7 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
               child: Column(
                 children: [
                   const Text(
-                    'Send alert to citizens',
+                    'Send alert to residents',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 12),

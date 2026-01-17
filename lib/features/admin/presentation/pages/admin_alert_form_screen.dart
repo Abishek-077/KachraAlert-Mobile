@@ -107,7 +107,7 @@ class _AdminAlertFormScreenState extends ConsumerState<AdminAlertFormScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'This alert will be broadcast to all citizens',
+                    'This alert will be broadcast to all residents',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -159,4 +159,3 @@ class _AdminAlertFormScreenState extends ConsumerState<AdminAlertFormScreen> {
     );
   }
 }
-
