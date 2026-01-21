@@ -158,145 +158,201 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 : [const Color(0xFFE7F7EF), Colors.white],
           ),
         ),
-        child: SafeArea(
-          child: AbsorbPointer(
-            absorbing: loading,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        onPressed: loading ? null : () => context.go('/auth/login'),
-                        icon: Icon(Icons.arrow_back_rounded, color: scheme.onSurface),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    FadeTransition(
-                      opacity: fadeAnimation,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              color: scheme.primary,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: scheme.primary.withOpacity(0.25),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.eco_rounded,
-                              color: Colors.white,
-                              size: 34,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
+        child: Stack(
+          children: [
+            Positioned(
+              right: -80,
+              top: -20,
+              child: _GlowCircle(
+                size: 220,
+                color: scheme.primary.withOpacity(isDark ? 0.2 : 0.12),
+              ),
+            ),
+            Positioned(
+              left: -70,
+              bottom: 80,
+              child: _GlowCircle(
+                size: 180,
+                color: scheme.secondary.withOpacity(isDark ? 0.18 : 0.1),
+              ),
+            ),
+            SafeArea(
+              child: AbsorbPointer(
+                absorbing: loading,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            onPressed:
+                                loading ? null : () => context.go('/auth/login'),
+                            icon: Icon(
+                              Icons.arrow_back_rounded,
                               color: scheme.onSurface,
-                              height: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Join KachraAlert today',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: scheme.onSurfaceVariant,
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SlideTransition(
-                      position: slideAnimation,
-                      child: FadeTransition(
-                        opacity: fadeAnimation,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: scheme.surface,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: scheme.outlineVariant,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(
-                                  theme.brightness == Brightness.dark ? 0.18 : 0.06,
+                        ),
+                        const SizedBox(height: 8),
+                        FadeTransition(
+                          opacity: fadeAnimation,
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: scheme.primary,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: scheme.primary.withOpacity(0.25),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                                child: const Icon(
+                                  Icons.eco_rounded,
+                                  color: Colors.white,
+                                  size: 34,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.onSurface,
+                                  height: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Set up your profile and start receiving alerts.',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: scheme.onSurfaceVariant,
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: scheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_outlined,
+                                      size: 16,
+                                      color: scheme.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Two-step registration',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const SizedBox(height: 28),
+                        SlideTransition(
+                          position: slideAnimation,
+                          child: FadeTransition(
+                            opacity: fadeAnimation,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: scheme.surface,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: scheme.outlineVariant,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(
+                                      theme.brightness == Brightness.dark
+                                          ? 0.18
+                                          : 0.06,
+                                    ),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildStepIndicator(scheme),
+                                    const SizedBox(height: 20),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      switchInCurve: Curves.easeOut,
+                                      switchOutCurve: Curves.easeIn,
+                                      child: _step == 0
+                                          ? _buildAccountStep(scheme, loading)
+                                          : _buildAddressStep(scheme, loading),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Center(
+                          child: RichText(
+                            text: TextSpan(
+                              text: 'Already have an account? ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: scheme.onSurfaceVariant,
+                              ),
                               children: [
-                                _buildStepIndicator(scheme),
-                                const SizedBox(height: 20),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 250),
-                                  switchInCurve: Curves.easeOut,
-                                  switchOutCurve: Curves.easeIn,
-                                  child: _step == 0
-                                      ? _buildAccountStep(scheme, loading)
-                                      : _buildAddressStep(scheme, loading),
+                                TextSpan(
+                                  text: 'Login',
+                                  style: TextStyle(
+                                    color: scheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = loading
+                                        ? null
+                                        : () => context.go('/auth/login'),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    Center(
-                      child: RichText(
-                        text: TextSpan(
-                          text: 'Already have an account? ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'Login',
-                              style: TextStyle(
-                                color: scheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = loading
-                                    ? null
-                                    : () => context.go('/auth/login'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -751,6 +807,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   fontWeight: FontWeight.w700,
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _GlowCircle extends StatelessWidget {
+  const _GlowCircle({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, Colors.transparent],
+        ),
       ),
     );
   }
