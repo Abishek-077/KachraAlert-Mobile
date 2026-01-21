@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/widgets/k_widgets.dart';
+import '../../../../core/utils/media_permissions.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/report_providers.dart';
 import '../../data/models/report_hive_model.dart';
@@ -249,6 +250,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
             // Photo placeholder (optional, no extra plugins)
             KCard(
               padding: const EdgeInsets.all(14),
+              onTap: () => MediaPermissions.requestPhotoVideoAccess(context),
               child: Row(
                 children: [
                   KIconCircle(
@@ -257,17 +259,18 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                     foreground: cs.onSurface.withOpacity(0.65),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Add photo (optional)',
                           style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Coming soon — we will enable camera/gallery upload.',
+                          'Tap to allow photo and video access for uploads.',
+                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
                         ),
                       ],
                     ),
