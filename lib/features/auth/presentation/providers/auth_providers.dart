@@ -61,17 +61,19 @@ class AuthState {
 
   const AuthState({required this.isLoggedIn, this.session, this.errorMessage});
 
-  bool get isAdmin => (session?.role == 'admin_driver');
+  bool get isAdmin => session?.role == 'admin';
 
   AuthState copyWith({
     bool? isLoggedIn,
     UserSessionHiveModel? session,
+    bool clearSession = false,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      session: session ?? this.session,
-      errorMessage: errorMessage,
+      session: clearSession ? null : (session ?? this.session),
+      errorMessage: clearError ? null : errorMessage,
     );
   }
 
@@ -92,23 +94,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
   }
 
   final AuthApiService _authApi;
-  late final Box<UserSessionHiveModel> _sessionBox;
-  bool _isInitialized = false;
 
-  Future<void> _initBoxes() async {
-    if (_isInitialized) return;
+  Box<UserSessionHiveModel>? _sessionBox;
 
-    _sessionBox = HiveService.box<UserSessionHiveModel>(
+  Future<Box<UserSessionHiveModel>> _initSessionBox() async {
+    // If your HiveService needs explicit init/open, do it there.
+    _sessionBox ??= HiveService.box<UserSessionHiveModel>(
       HiveTableConstant.sessionBox,
     );
-
-    _isInitialized = true;
+    return _sessionBox!;
   }
 
   Future<void> _load() async {
     try {
-      await _initBoxes();
-      final session = _sessionBox.get('session');
+      final box = await _initSessionBox();
+      final session = box.get('session');
+
       if (session == null) {
         state = const AsyncValue.data(AuthState.loggedOut);
       } else {
@@ -120,7 +121,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     }
   }
 
-  /// ✅ SIGNUP (NO THROW, sets errorMessage)
+  /// ✅ SIGNUP (NO THROW to UI, sets errorMessage)
   Future<void> signup({
     required String email,
     required String password,
@@ -135,37 +136,43 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     state = const AsyncValue.loading();
 
     try {
-      await _initBoxes();
+      final box = await _initSessionBox();
 
       final cleanEmail = email.trim().toLowerCase();
+      final cleanName = fullName.trim();
+      final cleanPhone = phone.trim();
+      final cleanSociety = society.trim();
+      final cleanBuilding = building.trim();
+      final cleanApartment = apartment.trim();
 
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (password.isEmpty) throw const InvalidInputException('Password');
       if (password.length < 6) throw const PasswordTooShortException();
-      if (fullName.trim().isEmpty) {
-        throw const InvalidInputException('Full name');
-      }
-      if (phone.trim().isEmpty) throw const InvalidInputException('Phone');
-      if (society.trim().isEmpty) {
-        throw const InvalidInputException('Society');
-      }
-      if (building.trim().isEmpty) {
-        throw const InvalidInputException('Building');
-      }
-      if (apartment.trim().isEmpty) {
+      if (cleanName.isEmpty) throw const InvalidInputException('Full name');
+      if (cleanPhone.isEmpty) throw const InvalidInputException('Phone');
+      if (cleanSociety.isEmpty) throw const InvalidInputException('Society');
+      if (cleanBuilding.isEmpty) throw const InvalidInputException('Building');
+      if (cleanApartment.isEmpty) {
         throw const InvalidInputException('Apartment');
       }
 
       final user = await _authApi.signup(
         email: cleanEmail,
         password: password,
-        accountType: role,
-        name: fullName,
-        phone: phone,
-        society: society,
-        building: building,
-        apartment: apartment,
+        role: role,
+        fullName: cleanName,
+        phone: cleanPhone,
+        society: cleanSociety,
+        building: cleanBuilding,
+        apartment: cleanApartment,
+        accountType: '',
+        name: '',
         termsAccepted: termsAccepted,
+
+        // If your API really requires these, add them to the method signature:
+        // accountType: ...,
+        // name: ...,
+        // termsAccepted: true,
       );
 
       var session = UserSessionHiveModel(
@@ -181,7 +188,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         _logger.w('Broadcast gate failed during signup', error: e);
       }
 
-      await _sessionBox.put('session', session);
+      await box.put('session', session);
 
       state = AsyncValue.data(
         AuthState(isLoggedIn: true, session: session, errorMessage: null),
@@ -208,7 +215,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     }
   }
 
-  /// ✅ LOGIN (NO THROW, sets errorMessage)
+  /// ✅ LOGIN (NO THROW to UI, sets errorMessage)
   Future<void> login({
     required String email,
     required String password,
@@ -217,20 +224,21 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     state = const AsyncValue.loading();
 
     try {
-      await _initBoxes();
+      final box = await _initSessionBox();
 
       final cleanEmail = email.trim().toLowerCase();
-
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (password.isEmpty) throw const InvalidInputException('Password');
       if (password.length < 6) throw const PasswordTooShortException();
 
-      final previous = _sessionBox.get('session');
+      final previous = box.get('session');
+
       final user = await _authApi.login(
         email: cleanEmail,
         password: password,
         role: role,
       );
+
       var session = UserSessionHiveModel(
         userId: user.userId,
         email: user.email,
@@ -244,7 +252,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         _logger.w('Broadcast gate failed during login', error: e);
       }
 
-      await _sessionBox.put('session', session);
+      await box.put('session', session);
 
       state = AsyncValue.data(
         AuthState(isLoggedIn: true, session: session, errorMessage: null),
@@ -276,13 +284,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     final current = state.valueOrNull;
     if (current == null) return;
     if (current.errorMessage == null) return;
-    state = AsyncValue.data(current.copyWith(errorMessage: null));
+
+    state = AsyncValue.data(current.copyWith(clearError: true));
   }
 
   Future<void> logout() async {
     try {
-      await _initBoxes();
-      await _sessionBox.delete('session');
+      final box = await _initSessionBox();
+      await box.delete('session');
       state = const AsyncValue.data(AuthState.loggedOut);
     } catch (e, st) {
       _logger.e('Logout failed', error: e, stackTrace: st);
