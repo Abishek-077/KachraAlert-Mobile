@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kachra Alert needs access to your photos and videos to attach them to reports.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kachra Alert needs permission to save report photos and videos.</string>
 </dict>
 </plist>
