@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../data/models/schedule_hive_model.dart';
-import '../../data/repositories/schedule_repository_hive.dart';
+import '../../data/repositories/schedule_repository_api.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
 final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
-  return ScheduleRepositoryHive();
+  return ScheduleRepositoryApi(client: ref.watch(apiClientProvider));
 });
 
 final schedulesProvider =
