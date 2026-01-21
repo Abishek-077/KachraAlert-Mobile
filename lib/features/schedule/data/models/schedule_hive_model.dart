@@ -33,6 +33,33 @@ class ScheduleHiveModel extends HiveObject {
 
   DateTime get date => DateTime.fromMillisecondsSinceEpoch(dateMillis);
 
+  factory ScheduleHiveModel.fromJson(Map<String, dynamic> json) {
+    final rawDate = json['dateMillis'] ?? json['date'] ?? json['collectionDate'];
+    final parsedDate = _parseDateMillis(rawDate);
+
+    return ScheduleHiveModel(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      dateMillis: parsedDate ??
+          DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+      area: (json['area'] ?? '').toString(),
+      note: (json['note'] ?? '').toString(),
+      shift: (json['shift'] ?? '').toString(),
+      isActive: json['isActive'] == null ? true : json['isActive'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'dateMillis': dateMillis,
+      'date': date.toIso8601String(),
+      'area': area,
+      'note': note,
+      'shift': shift,
+      'isActive': isActive,
+    };
+  }
+
   ScheduleHiveModel copyWith({
     String? id,
     int? dateMillis,
@@ -49,5 +76,15 @@ class ScheduleHiveModel extends HiveObject {
       shift: shift ?? this.shift,
       isActive: isActive ?? this.isActive,
     );
+  }
+
+  static int? _parseDateMillis(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      return parsed?.millisecondsSinceEpoch;
+    }
+    return null;
   }
 }
