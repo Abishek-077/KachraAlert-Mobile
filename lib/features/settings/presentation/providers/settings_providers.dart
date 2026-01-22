@@ -8,25 +8,34 @@ import '../../../../core/services/hive/hive_service.dart';
 const _kOnboarded = 'onboarded';
 const _kDarkMode = 'darkMode';
 const _kPickupReminders = 'pickupReminders';
+const _kSplashShownAt = 'splashShownAt';
 
 class SettingsState {
   final bool onboarded;
   final bool isDarkMode;
   final bool pickupRemindersEnabled;
+  final DateTime? splashShownAt;
 
   const SettingsState({
     required this.onboarded,
     required this.isDarkMode,
     required this.pickupRemindersEnabled,
+    this.splashShownAt,
   });
 
   ThemeMode get themeMode => isDarkMode ? ThemeMode.dark : ThemeMode.light;
 
-  SettingsState copyWith({bool? onboarded, bool? isDarkMode, bool? pickupRemindersEnabled}) {
+  SettingsState copyWith({
+    bool? onboarded,
+    bool? isDarkMode,
+    bool? pickupRemindersEnabled,
+    DateTime? splashShownAt,
+  }) {
     return SettingsState(
       onboarded: onboarded ?? this.onboarded,
       isDarkMode: isDarkMode ?? this.isDarkMode,
       pickupRemindersEnabled: pickupRemindersEnabled ?? this.pickupRemindersEnabled,
+      splashShownAt: splashShownAt ?? this.splashShownAt,
     );
   }
 }
@@ -72,17 +81,25 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       final isDarkMode = (_box.get(_kDarkMode, defaultValue: false) as bool);
       final pickupRemindersEnabled =
           (_box.get(_kPickupReminders, defaultValue: true) as bool);
+      final splashMillis = _box.get(_kSplashShownAt) as int?;
+      final splashShownAt =
+          splashMillis == null ? null : DateTime.fromMillisecondsSinceEpoch(splashMillis);
 
       state = AsyncValue.data(
         SettingsState(
           onboarded: onboarded,
           isDarkMode: isDarkMode,
           pickupRemindersEnabled: pickupRemindersEnabled,
+          splashShownAt: splashShownAt,
         ),
       );
     } catch (_) {
       state = const AsyncValue.data(
-        SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true),
+        SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+        ),
       );
     }
   }
@@ -91,7 +108,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     await _init();
     await _box.put(_kOnboarded, true);
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     state = AsyncValue.data(current.copyWith(onboarded: true));
   }
 
@@ -99,14 +117,16 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     await _init();
     await _box.put(_kOnboarded, false);
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     state = AsyncValue.data(current.copyWith(onboarded: false));
   }
 
   Future<void> toggleTheme() async {
     await _init();
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     final next = !current.isDarkMode;
     await _box.put(_kDarkMode, next);
     state = AsyncValue.data(current.copyWith(isDarkMode: next));
@@ -115,8 +135,33 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
   Future<void> setPickupReminders(bool enabled) async {
     await _init();
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     await _box.put(_kPickupReminders, enabled);
     state = AsyncValue.data(current.copyWith(pickupRemindersEnabled: enabled));
   }
+
+  Future<void> recordSplashShown() async {
+    await _init();
+    final now = DateTime.now();
+    await _box.put(_kSplashShownAt, now.millisecondsSinceEpoch);
+    final current =
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+    state = AsyncValue.data(current.copyWith(splashShownAt: now));
+  }
 }
+
+final splashDelayProvider = FutureProvider<void>((ref) async {
+  final settings = ref.watch(settingsProvider).valueOrNull;
+  final now = DateTime.now();
+  final lastShown = settings?.splashShownAt;
+  if (lastShown != null) {
+    final elapsed = now.difference(lastShown);
+    if (elapsed >= const Duration(seconds: 1)) {
+      return;
+    }
+  }
+  await Future<void>.delayed(const Duration(seconds: 1));
+  await ref.read(settingsProvider.notifier).recordSplashShown();
+});

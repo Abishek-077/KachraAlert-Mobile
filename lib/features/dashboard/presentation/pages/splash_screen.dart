@@ -63,6 +63,14 @@ class _SplashScreenState extends State<SplashScreen>
                 color: Colors.white.withOpacity(0.08),
               ),
             ),
+            Positioned(
+              right: 30,
+              bottom: 120,
+              child: _GlowCircle(
+                size: 120,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
             SafeArea(
               child: Center(
                 child: Column(
@@ -73,27 +81,34 @@ class _SplashScreenState extends State<SplashScreen>
                       child: FadeTransition(
                         opacity: _fadeAnimation,
                         child: Container(
-                          width: 96,
-                          height: 96,
+                          width: 110,
+                          height: 110,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(28),
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(32),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.25),
+                              color: Colors.white.withOpacity(0.28),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.18),
-                                blurRadius: 18,
-                                offset: const Offset(0, 10),
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.recycling_rounded,
-                            color: Colors.white,
-                            size: 46,
+                          child: Container(
+                            margin: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.goldGradient,
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            child: const Icon(
+                              Icons.recycling_rounded,
+                              color: Colors.white,
+                              size: 44,
+                            ),
                           ),
                         ),
                       ),
@@ -124,11 +139,18 @@ class _SplashScreenState extends State<SplashScreen>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.16),
+                        color: Colors.white.withOpacity(0.18),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
