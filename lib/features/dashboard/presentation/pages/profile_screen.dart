@@ -176,6 +176,13 @@ class ProfileScreen extends ConsumerWidget {
                     onTap: () => context.go('/alerts'),
                   ),
                   _SettingsTile(
+                    icon: Icons.receipt_long_outlined,
+                    iconBg: const Color(0xFFE8FFF7),
+                    title: 'Payments',
+                    subtitle: 'View invoices and pay dues',
+                    onTap: () => context.push('/payments'),
+                  ),
+                  _SettingsTile(
                     icon: Icons.language_rounded,
                     iconBg: const Color(0xFFE8FFF7),
                     title: 'Language',
