@@ -12,7 +12,14 @@ class ScheduleRepositoryHive implements ScheduleRepository {
   @override
   Future<List<ScheduleHiveModel>> getAll() async {
     final list = _box.values.toList();
-    list.sort((a, b) => a.dateMillis.compareTo(b.dateMillis));
+    list.sort((a, b) {
+      final aDate = DateTime.tryParse(a.dateISO);
+      final bDate = DateTime.tryParse(b.dateISO);
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
+    });
     return list;
   }
 

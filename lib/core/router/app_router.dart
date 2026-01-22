@@ -27,6 +27,7 @@ import 'package:smart_waste_app/features/dashboard/presentation/pages/home_scree
 import 'package:smart_waste_app/features/dashboard/presentation/pages/profile_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/schedule_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/splash_screen.dart';
+import 'package:smart_waste_app/features/payments/presentation/pages/payments_screen.dart';
 
 // Onboarding + Settings
 import 'package:smart_waste_app/features/onboarding/presentation/pages/onboarding_page.dart';
@@ -57,6 +58,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           loc == '/alerts' ||
           loc.startsWith('/profile');
       final isSettings = loc == '/settings';
+      final isPayments = loc == '/payments';
 
       // ✅ 0) If auth OR onboarding still loading -> stay on splash
       final stillLoading = authAsync.isLoading || onboardedAsync.isLoading;
@@ -95,6 +97,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 6) Allowed routes
       if (isShell ||
           isSettings ||
+          isPayments ||
           isReportsList ||
           (isAdmin && userIsAdmin) ||
           isAlertsCreate ||
@@ -110,6 +113,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/auth/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/auth/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
 
       // NOTE: Schedule is a bottom-tab route (see shell branches).

@@ -21,13 +21,14 @@ class UserSessionHiveModelAdapter extends TypeAdapter<UserSessionHiveModel> {
       email: fields[1] as String,
       role: fields[2] as String,
       lastHeardBroadcastAt: fields[3] as int,
+      accessToken: fields[4] as String? ?? '',
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSessionHiveModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class UserSessionHiveModelAdapter extends TypeAdapter<UserSessionHiveModel> {
       ..writeByte(2)
       ..write(obj.role)
       ..writeByte(3)
-      ..write(obj.lastHeardBroadcastAt);
+      ..write(obj.lastHeardBroadcastAt)
+      ..writeByte(4)
+      ..write(obj.accessToken);
   }
 
   @override

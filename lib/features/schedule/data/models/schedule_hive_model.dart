@@ -8,46 +8,62 @@ class ScheduleHiveModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final int dateMillis; // collection day
+  final String dateISO; // ISO date string
 
   @HiveField(2)
-  final String area; // e.g. Ward 10 / Baneshwor
+  final String timeLabel; // Morning/Evening
 
   @HiveField(3)
-  final String note; // admin message
+  final String waste; // Biodegradable/Dry Waste/etc
 
   @HiveField(4)
-  final String shift; // Morning/Evening
-
-  @HiveField(5)
-  final bool isActive;
+  final String status; // Upcoming/Completed/Missed
 
   ScheduleHiveModel({
     required this.id,
-    required this.dateMillis,
-    required this.area,
-    required this.note,
-    required this.shift,
-    required this.isActive,
+    required this.dateISO,
+    required this.timeLabel,
+    required this.waste,
+    required this.status,
   });
 
-  DateTime get date => DateTime.fromMillisecondsSinceEpoch(dateMillis);
+  DateTime? get date => DateTime.tryParse(dateISO);
+
+  factory ScheduleHiveModel.fromJson(Map<String, dynamic> json) {
+    return ScheduleHiveModel(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      dateISO:
+          (json['dateISO'] ?? json['date'] ?? json['collectionDate'] ?? '')
+              .toString(),
+      timeLabel: (json['timeLabel'] ?? json['time'] ?? '').toString(),
+      waste: (json['waste'] ?? json['wasteType'] ?? '').toString(),
+      status: (json['status'] ?? 'Upcoming').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'dateISO': dateISO,
+      'timeLabel': timeLabel,
+      'waste': waste,
+      'status': status,
+    };
+  }
 
   ScheduleHiveModel copyWith({
     String? id,
-    int? dateMillis,
-    String? area,
-    String? note,
-    String? shift,
-    bool? isActive,
+    String? dateISO,
+    String? timeLabel,
+    String? waste,
+    String? status,
   }) {
     return ScheduleHiveModel(
       id: id ?? this.id,
-      dateMillis: dateMillis ?? this.dateMillis,
-      area: area ?? this.area,
-      note: note ?? this.note,
-      shift: shift ?? this.shift,
-      isActive: isActive ?? this.isActive,
+      dateISO: dateISO ?? this.dateISO,
+      timeLabel: timeLabel ?? this.timeLabel,
+      waste: waste ?? this.waste,
+      status: status ?? this.status,
     );
   }
 }

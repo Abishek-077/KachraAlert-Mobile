@@ -1,22 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
-
+import '../../../../core/api/api_client.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/schedule_hive_model.dart';
-import '../../data/repositories/schedule_repository_hive.dart';
+import '../../data/repositories/schedule_repository_api.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
 final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
-  return ScheduleRepositoryHive();
+  final auth = ref.watch(authStateProvider).valueOrNull;
+  return ScheduleRepositoryApi(
+    client: ref.watch(apiClientProvider),
+    accessToken: auth?.session?.accessToken,
+  );
 });
 
-final schedulesProvider =
-    StateNotifierProvider<
-      SchedulesNotifier,
-      AsyncValue<List<ScheduleHiveModel>>
-    >((ref) => SchedulesNotifier(ref.watch(scheduleRepoProvider)));
+final schedulesProvider = StateNotifierProvider<
+    SchedulesNotifier, AsyncValue<List<ScheduleHiveModel>>>(
+  (ref) => SchedulesNotifier(ref.watch(scheduleRepoProvider)),
+);
 
-class SchedulesNotifier
-    extends StateNotifier<AsyncValue<List<ScheduleHiveModel>>> {
+class SchedulesNotifier extends StateNotifier<AsyncValue<List<ScheduleHiveModel>>> {
   SchedulesNotifier(this._repo) : super(const AsyncValue.loading()) {
     load();
   }
@@ -35,22 +37,18 @@ class SchedulesNotifier
 
   Future<void> create({
     required DateTime date,
-    required String area,
-    required String shift,
-    required String note,
+    required String timeLabel,
+    required String waste,
+    required String status,
   }) async {
     final model = ScheduleHiveModel(
-      id: const Uuid().v4(),
-      dateMillis: DateTime(
-        date.year,
-        date.month,
-        date.day,
-      ).millisecondsSinceEpoch,
-      area: area.trim(),
-      note: note.trim(),
-      shift: shift.trim(),
-      isActive: true,
+      id: '',
+      dateISO: DateTime(date.year, date.month, date.day).toIso8601String(),
+      timeLabel: timeLabel.trim(),
+      waste: waste.trim(),
+      status: status.trim(),
     );
+
     await _repo.upsert(model);
     await load();
   }
