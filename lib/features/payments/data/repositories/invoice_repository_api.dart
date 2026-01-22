@@ -12,9 +12,10 @@ class InvoiceRepositoryApi implements InvoiceRepository {
 
   @override
   Future<List<InvoiceModel>> fetchInvoices() async {
+    final token = _requireAccessToken();
     final response = await _client.getJson(
       ApiEndpoints.invoices,
-      accessToken: accessToken,
+      accessToken: token,
     );
     final items = _extractList(response);
     return items.map(InvoiceModel.fromJson).toList();
@@ -22,10 +23,11 @@ class InvoiceRepositoryApi implements InvoiceRepository {
 
   @override
   Future<InvoiceModel> payInvoice(String invoiceId) async {
+    final token = _requireAccessToken();
     final response = await _client.postJson(
       '${ApiEndpoints.invoices}/$invoiceId/pay',
       const <String, dynamic>{},
-      accessToken: accessToken,
+      accessToken: token,
     );
     final payload = _extractItem(response);
     return InvoiceModel.fromJson(payload);
@@ -58,5 +60,13 @@ class InvoiceRepositoryApi implements InvoiceRepository {
       return data;
     }
     return <String, dynamic>{};
+  }
+
+  String _requireAccessToken() {
+    final token = accessToken?.trim();
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Please sign in again to access payments.');
+    }
+    return token;
   }
 }

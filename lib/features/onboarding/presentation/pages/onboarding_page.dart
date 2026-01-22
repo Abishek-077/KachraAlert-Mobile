@@ -39,34 +39,36 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final page = pages[_index.clamp(0, pages.length - 1)];
 
     return Scaffold(
-      body: Container(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
                 ? [cs.surface, theme.scaffoldBackgroundColor]
-                : [const Color(0xFFE6F7EF), Colors.white],
+                : page.background,
           ),
         ),
         child: Stack(
           children: [
             Positioned(
-              right: -90,
-              top: -20,
+              right: -100,
+              top: -40,
               child: _GlowCircle(
                 size: 220,
-                color: cs.primary.withOpacity(isDark ? 0.2 : 0.12),
+                color: page.accent.withOpacity(isDark ? 0.2 : 0.16),
               ),
             ),
             Positioned(
-              left: -70,
-              bottom: 120,
+              left: -90,
+              bottom: 60,
               child: _GlowCircle(
-                size: 180,
-                color: cs.secondary.withOpacity(isDark ? 0.18 : 0.1),
+                size: 200,
+                color: page.accent.withOpacity(isDark ? 0.18 : 0.12),
               ),
             ),
             SafeArea(
@@ -74,31 +76,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 20,
+                      vertical: 8,
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Kachra Alert',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            Text(
-                              'Onboarding ${_index + 1} of ${pages.length}',
-                              style: TextStyle(
-                                color: cs.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                        const Spacer(),
                         TextButton(
                           onPressed: _finish,
                           style: TextButton.styleFrom(
@@ -106,25 +89,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           ),
                           child: const Text(
                             'Skip',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: LinearProgressIndicator(
-                        value: (_index + 1) / pages.length,
-                        minHeight: 6,
-                        backgroundColor: cs.outlineVariant.withOpacity(0.5),
-                        valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   Expanded(
                     child: PageView.builder(
                       controller: _page,
@@ -132,135 +102,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       onPageChanged: (i) => setState(() => _index = i),
                       itemBuilder: (context, i) {
                         final p = pages[i];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            children: [
-                              const Spacer(),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      p.iconBg.withOpacity(0.92),
-                                      p.iconBg.withOpacity(0.72),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(28),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: p.iconBg.withOpacity(
-                                        isDark ? 0.4 : 0.28,
-                                      ),
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 12),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 56,
-                                      height: 56,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Icon(
-                                        p.icon,
-                                        color: Colors.white,
-                                        size: 30,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 18),
-                                    Text(
-                                      p.title,
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        height: 1.15,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      p.subtitle,
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.85),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(18),
-                                decoration: BoxDecoration(
-                                  color: cs.surface,
-                                  borderRadius: BorderRadius.circular(22),
-                                  border: Border.all(
-                                    color: cs.outlineVariant,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(
-                                        isDark ? 0.2 : 0.08,
-                                      ),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: p.highlights
-                                      .map(
-                                        (text) => Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 30,
-                                                height: 30,
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      cs.primary.withOpacity(0.15),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                child: Icon(
-                                                  Icons.check_rounded,
-                                                  color: cs.primary,
-                                                  size: 18,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Text(
-                                                  text,
-                                                  style: TextStyle(
-                                                    color: cs.onSurface,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                              ),
-                              const Spacer(),
-                            ],
-                          ),
+                        return _OnboardingSlide(
+                          data: p,
+                          colorScheme: cs,
+                          isDark: isDark,
                         );
                       },
                     ),
@@ -272,13 +117,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       dotHeight: 8,
                       dotWidth: 8,
                       activeDotColor: cs.primary,
-                      dotColor: cs.outlineVariant,
+                      dotColor: cs.outlineVariant.withOpacity(0.6),
                       expansionFactor: 3.4,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                     child: SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -322,53 +167,154 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
 List<_OnboardData> _pages() => const [
       _OnboardData(
-        icon: Icons.eco_outlined,
-        iconBg: Color(0xFF12B76A),
-        title: 'Smarter Waste Pickup',
-        subtitle: 'A cleaner city starts with better coordination.',
-        highlights: [
-          'Real-time waste pickup alerts for your area.',
-          'Personalized schedules tailored to your community.',
-          'Trusted notifications from city operators.',
-        ],
-      ),
-      _OnboardData(
-        icon: Icons.camera_alt_outlined,
-        iconBg: Color(0xFF2DD4BF),
-        title: 'Report in Seconds',
-        subtitle: 'Snap, tag, and send waste reports instantly.',
-        highlights: [
-          'Attach location and photos in one tap.',
-          'Track report status with clear updates.',
-          'Help keep neighborhoods spotless.',
-        ],
-      ),
-      _OnboardData(
+        tag: '✨ Smart Alerts',
         icon: Icons.notifications_none_rounded,
-        iconBg: Color(0xFF16A34A),
-        title: 'Never Miss a Pickup',
-        subtitle: 'Stay informed with smart reminders.',
-        highlights: [
-          'Daily, weekly, and holiday schedules.',
-          'Instant alerts for route changes.',
-          'Optional reminders before pickup time.',
-        ],
+        accent: Color(0xFFF5A524),
+        background: [Color(0xFFEFF9F4), Color(0xFFF7F8F9)],
+        title: 'Never miss pickup',
+        subtitle:
+            'Get timely reminders about collection schedules, community events, and urgent updates.',
+      ),
+      _OnboardData(
+        tag: '✨ Real-time',
+        icon: Icons.location_on_outlined,
+        accent: Color(0xFF3B82F6),
+        background: [Color(0xFFEAF4FF), Color(0xFFF7F8FB)],
+        title: 'Track everything',
+        subtitle:
+            'See your reports progress live. From submission to cleanup, stay informed every step.',
+      ),
+      _OnboardData(
+        tag: '✨ Quick Report',
+        icon: Icons.camera_alt_outlined,
+        accent: Color(0xFF10B981),
+        background: [Color(0xFFEBFAF2), Color(0xFFF7F9F8)],
+        title: 'Report in seconds',
+        subtitle:
+            'Capture waste issues with your camera. Our AI auto-detects the problem type and severity.',
       ),
     ];
 
 class _OnboardData {
+  final String tag;
   final IconData icon;
-  final Color iconBg;
+  final Color accent;
+  final List<Color> background;
   final String title;
   final String subtitle;
-  final List<String> highlights;
   const _OnboardData({
+    required this.tag,
     required this.icon,
-    required this.iconBg,
+    required this.accent,
+    required this.background,
     required this.title,
     required this.subtitle,
-    required this.highlights,
   });
+}
+
+class _OnboardingSlide extends StatelessWidget {
+  const _OnboardingSlide({
+    required this.data,
+    required this.colorScheme,
+    required this.isDark,
+  });
+
+  final _OnboardData data;
+  final ColorScheme colorScheme;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const Spacer(),
+          Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                width: 180,
+                height: 180,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.25 : 0.12),
+                      blurRadius: 30,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: data.accent,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Icon(
+                    data.icon,
+                    color: Colors.white,
+                    size: 50,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    data.tag,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Text(
+            data.title,
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            data.subtitle,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
 }
 
 class _GlowCircle extends StatelessWidget {
