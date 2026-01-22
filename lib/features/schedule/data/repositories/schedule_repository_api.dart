@@ -4,31 +4,49 @@ import '../models/schedule_hive_model.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
 class ScheduleRepositoryApi implements ScheduleRepository {
-  ScheduleRepositoryApi({required ApiClient client}) : _client = client;
+  ScheduleRepositoryApi({
+    required ApiClient client,
+    required this.accessToken,
+  }) : _client = client;
 
   final ApiClient _client;
+  final String? accessToken;
 
   @override
   Future<List<ScheduleHiveModel>> getAll() async {
-    final response = await _client.getJson(ApiEndpoints.schedules);
+    final response = await _client.getJson(
+      ApiEndpoints.schedules,
+      accessToken: accessToken,
+    );
     final items = _extractList(response);
     return items.map(ScheduleHiveModel.fromJson).toList();
   }
 
   @override
   Future<void> upsert(ScheduleHiveModel model) async {
-    final payload = model.toJson();
+    final payload = model.toJson()..remove('id');
     if (model.id.isEmpty) {
-      await _client.postJson(ApiEndpoints.schedules, payload);
+      await _client.postJson(
+        ApiEndpoints.schedules,
+        payload,
+        accessToken: accessToken,
+      );
       return;
     }
 
-    await _client.putJson('${ApiEndpoints.schedules}/${model.id}', payload);
+    await _client.patchJson(
+      '${ApiEndpoints.schedules}/${model.id}',
+      payload,
+      accessToken: accessToken,
+    );
   }
 
   @override
   Future<void> deleteById(String id) async {
-    await _client.deleteJson('${ApiEndpoints.schedules}/$id');
+    await _client.deleteJson(
+      '${ApiEndpoints.schedules}/$id',
+      accessToken: accessToken,
+    );
   }
 
   List<Map<String, dynamic>> _extractList(Map<String, dynamic> response) {

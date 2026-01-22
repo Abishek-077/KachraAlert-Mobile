@@ -16,11 +16,15 @@ class UserSessionHiveModel extends HiveObject {
   @HiveField(3)
   final int lastHeardBroadcastAt; // epoch millis
 
+  @HiveField(4)
+  final String accessToken;
+
   UserSessionHiveModel({
     required this.userId,
     required this.email,
     this.role = 'resident',
     this.lastHeardBroadcastAt = 0,
+    this.accessToken = '',
   });
 
   /// ✅ REQUIRED (fixes your error)
@@ -29,12 +33,14 @@ class UserSessionHiveModel extends HiveObject {
     String? email,
     String? role,
     int? lastHeardBroadcastAt,
+    String? accessToken,
   }) {
     return UserSessionHiveModel(
       userId: userId ?? this.userId,
       email: email ?? this.email,
       role: role ?? this.role,
       lastHeardBroadcastAt: lastHeardBroadcastAt ?? this.lastHeardBroadcastAt,
+      accessToken: accessToken ?? this.accessToken,
     );
   }
 

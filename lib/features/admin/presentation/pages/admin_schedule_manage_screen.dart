@@ -34,8 +34,10 @@ class AdminScheduleManageScreen extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
               final s = list[i];
-              final dateStr =
-                  '${s.date.day.toString().padLeft(2, '0')}-${s.date.month.toString().padLeft(2, '0')}-${s.date.year}';
+              final parsedDate = DateTime.tryParse(s.dateISO);
+              final dateStr = parsedDate == null
+                  ? s.dateISO
+                  : '${parsedDate.day.toString().padLeft(2, '0')}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.year}';
 
               return Card(
                 child: ListTile(
@@ -50,23 +52,16 @@ class AdminScheduleManageScreen extends ConsumerWidget {
                     child: const Icon(Icons.event_available_rounded),
                   ),
                   title: Text(
-                    '${s.area} • ${s.shift}',
+                    '${s.waste} • ${s.timeLabel}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   subtitle: Text(
-                    '$dateStr • ${s.note.isEmpty ? 'No note' : s.note}',
+                    '$dateStr • ${s.status}',
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (v) async {
                       if (v == 'edit') {
                         _openForm(context, existing: s);
-                        return;
-                      }
-
-                      if (v == 'toggle') {
-                        await ref
-                            .read(schedulesProvider.notifier)
-                            .update(s.copyWith(isActive: !s.isActive));
                         return;
                       }
 
@@ -77,10 +72,6 @@ class AdminScheduleManageScreen extends ConsumerWidget {
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(
-                        value: 'toggle',
-                        child: Text(s.isActive ? 'Deactivate' : 'Activate'),
-                      ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Text('Delete'),
@@ -116,24 +107,25 @@ class _ScheduleFormSheet extends ConsumerStatefulWidget {
 
 class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
   late DateTime _date;
-  late TextEditingController _area;
-  late TextEditingController _note;
-  String _shift = 'Morning';
+  late TextEditingController _timeLabel;
+  String _waste = 'Biodegradable';
+  String _status = 'Upcoming';
 
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
-    _date = e?.date ?? DateTime.now().add(const Duration(days: 1));
-    _area = TextEditingController(text: e?.area ?? '');
-    _note = TextEditingController(text: e?.note ?? '');
-    _shift = e?.shift ?? 'Morning';
+    _date =
+        DateTime.tryParse(e?.dateISO ?? '') ??
+        DateTime.now().add(const Duration(days: 1));
+    _timeLabel = TextEditingController(text: e?.timeLabel ?? 'Morning');
+    _waste = e?.waste ?? 'Biodegradable';
+    _status = e?.status ?? 'Upcoming';
   }
 
   @override
   void dispose() {
-    _area.dispose();
-    _note.dispose();
+    _timeLabel.dispose();
     super.dispose();
   }
 
@@ -184,35 +176,43 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  // ✅ FIX: 'value' deprecated -> use initialValue
-                  initialValue: _shift,
-                  decoration: const InputDecoration(labelText: 'Shift'),
-                  items: const [
-                    DropdownMenuItem(value: 'Morning', child: Text('Morning')),
-                    DropdownMenuItem(value: 'Evening', child: Text('Evening')),
-                  ],
-                  onChanged: (v) => setState(() => _shift = v ?? 'Morning'),
+                child: TextField(
+                  controller: _timeLabel,
+                  decoration: const InputDecoration(
+                    labelText: 'Time label (e.g. Morning)',
+                    prefixIcon: Icon(Icons.schedule_rounded),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _area,
-            decoration: const InputDecoration(
-              labelText: 'Area (e.g. Ward 10, Baneshwor)',
-              prefixIcon: Icon(Icons.place_rounded),
-            ),
+          DropdownButtonFormField<String>(
+            initialValue: _waste,
+            decoration: const InputDecoration(labelText: 'Waste type'),
+            items: const [
+              DropdownMenuItem(
+                value: 'Biodegradable',
+                child: Text('Biodegradable'),
+              ),
+              DropdownMenuItem(value: 'Dry Waste', child: Text('Dry Waste')),
+              DropdownMenuItem(value: 'Plastic', child: Text('Plastic')),
+              DropdownMenuItem(value: 'Glass', child: Text('Glass')),
+              DropdownMenuItem(value: 'Metal', child: Text('Metal')),
+            ],
+            onChanged: (v) =>
+                setState(() => _waste = v ?? 'Biodegradable'),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _note,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Note (optional)',
-              prefixIcon: Icon(Icons.notes_rounded),
-            ),
+          DropdownButtonFormField<String>(
+            initialValue: _status,
+            decoration: const InputDecoration(labelText: 'Status'),
+            items: const [
+              DropdownMenuItem(value: 'Upcoming', child: Text('Upcoming')),
+              DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+              DropdownMenuItem(value: 'Missed', child: Text('Missed')),
+            ],
+            onChanged: (v) => setState(() => _status = v ?? 'Upcoming'),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -224,12 +224,11 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
                 final messenger = ScaffoldMessenger.of(context);
                 final navigator = Navigator.of(context);
 
-                final area = _area.text.trim();
-                final note = _note.text.trim();
+                final timeLabel = _timeLabel.text.trim();
 
-                if (area.isEmpty) {
+                if (timeLabel.isEmpty) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Area is required')),
+                    const SnackBar(content: Text('Time label is required')),
                   );
                   return;
                 }
@@ -239,23 +238,23 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
                       .read(schedulesProvider.notifier)
                       .create(
                         date: _date,
-                        area: area,
-                        shift: _shift,
-                        note: note,
+                        timeLabel: timeLabel,
+                        waste: _waste,
+                        status: _status,
                       );
                 } else {
                   await ref
                       .read(schedulesProvider.notifier)
                       .update(
                         e.copyWith(
-                          dateMillis: DateTime(
+                          dateISO: DateTime(
                             _date.year,
                             _date.month,
                             _date.day,
-                          ).millisecondsSinceEpoch,
-                          area: area,
-                          shift: _shift,
-                          note: note,
+                          ).toIso8601String(),
+                          timeLabel: timeLabel,
+                          waste: _waste,
+                          status: _status,
                         ),
                       );
                 }
