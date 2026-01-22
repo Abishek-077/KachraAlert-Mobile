@@ -38,6 +38,7 @@ import 'package:smart_waste_app/features/settings/presentation/providers/setting
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authStateProvider);
   final onboardedAsync = ref.watch(isOnboardedProvider);
+  final splashDelayAsync = ref.watch(splashDelayProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -61,7 +62,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isPayments = loc == '/payments';
 
       // ✅ 0) If auth OR onboarding still loading -> stay on splash
-      final stillLoading = authAsync.isLoading || onboardedAsync.isLoading;
+      final stillLoading =
+          authAsync.isLoading || onboardedAsync.isLoading || splashDelayAsync.isLoading;
       if (stillLoading) {
         return isSplash ? null : '/splash';
       }
