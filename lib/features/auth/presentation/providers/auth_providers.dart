@@ -61,7 +61,8 @@ class AuthState {
 
   const AuthState({required this.isLoggedIn, this.session, this.errorMessage});
 
-  bool get isAdmin => session?.role == 'admin';
+  bool get isAdmin =>
+      session?.role == 'admin_driver' || session?.role == 'admin';
 
   AuthState copyWith({
     bool? isLoggedIn,
@@ -180,6 +181,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         email: user.email,
         role: user.role,
         lastHeardBroadcastAt: 0,
+        accessToken: user.accessToken ?? '',
       );
 
       try {
@@ -244,6 +246,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         email: user.email,
         role: user.role,
         lastHeardBroadcastAt: previous?.lastHeardBroadcastAt ?? 0,
+        accessToken: user.accessToken ?? previous?.accessToken ?? '',
       );
 
       try {

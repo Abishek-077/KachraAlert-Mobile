@@ -117,10 +117,9 @@ class ScheduleScreen extends ConsumerWidget {
                     children: [
                       for (final s in list) ...[
                         _ScheduleCard(
-                          title: '${s.area} • ${s.shift}',
-                          date: s.date,
-                          note: s.note,
-                          active: s.isActive,
+                          title: '${s.waste} • ${s.timeLabel}',
+                          dateISO: s.dateISO,
+                          status: s.status,
                         ),
                         const SizedBox(height: 12),
                       ]
@@ -139,21 +138,22 @@ class ScheduleScreen extends ConsumerWidget {
 class _ScheduleCard extends StatelessWidget {
   const _ScheduleCard({
     required this.title,
-    required this.date,
-    required this.note,
-    required this.active,
+    required this.dateISO,
+    required this.status,
   });
 
   final String title;
-  final DateTime date;
-  final String note;
-  final bool active;
+  final String dateISO;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final dateStr =
-        '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+    final parsedDate = DateTime.tryParse(dateISO);
+    final dateStr = parsedDate == null
+        ? dateISO
+        : '${parsedDate.day.toString().padLeft(2, '0')}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.year}';
+    final isUpcoming = status.toLowerCase() == 'upcoming';
 
     return KCard(
       padding: const EdgeInsets.all(16),
@@ -175,7 +175,7 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  note.isEmpty ? dateStr : '$dateStr  •  $note',
+                  '$dateStr  •  $status',
                   style: TextStyle(
                     color: cs.onSurface.withOpacity(0.65),
                     fontWeight: FontWeight.w700,
@@ -188,8 +188,12 @@ class _ScheduleCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Icon(
-            active ? Icons.check_circle_rounded : Icons.pause_circle_filled_rounded,
-            color: active ? const Color(0xFF1ECA92) : cs.onSurface.withOpacity(0.45),
+            isUpcoming
+                ? Icons.access_time_rounded
+                : Icons.check_circle_rounded,
+            color: isUpcoming
+                ? cs.secondary
+                : const Color(0xFF1ECA92),
           ),
         ],
       ),

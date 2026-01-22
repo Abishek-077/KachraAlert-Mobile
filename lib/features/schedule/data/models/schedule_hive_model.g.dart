@@ -18,30 +18,27 @@ class ScheduleHiveModelAdapter extends TypeAdapter<ScheduleHiveModel> {
     };
     return ScheduleHiveModel(
       id: fields[0] as String,
-      dateMillis: fields[1] as int,
-      area: fields[2] as String,
-      note: fields[3] as String,
-      shift: fields[4] as String,
-      isActive: fields[5] as bool,
+      dateISO: fields[1] as String? ?? '',
+      timeLabel: fields[2] as String? ?? '',
+      waste: fields[3] as String? ?? '',
+      status: fields[4] as String? ?? 'Upcoming',
     );
   }
 
   @override
   void write(BinaryWriter writer, ScheduleHiveModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.dateMillis)
+      ..write(obj.dateISO)
       ..writeByte(2)
-      ..write(obj.area)
+      ..write(obj.timeLabel)
       ..writeByte(3)
-      ..write(obj.note)
+      ..write(obj.waste)
       ..writeByte(4)
-      ..write(obj.shift)
-      ..writeByte(5)
-      ..write(obj.isActive);
+      ..write(obj.status);
   }
 
   @override

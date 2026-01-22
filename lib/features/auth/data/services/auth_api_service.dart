@@ -7,11 +7,13 @@ class AuthUser {
   final String userId;
   final String email;
   final String role;
+  final String? accessToken;
 
   const AuthUser({
     required this.userId,
     required this.email,
     required this.role,
+    this.accessToken,
   });
 }
 
@@ -73,6 +75,7 @@ class AuthApiService {
     required String fallbackRole,
   }) {
     final data = _extractUserPayload(response);
+    final accessToken = _extractAccessToken(response);
 
     final userId =
         _stringValue(data['userId']) ??
@@ -89,7 +92,12 @@ class AuthApiService {
         _stringValue(data['accountType']) ??
         fallbackRole;
 
-    return AuthUser(userId: userId, email: email, role: role);
+    return AuthUser(
+      userId: userId,
+      email: email,
+      role: role,
+      accessToken: accessToken,
+    );
   }
 
   Map<String, dynamic> _extractUserPayload(Map<String, dynamic> response) {
@@ -117,6 +125,41 @@ class AuthApiService {
     if (value == null) return null;
     final stringValue = value.toString().trim();
     return stringValue.isEmpty ? null : stringValue;
+  }
+
+  String? _extractAccessToken(Map<String, dynamic> response) {
+    final candidates = <dynamic>[
+      response['accessToken'],
+      response['access_token'],
+      response['token'],
+    ];
+
+    final data = response['data'] ?? response['payload'] ?? response['user'];
+    if (data is Map<String, dynamic>) {
+      candidates.addAll([
+        data['accessToken'],
+        data['access_token'],
+        data['token'],
+      ]);
+
+      final nested = data['tokens'];
+      if (nested is Map<String, dynamic>) {
+        candidates.addAll([
+          nested['accessToken'],
+          nested['access_token'],
+          nested['token'],
+        ]);
+      }
+    }
+
+    for (final candidate in candidates) {
+      final value = _stringValue(candidate);
+      if (value != null) {
+        return value;
+      }
+    }
+
+    return null;
   }
 }
 
