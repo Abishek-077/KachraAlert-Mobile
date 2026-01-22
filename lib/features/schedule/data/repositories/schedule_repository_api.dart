@@ -14,9 +14,10 @@ class ScheduleRepositoryApi implements ScheduleRepository {
 
   @override
   Future<List<ScheduleHiveModel>> getAll() async {
+    final token = _requireAccessToken();
     final response = await _client.getJson(
       ApiEndpoints.schedules,
-      accessToken: accessToken,
+      accessToken: token,
     );
     final items = _extractList(response);
     return items.map(ScheduleHiveModel.fromJson).toList();
@@ -24,12 +25,13 @@ class ScheduleRepositoryApi implements ScheduleRepository {
 
   @override
   Future<void> upsert(ScheduleHiveModel model) async {
+    final token = _requireAccessToken();
     final payload = model.toJson()..remove('id');
     if (model.id.isEmpty) {
       await _client.postJson(
         ApiEndpoints.schedules,
         payload,
-        accessToken: accessToken,
+        accessToken: token,
       );
       return;
     }
@@ -37,16 +39,25 @@ class ScheduleRepositoryApi implements ScheduleRepository {
     await _client.patchJson(
       '${ApiEndpoints.schedules}/${model.id}',
       payload,
-      accessToken: accessToken,
+      accessToken: token,
     );
   }
 
   @override
   Future<void> deleteById(String id) async {
+    final token = _requireAccessToken();
     await _client.deleteJson(
       '${ApiEndpoints.schedules}/$id',
-      accessToken: accessToken,
+      accessToken: token,
     );
+  }
+
+  String _requireAccessToken() {
+    final token = accessToken?.trim();
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Please sign in again to access schedules.');
+    }
+    return token;
   }
 
   List<Map<String, dynamic>> _extractList(Map<String, dynamic> response) {

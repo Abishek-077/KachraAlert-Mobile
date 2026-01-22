@@ -22,7 +22,11 @@ class SettingsState {
 
   ThemeMode get themeMode => isDarkMode ? ThemeMode.dark : ThemeMode.light;
 
-  SettingsState copyWith({bool? onboarded, bool? isDarkMode, bool? pickupRemindersEnabled}) {
+  SettingsState copyWith({
+    bool? onboarded,
+    bool? isDarkMode,
+    bool? pickupRemindersEnabled,
+  }) {
     return SettingsState(
       onboarded: onboarded ?? this.onboarded,
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -72,7 +76,6 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       final isDarkMode = (_box.get(_kDarkMode, defaultValue: false) as bool);
       final pickupRemindersEnabled =
           (_box.get(_kPickupReminders, defaultValue: true) as bool);
-
       state = AsyncValue.data(
         SettingsState(
           onboarded: onboarded,
@@ -82,7 +85,11 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       );
     } catch (_) {
       state = const AsyncValue.data(
-        SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true),
+        SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+        ),
       );
     }
   }
@@ -91,7 +98,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     await _init();
     await _box.put(_kOnboarded, true);
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     state = AsyncValue.data(current.copyWith(onboarded: true));
   }
 
@@ -99,14 +107,16 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     await _init();
     await _box.put(_kOnboarded, false);
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     state = AsyncValue.data(current.copyWith(onboarded: false));
   }
 
   Future<void> toggleTheme() async {
     await _init();
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     final next = !current.isDarkMode;
     await _box.put(_kDarkMode, next);
     state = AsyncValue.data(current.copyWith(isDarkMode: next));
@@ -115,8 +125,14 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
   Future<void> setPickupReminders(bool enabled) async {
     await _init();
     final current =
-        state.value ?? const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
+        state.value ??
+        const SettingsState(onboarded: false, isDarkMode: false, pickupRemindersEnabled: true);
     await _box.put(_kPickupReminders, enabled);
     state = AsyncValue.data(current.copyWith(pickupRemindersEnabled: enabled));
   }
+
 }
+
+final splashDelayProvider = FutureProvider<void>((ref) async {
+  await Future<void>.delayed(const Duration(seconds: 1));
+});

@@ -38,6 +38,7 @@ import 'package:smart_waste_app/features/settings/presentation/providers/setting
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authStateProvider);
   final onboardedAsync = ref.watch(isOnboardedProvider);
+  final splashDelayAsync = ref.watch(splashDelayProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -61,7 +62,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isPayments = loc == '/payments';
 
       // ✅ 0) If auth OR onboarding still loading -> stay on splash
-      final stillLoading = authAsync.isLoading || onboardedAsync.isLoading;
+      final stillLoading =
+          authAsync.isLoading || onboardedAsync.isLoading || splashDelayAsync.isLoading;
       if (stillLoading) {
         return isSplash ? null : '/splash';
       }
@@ -69,7 +71,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ✅ resolve actual values only AFTER loading is finished
       final onboarded = onboardedAsync.value ?? false;
       final auth = authAsync.valueOrNull;
-      final loggedIn = auth?.isLoggedIn ?? false;
+      final hasToken = (auth?.session?.accessToken ?? '').trim().isNotEmpty;
+      final loggedIn = (auth?.isLoggedIn ?? false) && hasToken;
       final userIsAdmin = auth?.session?.role == 'admin_driver';
 
       // 1) Always allow splash (when not loading, splash can redirect away)
