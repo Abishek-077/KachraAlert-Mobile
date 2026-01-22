@@ -69,7 +69,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ✅ resolve actual values only AFTER loading is finished
       final onboarded = onboardedAsync.value ?? false;
       final auth = authAsync.valueOrNull;
-      final loggedIn = auth?.isLoggedIn ?? false;
+      final hasToken = (auth?.session?.accessToken ?? '').trim().isNotEmpty;
+      final loggedIn = (auth?.isLoggedIn ?? false) && hasToken;
       final userIsAdmin = auth?.session?.role == 'admin_driver';
 
       // 1) Always allow splash (when not loading, splash can redirect away)

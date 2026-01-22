@@ -111,7 +111,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final box = await _initSessionBox();
       final session = box.get('session');
 
-      if (session == null) {
+      if (session == null || session.accessToken.trim().isEmpty) {
+        if (session != null) {
+          await box.delete('session');
+        }
         state = const AsyncValue.data(AuthState.loggedOut);
       } else {
         state = AsyncValue.data(AuthState(isLoggedIn: true, session: session));
@@ -170,6 +173,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         name: '',
         termsAccepted: termsAccepted,
       );
+
+      if ((user.accessToken ?? '').trim().isEmpty) {
+        throw const ApiException(
+          'Missing access token. Please sign in again.',
+        );
+      }
 
       var session = UserSessionHiveModel(
         userId: user.userId,
@@ -235,6 +244,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         password: password,
         role: role,
       );
+
+      if ((user.accessToken ?? '').trim().isEmpty) {
+        throw const ApiException(
+          'Missing access token. Please sign in again.',
+        );
+      }
 
       // ✅ Conflict resolved: keep role validation
       if (user.role != role) {
