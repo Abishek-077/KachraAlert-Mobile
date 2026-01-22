@@ -25,10 +25,13 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
 class ApiClient {
   ApiClient({required this.baseUrl, http.Client? client})
-    : _client = client ?? http.Client();
+      : _client = client ?? http.Client();
 
   final String baseUrl;
   final http.Client _client;
+
+  // Simple cookie jar for session-based backends.
+  final Map<String, String> _cookies = {};
 
   Future<Map<String, dynamic>> postJson(
     String path,
@@ -48,6 +51,7 @@ class ApiClient {
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));
+    _storeCookies(response);
 
     if (response.statusCode == 204) {
       return <String, dynamic>{};
@@ -78,6 +82,7 @@ class ApiClient {
           headers: _buildHeaders(accessToken: accessToken, headers: headers),
         )
         .timeout(const Duration(seconds: 20));
+    _storeCookies(response);
 
     if (response.statusCode == 204) {
       return <String, dynamic>{};
@@ -114,6 +119,7 @@ class ApiClient {
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));
+    _storeCookies(response);
 
     if (response.statusCode == 204) {
       return <String, dynamic>{};
@@ -144,6 +150,7 @@ class ApiClient {
           headers: _buildHeaders(accessToken: accessToken, headers: headers),
         )
         .timeout(const Duration(seconds: 20));
+    _storeCookies(response);
 
     if (response.statusCode == 204) {
       return <String, dynamic>{};
@@ -180,6 +187,7 @@ class ApiClient {
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));
+    _storeCookies(response);
 
     if (response.statusCode == 204) {
       return <String, dynamic>{};
@@ -199,9 +207,8 @@ class ApiClient {
   }
 
   Uri _resolve(String path) {
-    final cleanBase = baseUrl.endsWith('/')
-        ? baseUrl.substring(0, baseUrl.length - 1)
-        : baseUrl;
+    final cleanBase =
+        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
     final cleanPath = path.startsWith('/') ? path : '/$path';
     return Uri.parse('$cleanBase$cleanPath');
   }
@@ -222,7 +229,35 @@ class ApiClient {
       merged['Authorization'] = 'Bearer $token';
     }
 
+    // Attach cookies unless caller already supplied a Cookie header.
+    if (_cookies.isNotEmpty && !merged.containsKey('Cookie')) {
+      merged['Cookie'] = _cookies.entries
+          .map((entry) => '${entry.key}=${entry.value}')
+          .join('; ');
+    }
+
     return merged;
+  }
+
+  void _storeCookies(http.Response response) {
+    final rawCookies = response.headers['set-cookie'];
+    if (rawCookies == null || rawCookies.isEmpty) return;
+
+    // Supports multiple Set-Cookie headers folded into one string.
+    final cookies = rawCookies.split(RegExp(r',(?=[^;]+?=)'));
+    for (final cookie in cookies) {
+      final firstPair = cookie.split(';').first.trim();
+      if (firstPair.isEmpty) continue;
+
+      final separatorIndex = firstPair.indexOf('=');
+      if (separatorIndex <= 0) continue;
+
+      final name = firstPair.substring(0, separatorIndex).trim();
+      final value = firstPair.substring(separatorIndex + 1).trim();
+
+      if (name.isEmpty) continue;
+      _cookies[name] = value;
+    }
   }
 
   Map<String, dynamic> _safeDecode(String body) {
