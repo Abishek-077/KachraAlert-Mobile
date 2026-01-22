@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:logger/logger.dart';
 import 'package:smart_waste_app/core/api/api_client.dart';
+import 'package:smart_waste_app/features/settings/presentation/providers/settings_providers.dart';
 
 import '../../../../core/constants/hive_table_constant.dart';
 import '../../../../core/services/hive/hive_service.dart';
@@ -84,17 +85,22 @@ class AuthState {
 /// ✅ Auth provider
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>((ref) {
-  return AuthNotifier(authApi: ref.watch(authApiServiceProvider));
+  return AuthNotifier(
+    authApi: ref.watch(authApiServiceProvider),
+    ref: ref,
+  );
 });
 
 class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
-  AuthNotifier({required AuthApiService authApi})
+  AuthNotifier({required AuthApiService authApi, required Ref ref})
       : _authApi = authApi,
+        _ref = ref,
         super(const AsyncValue.loading()) {
     _load();
   }
 
   final AuthApiService _authApi;
+  final Ref _ref;
 
   Box<UserSessionHiveModel>? _sessionBox;
 
@@ -115,6 +121,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         if (session != null) {
           await box.delete('session');
         }
+        await _ref.read(settingsProvider.notifier).resetOnboarded();
         state = const AsyncValue.data(AuthState.loggedOut);
       } else {
         state = AsyncValue.data(AuthState(isLoggedIn: true, session: session));
@@ -310,9 +317,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     try {
       final box = await _initSessionBox();
       await box.delete('session');
+      await _ref.read(settingsProvider.notifier).resetOnboarded();
       state = const AsyncValue.data(AuthState.loggedOut);
     } catch (e, st) {
       _logger.e('Logout failed', error: e, stackTrace: st);
+      await _ref.read(settingsProvider.notifier).resetOnboarded();
       state = const AsyncValue.data(AuthState.loggedOut);
     }
   }
