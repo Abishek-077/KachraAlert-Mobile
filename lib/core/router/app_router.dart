@@ -34,11 +34,12 @@ import 'package:smart_waste_app/features/onboarding/presentation/pages/onboardin
 import 'package:smart_waste_app/features/settings/presentation/pages/settings_screen.dart';
 import 'package:smart_waste_app/features/settings/presentation/providers/settings_providers.dart';
 
-// ✅ App Router Provider
+/// App Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authStateProvider);
   final onboardedAsync = ref.watch(isOnboardedProvider);
   final splashDelayAsync = ref.watch(splashDelayProvider);
+  final startupTimeoutAsync = ref.watch(startupTimeoutProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -53,68 +54,77 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAlertsCreate = loc == '/alerts/create';
       final isReportsCreate = loc == '/reports/create';
       final isReportsList = loc == '/reports';
+
       final isShell =
           loc == '/home' ||
           loc == '/schedule' ||
           loc == '/alerts' ||
-          loc.startsWith('/profile');
+          loc == '/profile' ||
+          loc.startsWith('/profile/');
+
       final isSettings = loc == '/settings';
       final isPayments = loc == '/payments';
 
-      // ✅ 0) If auth OR onboarding still loading -> stay on splash
+      // 0) Gate startup: if auth/onboarding/splash-delay are still loading,
+      // keep the user on splash unless timeout has been reached.
+      final timeoutReached =
+          startupTimeoutAsync.hasValue || startupTimeoutAsync.hasError;
       final stillLoading =
-          authAsync.isLoading || onboardedAsync.isLoading || splashDelayAsync.isLoading;
+          (authAsync.isLoading ||
+              onboardedAsync.isLoading ||
+              splashDelayAsync.isLoading) &&
+          !timeoutReached;
+
       if (stillLoading) {
         return isSplash ? null : '/splash';
       }
 
-      // ✅ resolve actual values only AFTER loading is finished
+      // Resolve values only after loading gate.
       final onboarded = onboardedAsync.value ?? false;
       final auth = authAsync.valueOrNull;
-      final hasToken = (auth?.session?.accessToken ?? '').trim().isNotEmpty;
-      final loggedIn = (auth?.isLoggedIn ?? false) && hasToken;
+
+      final token = (auth?.session?.accessToken ?? '').trim();
+      final loggedIn = (auth?.isLoggedIn ?? false) && token.isNotEmpty;
       final userIsAdmin = auth?.session?.role == 'admin_driver';
 
-      // ✅ Splash always hands off to the next step in the flow.
+      // Splash is a transient handoff page.
       if (isSplash) {
         if (!onboarded) return '/onboarding';
         if (!loggedIn) return '/auth/login';
         return '/home';
       }
 
-      // 1) Always allow splash (when not loading, splash can redirect away)
-      // NOTE: we already handled loading above
-
-      // 2) Not onboarded -> force onboarding
+      // 1) Not onboarded -> force onboarding (and block everything else)
       if (!onboarded) {
         return isOnboarding ? null : '/onboarding';
       }
 
-      // 3) Onboarded but not logged in -> force login
+      // 2) Onboarded but not logged in -> force login
       if (!loggedIn) {
         return isAuth ? null : '/auth/login';
       }
 
-      // 4) Logged in -> block onboarding/auth pages
-      if (loggedIn && (isOnboarding || isAuth)) {
+      // 3) Logged in -> block onboarding/auth pages
+      if (isOnboarding || isAuth) {
         return '/home';
       }
 
-      // 5) Admin route protection
+      // 4) Admin route protection
       if (isAdmin && !userIsAdmin) return '/home';
       if (isAlertsCreate && !userIsAdmin) return '/home';
 
-      // 6) Allowed routes
-      if (isShell ||
+      // 5) Allowed routes
+      final allowed = isShell ||
           isSettings ||
           isPayments ||
           isReportsList ||
+          isReportsCreate ||
           (isAdmin && userIsAdmin) ||
-          isAlertsCreate ||
-          isReportsCreate) {
-        return null;
-      }
+          isAlertsCreate;
 
+      if (allowed) return null;
+
+      // 6) Unknown route fallback
       return '/home';
     },
     routes: [
@@ -125,8 +135,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
-
-      // NOTE: Schedule is a bottom-tab route (see shell branches).
 
       GoRoute(
         path: '/admin/broadcast',
@@ -146,6 +154,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+
       GoRoute(
         path: '/reports/create',
         builder: (context, state) {
@@ -176,7 +185,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/alerts', builder: (_, __) => const AlertsHubScreen()),
+              GoRoute(
+                path: '/alerts',
+                builder: (_, __) => const AlertsHubScreen(),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -193,6 +205,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Notifies GoRouter to re-run redirect logic when relevant providers change.
 class GoRouterRefreshNotifier extends ChangeNotifier {
   GoRouterRefreshNotifier(this.ref) {
     _authSub = ref.listen<AsyncValue<AuthState>>(authStateProvider, (_, __) {
@@ -203,22 +216,34 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
       notifyListeners();
     });
 
-    _splashDelaySub =
-        ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
+    _splashDelaySub = ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
+      notifyListeners();
+    });
+
+    _startupTimeoutSub =
+        ref.listen<AsyncValue<void>>(startupTimeoutProvider, (_, __) {
       notifyListeners();
     });
   }
 
   final Ref ref;
-  late final ProviderSubscription _authSub;
-  late final ProviderSubscription _onboardSub;
-  late final ProviderSubscription _splashDelaySub;
+
+  late final ProviderSubscription<AsyncValue<AuthState>> _authSub;
+  late final ProviderSubscription<AsyncValue<bool>> _onboardSub;
+  late final ProviderSubscription<AsyncValue<void>> _splashDelaySub;
+  late final ProviderSubscription<AsyncValue<void>> _startupTimeoutSub;
 
   @override
   void dispose() {
     _authSub.close();
     _onboardSub.close();
     _splashDelaySub.close();
+    _startupTimeoutSub.close();
     super.dispose();
   }
 }
+
+/// Ensures the splash screen can't block forever if a provider hangs.
+final startupTimeoutProvider = FutureProvider<void>((ref) async {
+  await Future<void>.delayed(const Duration(seconds: 3));
+});
