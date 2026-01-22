@@ -36,7 +36,7 @@ class InvalidCredentialsException extends AuthException {
 
 class EmailAlreadyRegisteredException extends AuthException {
   const EmailAlreadyRegisteredException()
-    : super('This email is already registered.');
+      : super('This email is already registered.');
 }
 
 class InvalidInputException extends AuthException {
@@ -45,12 +45,12 @@ class InvalidInputException extends AuthException {
 
 class PasswordTooShortException extends AuthException {
   const PasswordTooShortException()
-    : super('Password must be at least 6 characters.');
+      : super('Password must be at least 6 characters.');
 }
 
 class RoleMismatchException extends AuthException {
   const RoleMismatchException()
-    : super('Selected role does not match this account.');
+      : super('Selected role does not match this account.');
 }
 
 /// ✅ Auth state with errorMessage (SnackBar uses this)
@@ -84,13 +84,13 @@ class AuthState {
 /// ✅ Auth provider
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>((ref) {
-      return AuthNotifier(authApi: ref.watch(authApiServiceProvider));
-    });
+  return AuthNotifier(authApi: ref.watch(authApiServiceProvider));
+});
 
 class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
   AuthNotifier({required AuthApiService authApi})
-    : _authApi = authApi,
-      super(const AsyncValue.loading()) {
+      : _authApi = authApi,
+        super(const AsyncValue.loading()) {
     _load();
   }
 
@@ -169,11 +169,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         accountType: '',
         name: '',
         termsAccepted: termsAccepted,
-
-        // If your API really requires these, add them to the method signature:
-        // accountType: ...,
-        // name: ...,
-        // termsAccepted: true,
       );
 
       var session = UserSessionHiveModel(
@@ -240,6 +235,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         password: password,
         role: role,
       );
+
+      // ✅ Conflict resolved: keep role validation
+      if (user.role != role) {
+        throw const RoleMismatchException();
+      }
 
       var session = UserSessionHiveModel(
         userId: user.userId,
