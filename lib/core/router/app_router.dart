@@ -75,6 +75,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loggedIn = (auth?.isLoggedIn ?? false) && hasToken;
       final userIsAdmin = auth?.session?.role == 'admin_driver';
 
+      // ✅ Splash always hands off to the next step in the flow.
+      if (isSplash) {
+        if (!onboarded) return '/onboarding';
+        if (!loggedIn) return '/auth/login';
+        return '/home';
+      }
+
       // 1) Always allow splash (when not loading, splash can redirect away)
       // NOTE: we already handled loading above
 
@@ -195,16 +202,23 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
     _onboardSub = ref.listen<AsyncValue<bool>>(isOnboardedProvider, (_, __) {
       notifyListeners();
     });
+
+    _splashDelaySub =
+        ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
+      notifyListeners();
+    });
   }
 
   final Ref ref;
   late final ProviderSubscription _authSub;
   late final ProviderSubscription _onboardSub;
+  late final ProviderSubscription _splashDelaySub;
 
   @override
   void dispose() {
     _authSub.close();
     _onboardSub.close();
+    _splashDelaySub.close();
     super.dispose();
   }
 }
