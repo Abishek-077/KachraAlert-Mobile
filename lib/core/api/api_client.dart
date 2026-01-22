@@ -63,6 +63,95 @@ class ApiClient {
     return json;
   }
 
+  Future<Map<String, dynamic>> getJson(String path) async {
+    final uri = _resolve(path);
+    final response = await _client
+        .get(
+          uri,
+          headers: const {
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 20));
+
+    if (response.statusCode == 204) {
+      return <String, dynamic>{};
+    }
+
+    final body = response.body.trim();
+    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        _extractMessage(json) ?? _fallbackMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return json;
+  }
+
+  Future<Map<String, dynamic>> putJson(
+    String path,
+    Map<String, dynamic> payload,
+  ) async {
+    final uri = _resolve(path);
+    final response = await _client
+        .put(
+          uri,
+          headers: const {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 20));
+
+    if (response.statusCode == 204) {
+      return <String, dynamic>{};
+    }
+
+    final body = response.body.trim();
+    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        _extractMessage(json) ?? _fallbackMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return json;
+  }
+
+  Future<Map<String, dynamic>> deleteJson(String path) async {
+    final uri = _resolve(path);
+    final response = await _client
+        .delete(
+          uri,
+          headers: const {
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 20));
+
+    if (response.statusCode == 204) {
+      return <String, dynamic>{};
+    }
+
+    final body = response.body.trim();
+    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        _extractMessage(json) ?? _fallbackMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return json;
+  }
+
   Uri _resolve(String path) {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
