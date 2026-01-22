@@ -39,6 +39,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authAsync = ref.watch(authStateProvider);
   final onboardedAsync = ref.watch(isOnboardedProvider);
   final splashDelayAsync = ref.watch(splashDelayProvider);
+  final startupTimeoutAsync = ref.watch(startupTimeoutProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -62,8 +63,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isPayments = loc == '/payments';
 
       // ✅ 0) If auth OR onboarding still loading -> stay on splash
+      final timeoutReached =
+          startupTimeoutAsync.hasValue || startupTimeoutAsync.hasError;
       final stillLoading =
-          authAsync.isLoading || onboardedAsync.isLoading || splashDelayAsync.isLoading;
+          (authAsync.isLoading ||
+              onboardedAsync.isLoading ||
+              splashDelayAsync.isLoading) &&
+          !timeoutReached;
       if (stillLoading) {
         return isSplash ? null : '/splash';
       }
@@ -74,6 +80,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final hasToken = (auth?.session?.accessToken ?? '').trim().isNotEmpty;
       final loggedIn = (auth?.isLoggedIn ?? false) && hasToken;
       final userIsAdmin = auth?.session?.role == 'admin_driver';
+
+      // ✅ Splash always hands off to the next step in the flow.
+      if (isSplash) {
+        if (!onboarded) return '/onboarding';
+        if (!loggedIn) return '/auth/login';
+        return '/home';
+      }
 
       // 1) Always allow splash (when not loading, splash can redirect away)
       // NOTE: we already handled loading above
@@ -195,16 +208,35 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
     _onboardSub = ref.listen<AsyncValue<bool>>(isOnboardedProvider, (_, __) {
       notifyListeners();
     });
+
+    _splashDelaySub =
+        ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
+      notifyListeners();
+    });
+
+    _startupTimeoutSub =
+        ref.listen<AsyncValue<void>>(startupTimeoutProvider, (_, __) {
+      notifyListeners();
+    });
   }
 
   final Ref ref;
   late final ProviderSubscription _authSub;
   late final ProviderSubscription _onboardSub;
+  late final ProviderSubscription _splashDelaySub;
+  late final ProviderSubscription _startupTimeoutSub;
 
   @override
   void dispose() {
     _authSub.close();
     _onboardSub.close();
+    _splashDelaySub.close();
+    _startupTimeoutSub.close();
     super.dispose();
   }
 }
+
+/// Ensures the splash screen can't block forever if a provider hangs.
+final startupTimeoutProvider = FutureProvider<void>((ref) async {
+  await Future<void>.delayed(const Duration(seconds: 3));
+});
