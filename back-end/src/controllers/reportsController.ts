@@ -1,0 +1,75 @@
+import type { Response, NextFunction } from "express";
+import { Report, type ReportDocument } from "../models/Report.js";
+import { sendSuccess } from "../utils/response.js";
+import { AppError } from "../utils/errors.js";
+import type { AuthRequest } from "../middleware/auth.js";
+
+function mapReport(report: ReportDocument) {
+  return {
+    id: report._id.toString(),
+    title: report.title,
+    category: report.category,
+    priority: report.priority,
+    status: report.status,
+    createdAt: report.createdAt
+  };
+}
+
+export async function listReports(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const filter = req.user!.accountType === "admin_driver" ? {} : { createdBy: req.user!.id };
+    const reports = await Report.find(filter).sort({ createdAt: -1 });
+    return sendSuccess(res, "Reports loaded", reports.map(mapReport));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function getReport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      throw new AppError("Report not found", 404, "NOT_FOUND");
+    }
+    if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
+      throw new AppError("Not authorized", 403, "FORBIDDEN");
+    }
+    return sendSuccess(res, "Report loaded", mapReport(report));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function createReport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const report = await Report.create({
+      title: req.body.title,
+      category: req.body.category,
+      priority: req.body.priority ?? "Medium",
+      createdBy: req.user!.id,
+      status: "Open"
+    });
+    return sendSuccess(res, "Report created", mapReport(report));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateReport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const report = await Report.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...(req.body.status ? { status: req.body.status } : {}),
+        ...(req.body.priority ? { priority: req.body.priority } : {})
+      },
+      { new: true }
+    );
+    if (!report) {
+      throw new AppError("Report not found", 404, "NOT_FOUND");
+    }
+    return sendSuccess(res, "Report updated", mapReport(report));
+  } catch (err) {
+    return next(err);
+  }
+}
