@@ -35,6 +35,31 @@ class ReportHiveModel extends HiveObject {
     required this.status,
   });
 
+  factory ReportHiveModel.fromJson(Map<String, dynamic> json) {
+    return ReportHiveModel(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      userId: (json['userId'] ?? json['createdBy'] ?? '').toString(),
+      createdAt: _parseCreatedAt(json['createdAt']),
+      category: (json['category'] ?? '').toString(),
+      location: (json['location'] ?? '').toString(),
+      message:
+          (json['message'] ?? json['note'] ?? json['description'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'createdAt': createdAt,
+      'category': category,
+      'location': location,
+      'message': message,
+      'status': status,
+    };
+  }
+
   ReportHiveModel copyWith({
     String? category,
     String? location,
@@ -51,4 +76,15 @@ class ReportHiveModel extends HiveObject {
       status: status ?? this.status,
     );
   }
+}
+
+int _parseCreatedAt(dynamic value) {
+  if (value == null) return DateTime.now().millisecondsSinceEpoch;
+  if (value is int) return value;
+  if (value is DateTime) return value.millisecondsSinceEpoch;
+  if (value is String) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed.millisecondsSinceEpoch;
+  }
+  return DateTime.now().millisecondsSinceEpoch;
 }

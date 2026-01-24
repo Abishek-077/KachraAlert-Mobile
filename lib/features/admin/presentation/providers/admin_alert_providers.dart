@@ -1,17 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
-import '../../data/datasources/local/admin_alert_local_datasource.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../data/repositories/admin_alert_repository_api.dart';
 import '../../data/models/admin_alert_hive_model.dart';
 
-final adminAlertLocalProvider = Provider((ref) => AdminAlertLocalDataSource());
+final adminAlertRepoProvider = Provider<AdminAlertRepositoryApi>((ref) {
+  final auth = ref.watch(authStateProvider).valueOrNull;
+  return AdminAlertRepositoryApi(
+    client: ref.watch(apiClientProvider),
+    accessToken: auth?.session?.accessToken,
+  );
+});
 
 final adminAlertsProvider =
     StateNotifierProvider<
       AdminAlertsNotifier,
       AsyncValue<List<AdminAlertHiveModel>>
     >((ref) {
-      return AdminAlertsNotifier(ref.watch(adminAlertLocalProvider));
+      return AdminAlertsNotifier(ref.watch(adminAlertRepoProvider));
     });
 
 class AdminAlertsNotifier
@@ -20,7 +27,7 @@ class AdminAlertsNotifier
     load();
   }
 
-  final AdminAlertLocalDataSource _local;
+  final AdminAlertRepositoryApi _local;
 
   Future<void> load() async {
     state = const AsyncValue.loading();
@@ -36,15 +43,7 @@ class AdminAlertsNotifier
     required String title,
     required String message,
   }) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final alert = AdminAlertHiveModel(
-      id: const Uuid().v4(),
-      title: title.trim(),
-      message: message.trim(),
-      createdAt: now,
-      updatedAt: now,
-    );
-    await _local.add(alert);
+    await _local.broadcast(title: title.trim(), message: message.trim());
     await load();
   }
 
@@ -53,20 +52,11 @@ class AdminAlertsNotifier
     required String title,
     required String message,
   }) async {
-    final existing = await _local.getById(id);
-    if (existing == null) return;
-    
-    final updated = existing.copyWith(
-      title: title.trim(),
-      message: message.trim(),
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-    );
-    await _local.update(updated);
+    await _local.broadcast(title: title.trim(), message: message.trim());
     await load();
   }
 
   Future<void> delete(String id) async {
-    await _local.delete(id);
     await load();
   }
 

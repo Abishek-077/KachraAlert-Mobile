@@ -27,6 +27,26 @@ class AdminAlertHiveModel extends HiveObject {
     required this.updatedAt,
   });
 
+  factory AdminAlertHiveModel.fromJson(Map<String, dynamic> json) {
+    return AdminAlertHiveModel(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      message: (json['body'] ?? json['message'] ?? '').toString(),
+      createdAt: _parseCreatedAt(json['createdAt']),
+      updatedAt: _parseCreatedAt(json['updatedAt'] ?? json['createdAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+
   AdminAlertHiveModel copyWith({
     String? id,
     String? title,
@@ -42,4 +62,15 @@ class AdminAlertHiveModel extends HiveObject {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+int _parseCreatedAt(dynamic value) {
+  if (value == null) return DateTime.now().millisecondsSinceEpoch;
+  if (value is int) return value;
+  if (value is DateTime) return value.millisecondsSinceEpoch;
+  if (value is String) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed.millisecondsSinceEpoch;
+  }
+  return DateTime.now().millisecondsSinceEpoch;
 }

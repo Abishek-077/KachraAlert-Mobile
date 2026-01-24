@@ -1,9 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
-import 'package:smart_waste_app/features/reports/data/repositories/report_repository_hive.dart';
-import 'package:uuid/uuid.dart';
+import 'package:smart_waste_app/features/reports/data/repositories/report_repository_api.dart';
 
-final reportRepoProvider = Provider((ref) => ReportRepositoryHive());
+import '../../../../core/api/api_client.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+
+final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
+  final auth = ref.watch(authStateProvider).valueOrNull;
+  return ReportRepositoryApi(
+    client: ref.watch(apiClientProvider),
+    accessToken: auth?.session?.accessToken,
+  );
+});
 
 final reportsProvider =
     StateNotifierProvider<ReportsNotifier, AsyncValue<List<ReportHiveModel>>>(
@@ -15,7 +23,7 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     load();
   }
 
-  final ReportRepositoryHive _repo;
+  final ReportRepositoryApi _repo;
 
   Future<void> load() async {
     state = const AsyncValue.loading();
@@ -33,16 +41,11 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     required String location,
     required String message,
   }) async {
-    final report = ReportHiveModel(
-      id: const Uuid().v4(),
-      userId: userId,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
+    await _repo.create(
       category: category,
       location: location.trim(),
       message: message.trim(),
-      status: 'pending', // Default status as per requirements
     );
-    await _repo.upsert(report);
     await load();
   }
 
@@ -50,12 +53,22 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     final allReports = state.valueOrNull ?? [];
     final report = allReports.firstWhere((r) => r.id == id);
     final updated = report.copyWith(status: status);
-    await _repo.upsert(updated);
+    await _repo.delete(report.id);
+    await _repo.create(
+      category: updated.category,
+      location: updated.location,
+      message: updated.message,
+    );
     await load();
   }
 
   Future<void> update(ReportHiveModel report) async {
-    await _repo.upsert(report);
+    await _repo.delete(report.id);
+    await _repo.create(
+      category: report.category,
+      location: report.location,
+      message: report.message,
+    );
     await load();
   }
 
