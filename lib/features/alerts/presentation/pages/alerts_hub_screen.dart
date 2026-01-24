@@ -66,8 +66,6 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Failed to load alerts: $e')),
                 data: (alerts) {
-                  // Seeded “reference-like” alerts at top
-                  final seeded = _seededAlerts();
                   final dynamicAlerts = alerts.map((a) {
                     final type = _inferType(a.title, a.message);
                     return _AlertItem(
@@ -79,8 +77,7 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
                     );
                   }).toList();
 
-                  final combined = [...seeded, ...dynamicAlerts];
-                  final filtered = combined.where((a) {
+                  final filtered = dynamicAlerts.where((a) {
                     final f = _filters[_filterIndex];
                     if (f == 'All') return true;
                     return a.type == f;
@@ -290,46 +287,6 @@ class _AlertCard extends StatelessWidget {
       ),
     );
   }
-}
-
-List<_AlertItem> _seededAlerts() {
-  return [
-    _AlertItem(
-      type: 'Urgent',
-      title: 'Illegal Dumping Reported',
-      message: 'Large waste pile near Ratnapark area requires immediate attention. Avoid the area if possible.',
-      timeAgo: '15 min ago',
-      meta: 'Municipal Office',
-    ),
-    _AlertItem(
-      type: 'Pickup',
-      title: "Tomorrow's Collection",
-      message: 'Regular waste collection scheduled for Zone A (Thamel, New Road, Ason). Please place bins outside by 6:30 AM.',
-      timeAgo: '1h ago',
-      meta: 'KMC Waste Dept',
-    ),
-    _AlertItem(
-      type: 'Weather',
-      title: 'Heavy Rain Expected',
-      message: 'Monsoon rains expected this afternoon. Secure your waste bins to prevent overflow and water contamination.',
-      timeAgo: '3h ago',
-      meta: 'Met Department',
-    ),
-    _AlertItem(
-      type: 'Community',
-      title: 'Community Cleanup Drive',
-      message: 'Join us this Saturday at Tundikhel for a city-wide cleanup initiative. Volunteers welcome! Refreshments provided.',
-      timeAgo: '5h ago',
-      meta: 'Clean Kathmandu',
-    ),
-    _AlertItem(
-      type: 'Community',
-      title: 'Road Closure Notice',
-      message: 'Durbar Marg closed for maintenance work. Waste trucks will use alternate route via Putalisadak. Expect slight delays.',
-      timeAgo: '1d ago',
-      meta: 'Traffic Police',
-    ),
-  ];
 }
 
 String _inferType(String title, String message) {
