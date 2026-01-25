@@ -33,6 +33,7 @@ import 'package:smart_waste_app/features/payments/presentation/pages/payments_sc
 import 'package:smart_waste_app/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:smart_waste_app/features/settings/presentation/pages/settings_screen.dart';
 import 'package:smart_waste_app/features/settings/presentation/providers/settings_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 /// App Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -81,7 +82,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Resolve values only after loading gate.
       final onboarded = onboardedAsync.value ?? false;
-      final auth = authAsync.asData?.value;
+      final auth = authAsync.valueOrNull;
 
       final token = (auth?.session?.accessToken ?? '').trim();
       final loggedIn = (auth?.isLoggedIn ?? false) && token.isNotEmpty;

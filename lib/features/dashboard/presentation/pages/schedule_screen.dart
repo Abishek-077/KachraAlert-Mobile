@@ -6,6 +6,7 @@ import '../../../../core/widgets/k_widgets.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../schedule/presentation/providers/schedule_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
@@ -13,7 +14,7 @@ class ScheduleScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final auth = ref.watch(authStateProvider).asData?.value;
+    final auth = ref.watch(authStateProvider).valueOrNull;
     final isAdmin = auth?.isAdmin ?? false;
 
     final schedulesAsync = ref.watch(schedulesProvider);

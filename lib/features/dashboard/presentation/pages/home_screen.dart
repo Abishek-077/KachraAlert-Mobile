@@ -8,13 +8,14 @@ import '../../../../core/widgets/k_widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authStateProvider).asData?.value;
+    final auth = ref.watch(authStateProvider).valueOrNull;
     final userId = auth?.session?.userId;
     final reportsAsync = ref.watch(reportsProvider);
     final settingsAsync = ref.watch(settingsProvider);

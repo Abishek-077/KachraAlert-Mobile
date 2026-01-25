@@ -4,9 +4,10 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/schedule_hive_model.dart';
 import '../../data/repositories/schedule_repository_api.dart';
 import '../../domain/repositories/schedule_repository.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
-  final auth = ref.watch(authStateProvider).asData?.value;
+  final auth = ref.watch(authStateProvider).valueOrNull;
   return ScheduleRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,

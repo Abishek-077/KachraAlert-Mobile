@@ -5,9 +5,10 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/repositories/invoice_repository_api.dart';
 import '../../domain/repositories/invoice_repository.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final invoiceRepoProvider = Provider<InvoiceRepository>((ref) {
-  final auth = ref.watch(authStateProvider).asData?.value;
+  final auth = ref.watch(authStateProvider).valueOrNull;
   return InvoiceRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,

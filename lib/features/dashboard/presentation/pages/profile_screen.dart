@@ -11,6 +11,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../profile/data/services/user_profile_api_service.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -23,7 +24,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploading = false;
 
   Future<void> _changePhoto() async {
-    final auth = ref.read(authStateProvider).asData?.value;
+    final auth = ref.read(authStateProvider).valueOrNull;
     final token = auth?.session?.accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) {
@@ -105,7 +106,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final auth = ref.watch(authStateProvider).asData?.value;
+    final auth = ref.watch(authStateProvider).valueOrNull;
     final email = (auth?.session?.email ?? '').trim();
     final isAdmin = auth?.session?.role == 'admin_driver';
     final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
@@ -114,7 +115,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final profilePhotoUrl =
         _resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
 
-    final reports = ref.watch(reportsProvider).asData?.value ?? const [];
+    final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
     final myReports = (auth?.session?.userId == null)
         ? const []
         : reports.where((r) => r.userId == auth!.session!.userId).toList();
@@ -326,7 +327,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Consumer(
                     builder: (context, ref, _) {
                       final settings =
-                          ref.watch(settingsProvider).asData?.value;
+                          ref.watch(settingsProvider).valueOrNull;
                       final mode = (settings?.isDarkMode ?? false) ? 'Dark mode' : 'Light mode';
                       return _SettingsTile(
                         icon: Icons.nightlight_round,

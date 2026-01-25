@@ -9,6 +9,7 @@ import '../../../../core/services/hive/hive_service.dart';
 import '../../../admin/domain/services/admin_broadcast_sound_gate.dart';
 import '../../data/models/user_session_hive_model.dart';
 import '../../data/services/auth_api_service.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final _logger = Logger();
 
@@ -300,7 +301,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// ✅ Clears error message after UI shows SnackBar
   void clearError() {
-    final current = state.asData?.value;
+    final current = state.valueOrNull;
     if (current == null) return;
     if (current.errorMessage == null) return;
 
@@ -308,7 +309,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> updateProfilePhoto(String profilePhotoUrl) async {
-    final current = state.asData?.value;
+    final current = state.valueOrNull;
     final session = current?.session;
     if (current == null || session == null) return;
 
