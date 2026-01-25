@@ -245,7 +245,7 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
                 } else {
                   await ref
                       .read(schedulesProvider.notifier)
-                      .update(
+                      .updateSchedule(
                         e.copyWith(
                           dateISO: DateTime(
                             _date.year,

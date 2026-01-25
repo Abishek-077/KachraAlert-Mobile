@@ -49,7 +49,7 @@ class AdminAlertsNotifier extends AsyncNotifier<List<AdminAlertHiveModel>> {
     await load();
   }
 
-  Future<void> update({
+  Future<void> updateAlert({
     required String id,
     required String title,
     required String message,

@@ -59,7 +59,7 @@ class SchedulesNotifier extends AsyncNotifier<List<ScheduleHiveModel>> {
     await load();
   }
 
-  Future<void> update(ScheduleHiveModel model) async {
+  Future<void> updateSchedule(ScheduleHiveModel model) async {
     await _repo.upsert(model);
     await load();
   }

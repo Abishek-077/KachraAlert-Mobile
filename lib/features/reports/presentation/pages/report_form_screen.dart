@@ -91,7 +91,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       } else {
         await ref
             .read(reportsProvider.notifier)
-            .update(
+            .updateReport(
               e.copyWith(category: _category, location: loc, message: msg),
             );
       }
