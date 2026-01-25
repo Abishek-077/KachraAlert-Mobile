@@ -206,6 +206,48 @@ class ApiClient {
     return json;
   }
 
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    List<http.MultipartFile>? files,
+    String? accessToken,
+    Map<String, String>? headers,
+  }) async {
+    final uri = _resolve(path);
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(
+      _buildHeaders(
+        accessToken: accessToken,
+        headers: headers,
+        includeJsonContentType: false,
+      ),
+    );
+    request.fields.addAll(fields);
+    if (files != null && files.isNotEmpty) {
+      request.files.addAll(files);
+    }
+
+    final streamed = await _client.send(request).timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamed);
+    _storeCookies(response);
+
+    if (response.statusCode == 204) {
+      return <String, dynamic>{};
+    }
+
+    final body = response.body.trim();
+    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        _extractMessage(json) ?? _fallbackMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return json;
+  }
+
   Uri _resolve(String path) {
     final cleanBase =
         baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;

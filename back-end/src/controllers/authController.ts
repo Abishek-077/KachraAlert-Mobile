@@ -88,7 +88,8 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
       phone: user.phone,
       society: user.society,
       building: user.building,
-      apartment: user.apartment
+      apartment: user.apartment,
+      profilePhotoUrl: user.profilePhotoUrl ?? null
     });
   } catch (err) {
     return next(err);

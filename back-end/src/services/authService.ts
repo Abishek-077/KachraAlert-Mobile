@@ -145,7 +145,20 @@ export async function getMe(userId: string) {
   return user;
 }
 
-async function issueTokens(user: { _id: { toString(): string } } & { email: string; accountType: string; name: string; phone: string; society: string; building: string; apartment: string; }, meta: { ip?: string; userAgent?: string }, remember: boolean) {
+async function issueTokens(
+  user: { _id: { toString(): string } } & {
+    email: string;
+    accountType: string;
+    name: string;
+    phone: string;
+    society: string;
+    building: string;
+    apartment: string;
+    profilePhotoUrl?: string | null;
+  },
+  meta: { ip?: string; userAgent?: string },
+  remember: boolean
+) {
   const accessToken = signAccessToken(user as any);
   const jti = uuidv4();
   const { expiresAt, days } = getRefreshExpiry(remember);
@@ -172,7 +185,8 @@ async function issueTokens(user: { _id: { toString(): string } } & { email: stri
       phone: user.phone,
       society: user.society,
       building: user.building,
-      apartment: user.apartment
+      apartment: user.apartment,
+      profilePhotoUrl: user.profilePhotoUrl ?? null
     }
   };
 }

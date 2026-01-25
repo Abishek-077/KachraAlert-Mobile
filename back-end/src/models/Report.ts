@@ -19,6 +19,7 @@ const reportSchema = new Schema(
       default: "Open",
       required: true
     },
+    attachmentUrl: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
   },
   { timestamps: true }

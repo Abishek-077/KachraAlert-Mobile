@@ -11,7 +11,8 @@ function mapReport(report: ReportDocument) {
     category: report.category,
     priority: report.priority,
     status: report.status,
-    createdAt: report.createdAt
+    createdAt: report.createdAt,
+    attachmentUrl: report.attachmentUrl
   };
 }
 
@@ -42,10 +43,12 @@ export async function getReport(req: AuthRequest, res: Response, next: NextFunct
 
 export async function createReport(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    const attachmentUrl = req.file ? `/uploads/reports/${req.file.filename}` : undefined;
     const report = await Report.create({
       title: req.body.title,
       category: req.body.category,
       priority: req.body.priority ?? "Medium",
+      ...(attachmentUrl ? { attachmentUrl } : {}),
       createdBy: req.user!.id,
       status: "Open"
     });

@@ -1,23 +1,118 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/media_permissions.dart';
+import '../../../../core/ui/snackbar.dart';
 import '../../../../core/widgets/k_widgets.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../profile/data/services/user_profile_api_service.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _uploading = false;
+
+  Future<void> _changePhoto() async {
+    final auth = ref.read(authStateProvider).valueOrNull;
+    final token = auth?.session?.accessToken;
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        AppSnack.show(context, 'Please sign in to update your photo.', error: true);
+      }
+      return;
+    }
+
+    await MediaPermissions.requestPhotoVideoAccess(context);
+    if (!mounted) return;
+
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1800,
+    );
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      final profileApi = ref.read(userProfileApiServiceProvider);
+      final photoUrl = await profileApi.uploadProfilePhoto(
+        bytes: bytes,
+        filename: picked.name,
+        accessToken: token,
+      );
+      await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);
+      if (mounted) {
+        AppSnack.show(context, 'Profile photo updated.', error: false);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnack.show(context, 'Failed to update profile photo: $e', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  String? _resolveMediaUrl(String baseUrl, String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final value = raw.trim();
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    final cleanBase =
+        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanPath = value.startsWith('/') ? value : '/$value';
+    return '$cleanBase$cleanPath';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final email = (auth?.session?.email ?? '').trim();
     final isAdmin = auth?.session?.role == 'admin_driver';
     final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final apiBase = ref.watch(apiBaseUrlProvider);
+    final profilePhotoUrl =
+        _resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
 
     final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
     final myReports = (auth?.session?.userId == null)
@@ -41,37 +136,69 @@ class ProfileScreen extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 86,
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white.withOpacity(0.18)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        initial,
-                        style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                    Positioned(
-                      right: -2,
-                      bottom: -2,
-                      child: Container(
-                        width: 30,
-                        height: 30,
+                InkWell(
+                  onTap: _uploading ? null : _changePhoto,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1ECA92),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF0B5D56), width: 3),
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: Colors.white.withOpacity(0.18)),
                         ),
-                        child: const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
+                        alignment: Alignment.center,
+                        child: profilePhotoUrl == null
+                            ? Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(18),
+                                child: Image.network(
+                                  profilePhotoUrl,
+                                  width: 86,
+                                  height: 86,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    initial,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1ECA92),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF0B5D56), width: 3),
+                          ),
+                          child: _uploading
+                              ? const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

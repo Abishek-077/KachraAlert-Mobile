@@ -193,6 +193,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         role: user.role,
         lastHeardBroadcastAt: 0,
         accessToken: user.accessToken ?? '',
+        profilePhotoUrl: user.profilePhotoUrl,
       );
 
       try {
@@ -269,6 +270,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         role: user.role,
         lastHeardBroadcastAt: previous?.lastHeardBroadcastAt ?? 0,
         accessToken: user.accessToken ?? previous?.accessToken ?? '',
+        profilePhotoUrl: user.profilePhotoUrl ?? previous?.profilePhotoUrl,
       );
 
       try {
@@ -311,6 +313,21 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     if (current.errorMessage == null) return;
 
     state = AsyncValue.data(current.copyWith(clearError: true));
+  }
+
+  Future<void> updateProfilePhoto(String profilePhotoUrl) async {
+    final current = state.valueOrNull;
+    final session = current?.session;
+    if (current == null || session == null) return;
+
+    final updated = session.copyWith(profilePhotoUrl: profilePhotoUrl);
+    try {
+      final box = await _initSessionBox();
+      await box.put('session', updated);
+      state = AsyncValue.data(current.copyWith(session: updated));
+    } catch (e, st) {
+      _logger.e('Failed to persist profile photo', error: e, stackTrace: st);
+    }
   }
 
   Future<void> logout() async {

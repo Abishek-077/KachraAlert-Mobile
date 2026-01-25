@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
 import 'package:smart_waste_app/features/reports/data/repositories/report_repository_api.dart';
@@ -40,11 +42,15 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     required String category,
     required String location,
     required String message,
+    Uint8List? attachmentBytes,
+    String? attachmentName,
   }) async {
     await _repo.create(
       category: category,
       location: location.trim(),
       message: message.trim(),
+      attachmentBytes: attachmentBytes,
+      attachmentName: attachmentName,
     );
     await load();
   }

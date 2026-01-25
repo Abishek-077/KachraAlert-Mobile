@@ -25,6 +25,9 @@ class ReportHiveModel extends HiveObject {
   @HiveField(6)
   final String status; // pending | in_progress | resolved
 
+  @HiveField(7)
+  final String? attachmentUrl;
+
   ReportHiveModel({
     required this.id,
     required this.userId,
@@ -33,6 +36,7 @@ class ReportHiveModel extends HiveObject {
     required this.location,
     required this.message,
     required this.status,
+    this.attachmentUrl,
   });
 
   factory ReportHiveModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +49,7 @@ class ReportHiveModel extends HiveObject {
       message:
           (json['message'] ?? json['note'] ?? json['description'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
+      attachmentUrl: _nullableString(json['attachmentUrl'] ?? json['attachment']),
     );
   }
 
@@ -57,6 +62,7 @@ class ReportHiveModel extends HiveObject {
       'location': location,
       'message': message,
       'status': status,
+      'attachmentUrl': attachmentUrl,
     };
   }
 
@@ -65,6 +71,7 @@ class ReportHiveModel extends HiveObject {
     String? location,
     String? message,
     String? status,
+    String? attachmentUrl,
   }) {
     return ReportHiveModel(
       id: id,
@@ -74,6 +81,7 @@ class ReportHiveModel extends HiveObject {
       location: location ?? this.location,
       message: message ?? this.message,
       status: status ?? this.status,
+      attachmentUrl: attachmentUrl ?? this.attachmentUrl,
     );
   }
 }
@@ -87,4 +95,10 @@ int _parseCreatedAt(dynamic value) {
     if (parsed != null) return parsed.millisecondsSinceEpoch;
   }
   return DateTime.now().millisecondsSinceEpoch;
+}
+
+String? _nullableString(dynamic value) {
+  if (value == null) return null;
+  final text = value.toString().trim();
+  return text.isEmpty ? null : text;
 }

@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
+
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../models/report_hive_model.dart';
@@ -23,18 +27,34 @@ class ReportRepositoryApi {
     required String category,
     required String location,
     required String message,
+    Uint8List? attachmentBytes,
+    String? attachmentName,
   }) async {
     final token = _requireAccessToken();
     final title = _buildTitle(category: category, location: location, message: message);
-    final response = await _client.postJson(
-      ApiEndpoints.reports,
-      {
-        'title': title,
-        'category': _mapCategoryToApi(category),
-        'priority': 'Medium',
-      },
-      accessToken: token,
-    );
+    final fields = <String, String>{
+      'title': title,
+      'category': _mapCategoryToApi(category),
+      'priority': 'Medium',
+    };
+    final response = (attachmentBytes != null && attachmentBytes.isNotEmpty)
+        ? await _client.postMultipart(
+            ApiEndpoints.reports,
+            fields: fields,
+            files: [
+              http.MultipartFile.fromBytes(
+                'attachment',
+                attachmentBytes,
+                filename: attachmentName ?? 'attachment.jpg',
+              ),
+            ],
+            accessToken: token,
+          )
+        : await _client.postJson(
+            ApiEndpoints.reports,
+            fields,
+            accessToken: token,
+          );
     final payload = _extractItem(response);
     final report = _mapReport(payload, fallbackTitle: title);
     return report.copyWith(
@@ -106,6 +126,7 @@ class ReportRepositoryApi {
       location: location,
       message: message,
       status: normalizedStatus,
+      attachmentUrl: mapped.attachmentUrl,
     );
   }
 

@@ -13,7 +13,8 @@ function mapUser(user: UserDocument) {
     phone: user.phone,
     society: user.society,
     building: user.building,
-    apartment: user.apartment
+    apartment: user.apartment,
+    profilePhotoUrl: user.profilePhotoUrl
   };
 }
 
@@ -46,6 +47,26 @@ export async function updateMe(req: AuthRequest, res: Response, next: NextFuncti
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
     return sendSuccess(res, "Profile updated", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateProfilePhoto(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    if (!req.file) {
+      throw new AppError("Photo file is required", 400, "PHOTO_REQUIRED");
+    }
+    const profilePhotoUrl = `/uploads/profiles/${req.file.filename}`;
+    const user = await User.findByIdAndUpdate(
+      req.user!.id,
+      { profilePhotoUrl },
+      { new: true }
+    );
+    if (!user) {
+      throw new AppError("User not found", 404, "NOT_FOUND");
+    }
+    return sendSuccess(res, "Profile photo updated", mapUser(user));
   } catch (err) {
     return next(err);
   }

@@ -19,12 +19,16 @@ class UserSessionHiveModel extends HiveObject {
   @HiveField(4)
   final String accessToken;
 
+  @HiveField(5)
+  final String? profilePhotoUrl;
+
   UserSessionHiveModel({
     required this.userId,
     required this.email,
     this.role = 'resident',
     this.lastHeardBroadcastAt = 0,
     this.accessToken = '',
+    this.profilePhotoUrl,
   });
 
   /// ✅ REQUIRED (fixes your error)
@@ -34,6 +38,7 @@ class UserSessionHiveModel extends HiveObject {
     String? role,
     int? lastHeardBroadcastAt,
     String? accessToken,
+    String? profilePhotoUrl,
   }) {
     return UserSessionHiveModel(
       userId: userId ?? this.userId,
@@ -41,6 +46,7 @@ class UserSessionHiveModel extends HiveObject {
       role: role ?? this.role,
       lastHeardBroadcastAt: lastHeardBroadcastAt ?? this.lastHeardBroadcastAt,
       accessToken: accessToken ?? this.accessToken,
+      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
     );
   }
 
