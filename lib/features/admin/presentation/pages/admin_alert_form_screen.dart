@@ -59,7 +59,7 @@ class _AdminAlertFormScreenState extends ConsumerState<AdminAlertFormScreen> {
               message: message,
             );
       } else {
-        await ref.read(adminAlertsProvider.notifier).update(
+        await ref.read(adminAlertsProvider.notifier).updateAlert(
               id: existing.id,
               title: title,
               message: message,

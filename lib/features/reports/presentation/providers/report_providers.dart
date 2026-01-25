@@ -69,7 +69,7 @@ class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
     await load();
   }
 
-  Future<void> update(ReportHiveModel report) async {
+  Future<void> updateReport(ReportHiveModel report) async {
     await _repo.update(
       id: report.id,
       category: report.category,
