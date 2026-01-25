@@ -31,7 +31,11 @@ class ReportRepositoryApi {
     String? attachmentName,
   }) async {
     final token = _requireAccessToken();
-    final title = _buildTitle(category: category, location: location, message: message);
+    final title = _buildTitle(
+      category: category,
+      location: location,
+      message: message,
+    );
     final fields = <String, String>{
       'title': title,
       'category': _mapCategoryToApi(category),
@@ -61,6 +65,43 @@ class ReportRepositoryApi {
       location: location,
       message: message,
     );
+  }
+
+  Future<ReportHiveModel> update({
+    required String id,
+    required String category,
+    required String location,
+    required String message,
+  }) async {
+    final token = _requireAccessToken();
+    final title = _buildTitle(category: category, location: location, message: message);
+    final response = await _client.patchJson(
+      '${ApiEndpoints.reports}/$id',
+      {
+        'title': title,
+        'category': _mapCategoryToApi(category),
+      },
+      accessToken: token,
+    );
+    final payload = _extractItem(response);
+    final report = _mapReport(payload, fallbackTitle: title);
+    return report.copyWith(location: location, message: message);
+  }
+
+  Future<ReportHiveModel> updateStatus({
+    required String id,
+    required String status,
+  }) async {
+    final token = _requireAccessToken();
+    final response = await _client.patchJson(
+      '${ApiEndpoints.reports}/$id',
+      {
+        'status': _mapStatusToApi(status),
+      },
+      accessToken: token,
+    );
+    final payload = _extractItem(response);
+    return _mapReport(payload);
   }
 
   Future<void> delete(String id) async {
@@ -157,6 +198,19 @@ class ReportRepositoryApi {
     }
   }
 
+  String _mapStatusToApi(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Open';
+      case 'in_progress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      default:
+        return status;
+    }
+  }
+
   String _buildTitle({
     required String category,
     required String location,
@@ -168,6 +222,8 @@ class ReportRepositoryApi {
     if (trimmedLocation.isNotEmpty) {
       return '$category @ $trimmedLocation';
     }
-    return category;
+    final fallback = category.trim();
+    if (fallback.length >= 6) return fallback;
+    return '$fallback issue';
   }
 }

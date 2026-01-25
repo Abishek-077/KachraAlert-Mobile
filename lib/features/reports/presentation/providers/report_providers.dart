@@ -57,20 +57,15 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
 
   Future<void> adminUpdateStatus(String id, String status) async {
     final allReports = state.valueOrNull ?? [];
-    final report = allReports.firstWhere((r) => r.id == id);
-    final updated = report.copyWith(status: status);
-    await _repo.delete(report.id);
-    await _repo.create(
-      category: updated.category,
-      location: updated.location,
-      message: updated.message,
-    );
+    final report = _findById(allReports, id);
+    if (report == null) return;
+    await _repo.updateStatus(id: report.id, status: status);
     await load();
   }
 
   Future<void> update(ReportHiveModel report) async {
-    await _repo.delete(report.id);
-    await _repo.create(
+    await _repo.update(
+      id: report.id,
       category: report.category,
       location: report.location,
       message: report.message,
@@ -81,5 +76,14 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
   Future<void> delete(String id) async {
     await _repo.delete(id);
     await load();
+  }
+
+  ReportHiveModel? _findById(List<ReportHiveModel> reports, String id) {
+    for (final report in reports) {
+      if (report.id == id) {
+        return report;
+      }
+    }
+    return null;
   }
 }

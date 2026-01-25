@@ -8,9 +8,11 @@ export const createReportSchema = z.object({
 
 export const updateReportSchema = z
   .object({
+    title: z.string().min(6, "Title must be at least 6 characters").optional(),
+    category: z.enum(["Missed Pickup", "Overflow", "Payment", "Other"]).optional(),
     status: z.enum(["Open", "In Progress", "Resolved"]).optional(),
     priority: z.enum(["Low", "Medium", "High"]).optional()
   })
-  .refine((data) => data.status || data.priority, {
-    message: "Provide status or priority to update"
+  .refine((data) => data.title || data.category || data.status || data.priority, {
+    message: "Provide at least one field to update"
   });

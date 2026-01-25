@@ -60,18 +60,42 @@ export async function createReport(req: AuthRequest, res: Response, next: NextFu
 
 export async function updateReport(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const report = await Report.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...(req.body.status ? { status: req.body.status } : {}),
-        ...(req.body.priority ? { priority: req.body.priority } : {})
-      },
-      { new: true }
-    );
+    const report = await Report.findById(req.params.id);
     if (!report) {
       throw new AppError("Report not found", 404, "NOT_FOUND");
     }
+    if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
+      throw new AppError("Not authorized", 403, "FORBIDDEN");
+    }
+
+    if (req.user!.accountType !== "admin_driver" && (req.body.status || req.body.priority)) {
+      throw new AppError("Not authorized to update status or priority", 403, "FORBIDDEN");
+    }
+
+    if (req.body.title) report.title = req.body.title;
+    if (req.body.category) report.category = req.body.category;
+    if (req.body.status) report.status = req.body.status;
+    if (req.body.priority) report.priority = req.body.priority;
+
+    await report.save();
     return sendSuccess(res, "Report updated", mapReport(report));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function deleteReport(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      throw new AppError("Report not found", 404, "NOT_FOUND");
+    }
+    if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
+      throw new AppError("Not authorized", 403, "FORBIDDEN");
+    }
+
+    await report.deleteOne();
+    return sendSuccess(res, "Report deleted", { id: report._id.toString() });
   } catch (err) {
     return next(err);
   }
