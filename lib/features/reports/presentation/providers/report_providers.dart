@@ -8,7 +8,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 
 final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
-  final auth = ref.watch(authStateProvider).valueOrNull;
+  final auth = ref.watch(authStateProvider).asData?.value;
   return ReportRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,
@@ -16,21 +16,26 @@ final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
 });
 
 final reportsProvider =
-    StateNotifierProvider<ReportsNotifier, AsyncValue<List<ReportHiveModel>>>(
-      (ref) => ReportsNotifier(ref.watch(reportRepoProvider)),
-    );
+    AsyncNotifierProvider<ReportsNotifier, List<ReportHiveModel>>(
+  ReportsNotifier.new,
+);
 
-class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
-  ReportsNotifier(this._repo) : super(const AsyncValue.loading()) {
-    load();
+class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
+  ReportRepositoryApi get _repo => ref.watch(reportRepoProvider);
+
+  @override
+  Future<List<ReportHiveModel>> build() async {
+    return _fetchReports();
   }
 
-  final ReportRepositoryApi _repo;
+  Future<List<ReportHiveModel>> _fetchReports() async {
+    return _repo.getAll();
+  }
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final list = await _repo.getAll();
+      final list = await _fetchReports();
       state = AsyncValue.data(list);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -56,7 +61,7 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
   }
 
   Future<void> adminUpdateStatus(String id, String status) async {
-    final allReports = state.valueOrNull ?? [];
+    final allReports = state.asData?.value ?? [];
     final report = _findById(allReports, id);
     if (report == null) return;
     await _repo.updateStatus(id: report.id, status: status);

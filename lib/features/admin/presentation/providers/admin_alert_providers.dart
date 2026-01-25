@@ -6,7 +6,7 @@ import '../../data/repositories/admin_alert_repository_api.dart';
 import '../../data/models/admin_alert_hive_model.dart';
 
 final adminAlertRepoProvider = Provider<AdminAlertRepositoryApi>((ref) {
-  final auth = ref.watch(authStateProvider).valueOrNull;
+  final auth = ref.watch(authStateProvider).asData?.value;
   return AdminAlertRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,
@@ -14,25 +14,26 @@ final adminAlertRepoProvider = Provider<AdminAlertRepositoryApi>((ref) {
 });
 
 final adminAlertsProvider =
-    StateNotifierProvider<
-      AdminAlertsNotifier,
-      AsyncValue<List<AdminAlertHiveModel>>
-    >((ref) {
-      return AdminAlertsNotifier(ref.watch(adminAlertRepoProvider));
-    });
+    AsyncNotifierProvider<AdminAlertsNotifier, List<AdminAlertHiveModel>>(
+  AdminAlertsNotifier.new,
+);
 
-class AdminAlertsNotifier
-    extends StateNotifier<AsyncValue<List<AdminAlertHiveModel>>> {
-  AdminAlertsNotifier(this._local) : super(const AsyncValue.loading()) {
-    load();
+class AdminAlertsNotifier extends AsyncNotifier<List<AdminAlertHiveModel>> {
+  AdminAlertRepositoryApi get _local => ref.watch(adminAlertRepoProvider);
+
+  @override
+  Future<List<AdminAlertHiveModel>> build() async {
+    return _fetchAlerts();
   }
 
-  final AdminAlertRepositoryApi _local;
+  Future<List<AdminAlertHiveModel>> _fetchAlerts() async {
+    return _local.getAll();
+  }
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final list = await _local.getAll();
+      final list = await _fetchAlerts();
       state = AsyncValue.data(list);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

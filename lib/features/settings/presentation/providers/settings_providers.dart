@@ -42,9 +42,7 @@ class SettingsState {
 }
 
 final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
-  return SettingsNotifier()..load();
-});
+    AsyncNotifierProvider<SettingsNotifier, SettingsState>(SettingsNotifier.new);
 
 final isOnboardedProvider = Provider<AsyncValue<bool>>((ref) {
   final settingsAsync = ref.watch(settingsProvider);
@@ -57,12 +55,11 @@ final isOnboardedProvider = Provider<AsyncValue<bool>>((ref) {
 });
 
 final themeModeProvider = Provider<ThemeMode>((ref) {
-  final settings = ref.watch(settingsProvider).valueOrNull;
+  final settings = ref.watch(settingsProvider).asData?.value;
   return settings?.themeMode ?? ThemeMode.system;
 });
 
-class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
-  SettingsNotifier() : super(const AsyncValue.loading());
+class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   late final Box _box; // untyped: stores bool + int (millis)
   bool _inited = false;
@@ -76,7 +73,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     _inited = true;
   }
 
-  Future<void> load() async {
+  @override
+  Future<SettingsState> build() async {
+    return _loadSettings();
+  }
+
+  Future<SettingsState> _loadSettings() async {
     try {
       await _init();
 
@@ -90,32 +92,33 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           ? null
           : DateTime.fromMillisecondsSinceEpoch(splashMillis);
 
-      state = AsyncValue.data(
-        SettingsState(
-          onboarded: onboarded,
-          isDarkMode: isDarkMode,
-          pickupRemindersEnabled: pickupRemindersEnabled,
-          splashShownAt: splashShownAt,
-        ),
+      return SettingsState(
+        onboarded: onboarded,
+        isDarkMode: isDarkMode,
+        pickupRemindersEnabled: pickupRemindersEnabled,
+        splashShownAt: splashShownAt,
       );
     } catch (_) {
       // Safe defaults
-      state = const AsyncValue.data(
-        SettingsState(
-          onboarded: false,
-          isDarkMode: false,
-          pickupRemindersEnabled: true,
-          splashShownAt: null,
-        ),
+      return const SettingsState(
+        onboarded: false,
+        isDarkMode: false,
+        pickupRemindersEnabled: true,
+        splashShownAt: null,
       );
     }
+  }
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    state = AsyncValue.data(await _loadSettings());
   }
 
   Future<void> setOnboarded() async {
     await _init();
     await _box.put(_kOnboarded, true);
 
-    final current = state.valueOrNull ??
+    final current = state.asData?.value ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -129,7 +132,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     await _init();
     await _box.put(_kOnboarded, false);
 
-    final current = state.valueOrNull ??
+    final current = state.asData?.value ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -142,7 +145,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
   Future<void> toggleTheme() async {
     await _init();
 
-    final current = state.valueOrNull ??
+    final current = state.asData?.value ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -158,7 +161,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
   Future<void> setPickupReminders(bool enabled) async {
     await _init();
 
-    final current = state.valueOrNull ??
+    final current = state.asData?.value ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -176,7 +179,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     final now = DateTime.now();
     await _box.put(_kSplashShownAt, now.millisecondsSinceEpoch);
 
-    final current = state.valueOrNull ??
+    final current = state.asData?.value ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -190,7 +193,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
 /// Ensures splash is shown for at least 1 second overall, and records when it was shown.
 /// If splash was already shown within the last 1 second (e.g., hot restart), it returns immediately.
 final splashDelayProvider = FutureProvider<void>((ref) async {
-  final settings = ref.watch(settingsProvider).valueOrNull;
+  final settings = ref.watch(settingsProvider).asData?.value;
   final now = DateTime.now();
   final lastShown = settings?.splashShownAt;
 

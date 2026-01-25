@@ -7,22 +7,25 @@ import '../../domain/entities/alert_status.dart';
 final alertLocalDataSourceProvider = Provider((ref) => AlertLocalDataSource());
 
 final alertsProvider =
-    StateNotifierProvider<AlertsNotifier, AsyncValue<List<AlertHiveModel>>>((
-      ref,
-    ) {
-      return AlertsNotifier(ref.watch(alertLocalDataSourceProvider));
-    });
+    AsyncNotifierProvider<AlertsNotifier, List<AlertHiveModel>>(
+  AlertsNotifier.new,
+);
 
-class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertHiveModel>>> {
-  AlertsNotifier(this._local) : super(const AsyncValue.loading()) {
-    load();
+class AlertsNotifier extends AsyncNotifier<List<AlertHiveModel>> {
+  AlertLocalDataSource get _local => ref.watch(alertLocalDataSourceProvider);
+
+  @override
+  Future<List<AlertHiveModel>> build() async {
+    return _fetchAlerts();
   }
 
-  final AlertLocalDataSource _local;
+  Future<List<AlertHiveModel>> _fetchAlerts() async {
+    return _local.getAll();
+  }
 
   Future<void> load() async {
     state = const AsyncValue.loading();
-    final data = await _local.getAll();
+    final data = await _fetchAlerts();
     state = AsyncValue.data(data);
   }
 

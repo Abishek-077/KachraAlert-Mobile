@@ -6,29 +6,34 @@ import '../../data/repositories/schedule_repository_api.dart';
 import '../../domain/repositories/schedule_repository.dart';
 
 final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
-  final auth = ref.watch(authStateProvider).valueOrNull;
+  final auth = ref.watch(authStateProvider).asData?.value;
   return ScheduleRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,
   );
 });
 
-final schedulesProvider = StateNotifierProvider<
-    SchedulesNotifier, AsyncValue<List<ScheduleHiveModel>>>(
-  (ref) => SchedulesNotifier(ref.watch(scheduleRepoProvider)),
+final schedulesProvider =
+    AsyncNotifierProvider<SchedulesNotifier, List<ScheduleHiveModel>>(
+  SchedulesNotifier.new,
 );
 
-class SchedulesNotifier extends StateNotifier<AsyncValue<List<ScheduleHiveModel>>> {
-  SchedulesNotifier(this._repo) : super(const AsyncValue.loading()) {
-    load();
+class SchedulesNotifier extends AsyncNotifier<List<ScheduleHiveModel>> {
+  ScheduleRepository get _repo => ref.watch(scheduleRepoProvider);
+
+  @override
+  Future<List<ScheduleHiveModel>> build() async {
+    return _fetchSchedules();
   }
 
-  final ScheduleRepository _repo;
+  Future<List<ScheduleHiveModel>> _fetchSchedules() async {
+    return _repo.getAll();
+  }
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final list = await _repo.getAll();
+      final list = await _fetchSchedules();
       state = AsyncValue.data(list);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
