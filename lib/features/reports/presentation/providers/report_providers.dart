@@ -6,9 +6,10 @@ import 'package:smart_waste_app/features/reports/data/repositories/report_reposi
 
 import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
-  final auth = ref.watch(authStateProvider).asData?.value;
+  final auth = ref.watch(authStateProvider).valueOrNull;
   return ReportRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,
@@ -61,7 +62,7 @@ class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
   }
 
   Future<void> adminUpdateStatus(String id, String status) async {
-    final allReports = state.asData?.value ?? [];
+    final allReports = state.valueOrNull ?? [];
     final report = _findById(allReports, id);
     if (report == null) return;
     await _repo.updateStatus(id: report.id, status: status);

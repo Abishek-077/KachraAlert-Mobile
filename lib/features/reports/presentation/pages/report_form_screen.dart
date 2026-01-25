@@ -11,6 +11,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/report_providers.dart';
 import '../../data/models/report_hive_model.dart';
 import '../../../../core/ui/snackbar.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class ReportFormScreen extends ConsumerStatefulWidget {
   const ReportFormScreen({super.key, this.existing});
@@ -46,7 +47,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
   Future<void> _save() async {
     if (_saving) return;
-    final auth = ref.read(authStateProvider).asData?.value;
+    final auth = ref.read(authStateProvider).valueOrNull;
     final userId = auth?.session?.userId;
 
     if (userId == null) {

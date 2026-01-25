@@ -4,9 +4,10 @@ import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/admin_alert_repository_api.dart';
 import '../../data/models/admin_alert_hive_model.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final adminAlertRepoProvider = Provider<AdminAlertRepositoryApi>((ref) {
-  final auth = ref.watch(authStateProvider).asData?.value;
+  final auth = ref.watch(authStateProvider).valueOrNull;
   return AdminAlertRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,

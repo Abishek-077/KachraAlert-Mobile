@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:smart_waste_app/core/ui/snackbar.dart';
 import 'package:smart_waste_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -111,7 +112,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         );
 
     if (!mounted) return;
-    final auth = ref.read(authStateProvider).asData?.value;
+    final auth = ref.read(authStateProvider).valueOrNull;
     if (auth?.isLoggedIn == true) {
       context.go('/home');
     }
@@ -124,7 +125,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     }
 
     ref.listen<AsyncValue<AuthState>>(authStateProvider, (prev, next) {
-      final msg = next.asData?.value.errorMessage;
+      final msg = next.valueOrNull?.errorMessage;
       if (msg != null && msg.isNotEmpty) {
         AppSnack.show(context, msg);
         ref.read(authStateProvider.notifier).clearError();

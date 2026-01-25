@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 
 import '../../../../core/constants/hive_table_constant.dart';
 import '../../../../core/services/hive/hive_service.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 const _kOnboarded = 'onboarded';
 const _kDarkMode = 'darkMode';
@@ -55,7 +56,7 @@ final isOnboardedProvider = Provider<AsyncValue<bool>>((ref) {
 });
 
 final themeModeProvider = Provider<ThemeMode>((ref) {
-  final settings = ref.watch(settingsProvider).asData?.value;
+  final settings = ref.watch(settingsProvider).valueOrNull;
   return settings?.themeMode ?? ThemeMode.system;
 });
 
@@ -118,7 +119,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
     await _init();
     await _box.put(_kOnboarded, true);
 
-    final current = state.asData?.value ??
+    final current = state.valueOrNull ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -132,7 +133,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
     await _init();
     await _box.put(_kOnboarded, false);
 
-    final current = state.asData?.value ??
+    final current = state.valueOrNull ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -145,7 +146,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
   Future<void> toggleTheme() async {
     await _init();
 
-    final current = state.asData?.value ??
+    final current = state.valueOrNull ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -161,7 +162,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
   Future<void> setPickupReminders(bool enabled) async {
     await _init();
 
-    final current = state.asData?.value ??
+    final current = state.valueOrNull ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -179,7 +180,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
     final now = DateTime.now();
     await _box.put(_kSplashShownAt, now.millisecondsSinceEpoch);
 
-    final current = state.asData?.value ??
+    final current = state.valueOrNull ??
         const SettingsState(
           onboarded: false,
           isDarkMode: false,
@@ -193,7 +194,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 /// Ensures splash is shown for at least 1 second overall, and records when it was shown.
 /// If splash was already shown within the last 1 second (e.g., hot restart), it returns immediately.
 final splashDelayProvider = FutureProvider<void>((ref) async {
-  final settings = ref.watch(settingsProvider).asData?.value;
+  final settings = ref.watch(settingsProvider).valueOrNull;
   final now = DateTime.now();
   final lastShown = settings?.splashShownAt;
 
