@@ -75,7 +75,7 @@ class AuthState {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       session: clearSession ? null : (session ?? this.session),
-      errorMessage: clearError ? null : errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 

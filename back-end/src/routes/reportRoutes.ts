@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as reportsController from "../controllers/reportsController.js";
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import { createReportSchema, updateReportSchema } from "../dto/reportSchemas.js";
 import { uploadReportAttachment } from "../config/upload.js";
@@ -16,6 +16,7 @@ router.post(
   validateBody(createReportSchema),
   reportsController.createReport
 );
-router.patch("/:id", requireAuth, requireAdmin, validateBody(updateReportSchema), reportsController.updateReport);
+router.patch("/:id", requireAuth, validateBody(updateReportSchema), reportsController.updateReport);
+router.delete("/:id", requireAuth, reportsController.deleteReport);
 
 export default router;
