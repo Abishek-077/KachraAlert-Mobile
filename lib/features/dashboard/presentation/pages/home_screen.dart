@@ -27,28 +27,11 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
           children: [
-            // Top bar: location + bell
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Kathmandu',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: cs.onSurface.withOpacity(0.6),
-                ),
-                const Spacer(),
-                _BellButton(
-                  hasDot: true,
-                  onTap: () => context.go('/alerts'),
-                ),
-              ],
+            _DashboardHero(
+              location: 'Kathmandu',
+              onBellTap: () => context.go('/alerts'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Cleanliness score card
             KCard(
@@ -125,15 +108,7 @@ class HomeScreen extends ConsumerWidget {
 
             const SizedBox(height: 18),
 
-            Text(
-              'QUICK ACTIONS',
-              style: TextStyle(
-                color: cs.onSurface.withOpacity(0.55),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.3,
-                fontSize: 12,
-              ),
-            ),
+            _SectionTitle(label: 'Quick Actions'),
             const SizedBox(height: 12),
 
             Row(
@@ -177,15 +152,7 @@ class HomeScreen extends ConsumerWidget {
 
             Row(
               children: [
-                Text(
-                  'RECENT REPORTS',
-                  style: TextStyle(
-                    color: cs.onSurface.withOpacity(0.55),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.3,
-                    fontSize: 12,
-                  ),
-                ),
+                const _SectionTitle(label: 'Recent Reports'),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () => context.push('/reports'),
@@ -271,6 +238,154 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+class _DashboardHero extends StatelessWidget {
+  const _DashboardHero({
+    required this.location,
+    required this.onBellTap,
+  });
+
+  final String location;
+  final VoidCallback onBellTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cs.primary.withOpacity(0.18),
+            cs.secondary.withOpacity(0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: cs.primary.withOpacity(0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 30,
+            offset: const Offset(0, 18),
+            color: cs.primary.withOpacity(0.18),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            top: -10,
+            child: _HeroOrb(
+              size: 86,
+              colors: [
+                cs.primary.withOpacity(0.45),
+                cs.primary.withOpacity(0.05),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    location,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: cs.onSurface.withOpacity(0.6),
+                  ),
+                  const Spacer(),
+                  _BellButton(
+                    hasDot: true,
+                    onTap: onBellTap,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Good morning',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withOpacity(0.68),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Let’s keep Kathmandu clean today.',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                          color: Colors.black.withOpacity(0.08),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, size: 16, color: cs.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Clean City',
+                          style: TextStyle(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        color: cs.onSurface.withOpacity(0.55),
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.3,
+        fontSize: 12,
+      ),
+    );
+  }
+}
+
 class _BellButton extends StatelessWidget {
   const _BellButton({required this.hasDot, required this.onTap});
   final bool hasDot;
@@ -315,6 +430,28 @@ class _BellButton extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroOrb extends StatelessWidget {
+  const _HeroOrb({required this.size, required this.colors});
+
+  final double size;
+  final List<Color> colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-0.3, -0.2),
+          colors: colors,
         ),
       ),
     );
@@ -440,6 +577,7 @@ class _QuickAction extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final bg = primary ? cs.primary : cs.surface;
     final fg = primary ? cs.onPrimary : cs.onSurface.withOpacity(0.78);
+    final accent = primary ? cs.primary : cs.primary.withOpacity(0.12);
 
     return InkWell(
       borderRadius: BorderRadius.circular(22),
@@ -447,19 +585,42 @@ class _QuickAction extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: bg,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              bg,
+              primary ? bg.withOpacity(0.9) : cs.surfaceVariant.withOpacity(0.4),
+            ],
+          ),
           borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: primary ? Colors.white.withOpacity(0.2) : cs.outlineVariant.withOpacity(0.3),
+          ),
           boxShadow: [
             BoxShadow(
               blurRadius: 24,
               offset: const Offset(0, 12),
               color: Colors.black.withOpacity(primary ? 0.12 : 0.08),
             ),
+            BoxShadow(
+              blurRadius: 10,
+              offset: const Offset(-6, -6),
+              color: Colors.white.withOpacity(primary ? 0.16 : 0.5),
+            ),
           ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: fg, size: 24),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: fg, size: 22),
+            ),
             const SizedBox(height: 10),
             Text(
               label,
