@@ -111,7 +111,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         );
 
     if (!mounted) return;
-    final auth = ref.read(authStateProvider).valueOrNull;
+    final auth = ref.read(authStateProvider).asData?.value;
     if (auth?.isLoggedIn == true) {
       context.go('/home');
     }
@@ -124,7 +124,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     }
 
     ref.listen<AsyncValue<AuthState>>(authStateProvider, (prev, next) {
-      final msg = next.valueOrNull?.errorMessage;
+      final msg = next.asData?.value.errorMessage;
       if (msg != null && msg.isNotEmpty) {
         AppSnack.show(context, msg);
         ref.read(authStateProvider.notifier).clearError();

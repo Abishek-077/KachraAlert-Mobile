@@ -7,7 +7,7 @@ import '../../data/repositories/invoice_repository_api.dart';
 import '../../domain/repositories/invoice_repository.dart';
 
 final invoiceRepoProvider = Provider<InvoiceRepository>((ref) {
-  final auth = ref.watch(authStateProvider).valueOrNull;
+  final auth = ref.watch(authStateProvider).asData?.value;
   return InvoiceRepositoryApi(
     client: ref.watch(apiClientProvider),
     accessToken: auth?.session?.accessToken,
@@ -15,21 +15,26 @@ final invoiceRepoProvider = Provider<InvoiceRepository>((ref) {
 });
 
 final invoicesProvider =
-    StateNotifierProvider<InvoicesNotifier, AsyncValue<List<InvoiceModel>>>(
-  (ref) => InvoicesNotifier(ref.watch(invoiceRepoProvider)),
+    AsyncNotifierProvider<InvoicesNotifier, List<InvoiceModel>>(
+  InvoicesNotifier.new,
 );
 
-class InvoicesNotifier extends StateNotifier<AsyncValue<List<InvoiceModel>>> {
-  InvoicesNotifier(this._repo) : super(const AsyncValue.loading()) {
-    load();
+class InvoicesNotifier extends AsyncNotifier<List<InvoiceModel>> {
+  InvoiceRepository get _repo => ref.watch(invoiceRepoProvider);
+
+  @override
+  Future<List<InvoiceModel>> build() async {
+    return _fetchInvoices();
   }
 
-  final InvoiceRepository _repo;
+  Future<List<InvoiceModel>> _fetchInvoices() async {
+    return _repo.fetchInvoices();
+  }
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final invoices = await _repo.fetchInvoices();
+      final invoices = await _fetchInvoices();
       state = AsyncValue.data(invoices);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

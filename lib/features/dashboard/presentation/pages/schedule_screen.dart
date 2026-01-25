@@ -13,7 +13,7 @@ class ScheduleScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final auth = ref.watch(authStateProvider).valueOrNull;
+    final auth = ref.watch(authStateProvider).asData?.value;
     final isAdmin = auth?.isAdmin ?? false;
 
     final schedulesAsync = ref.watch(schedulesProvider);

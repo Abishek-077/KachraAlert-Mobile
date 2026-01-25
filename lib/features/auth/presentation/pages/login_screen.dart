@@ -65,7 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         .login(email: _email.text.trim(), password: _pass.text, role: _role);
 
     if (!mounted) return;
-    final auth = ref.read(authStateProvider).valueOrNull;
+    final auth = ref.read(authStateProvider).asData?.value;
     if (auth?.isLoggedIn == true) {
       context.go('/home');
     }
@@ -78,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
 
     ref.listen<AsyncValue<AuthState>>(authStateProvider, (prev, next) {
-      final msg = next.valueOrNull?.errorMessage;
+      final msg = next.asData?.value.errorMessage;
       if (msg != null && msg.isNotEmpty) {
         AppSnack.show(context, msg);
         ref.read(authStateProvider.notifier).clearError();

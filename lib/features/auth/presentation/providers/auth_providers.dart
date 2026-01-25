@@ -84,23 +84,10 @@ class AuthState {
 
 /// ✅ Auth provider
 final authStateProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>((ref) {
-  return AuthNotifier(
-    authApi: ref.watch(authApiServiceProvider),
-    ref: ref,
-  );
-});
+    AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
 
-class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
-  AuthNotifier({required AuthApiService authApi, required Ref ref})
-      : _authApi = authApi,
-        _ref = ref,
-        super(const AsyncValue.loading()) {
-    _load();
-  }
-
-  final AuthApiService _authApi;
-  final Ref _ref;
+class AuthNotifier extends AsyncNotifier<AuthState> {
+  AuthApiService get _authApi => ref.watch(authApiServiceProvider);
 
   Box<UserSessionHiveModel>? _sessionBox;
 
@@ -112,7 +99,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     return _sessionBox!;
   }
 
-  Future<void> _load() async {
+  @override
+  Future<AuthState> build() async {
+    return _load();
+  }
+
+  Future<AuthState> _load() async {
     try {
       final box = await _initSessionBox();
       final session = box.get('session');
@@ -121,14 +113,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         if (session != null) {
           await box.delete('session');
         }
-        await _ref.read(settingsProvider.notifier).resetOnboarded();
-        state = const AsyncValue.data(AuthState.loggedOut);
+        await ref.read(settingsProvider.notifier).resetOnboarded();
+        return AuthState.loggedOut;
       } else {
-        state = AsyncValue.data(AuthState(isLoggedIn: true, session: session));
+        return AuthState(isLoggedIn: true, session: session);
       }
     } catch (e, st) {
       _logger.e('Auth load failed', error: e, stackTrace: st);
-      state = const AsyncValue.data(AuthState.loggedOut);
+      return AuthState.loggedOut;
     }
   }
 
@@ -308,7 +300,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
 
   /// ✅ Clears error message after UI shows SnackBar
   void clearError() {
-    final current = state.valueOrNull;
+    final current = state.asData?.value;
     if (current == null) return;
     if (current.errorMessage == null) return;
 
@@ -316,7 +308,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
   }
 
   Future<void> updateProfilePhoto(String profilePhotoUrl) async {
-    final current = state.valueOrNull;
+    final current = state.asData?.value;
     final session = current?.session;
     if (current == null || session == null) return;
 
@@ -334,11 +326,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     try {
       final box = await _initSessionBox();
       await box.delete('session');
-      await _ref.read(settingsProvider.notifier).resetOnboarded();
+      await ref.read(settingsProvider.notifier).resetOnboarded();
       state = const AsyncValue.data(AuthState.loggedOut);
     } catch (e, st) {
       _logger.e('Logout failed', error: e, stackTrace: st);
-      await _ref.read(settingsProvider.notifier).resetOnboarded();
+      await ref.read(settingsProvider.notifier).resetOnboarded();
       state = const AsyncValue.data(AuthState.loggedOut);
     }
   }

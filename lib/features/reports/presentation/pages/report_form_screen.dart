@@ -46,7 +46,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
   Future<void> _save() async {
     if (_saving) return;
-    final auth = ref.read(authStateProvider).valueOrNull;
+    final auth = ref.read(authStateProvider).asData?.value;
     final userId = auth?.session?.userId;
 
     if (userId == null) {

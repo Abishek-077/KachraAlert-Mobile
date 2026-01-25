@@ -81,7 +81,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Resolve values only after loading gate.
       final onboarded = onboardedAsync.value ?? false;
-      final auth = authAsync.valueOrNull;
+      final auth = authAsync.asData?.value;
 
       final token = (auth?.session?.accessToken ?? '').trim();
       final loggedIn = (auth?.isLoggedIn ?? false) && token.isNotEmpty;
