@@ -8,4 +8,5 @@ class ApiEndpoints {
   static const String broadcastAlert = '/alerts/broadcast';
   static const String schedules = '/schedules';
   static const String invoices = '/invoices';
+  static const String profilePhoto = '/users/me/photo';
 }

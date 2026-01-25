@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../../core/utils/media_permissions.dart';
@@ -22,6 +25,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   late final TextEditingController _message;
   String _category = 'Missed Pickup';
   bool _saving = false;
+  Uint8List? _attachmentBytes;
+  String? _attachmentName;
 
   @override
   void initState() {
@@ -79,6 +84,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
               category: _category,
               location: loc,
               message: msg,
+              attachmentBytes: _attachmentBytes,
+              attachmentName: _attachmentName,
             );
       } else {
         await ref
@@ -105,6 +112,56 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _selectAttachment() async {
+    await MediaPermissions.requestPhotoVideoAccess(context);
+    if (!mounted) return;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1800,
+    );
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _attachmentBytes = bytes;
+      _attachmentName = picked.name;
+    });
+  }
+
+  void _removeAttachment() {
+    setState(() {
+      _attachmentBytes = null;
+      _attachmentName = null;
+    });
   }
 
   @override
@@ -247,36 +304,72 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
             const SizedBox(height: 16),
 
-            // Photo placeholder (optional, no extra plugins)
+            // Photo attachment (optional)
             KCard(
               padding: const EdgeInsets.all(14),
-              onTap: () => MediaPermissions.requestPhotoVideoAccess(context),
-              child: Row(
-                children: [
-                  KIconCircle(
-                    icon: Icons.photo_camera_outlined,
-                    background: cs.onSurface.withOpacity(0.06),
-                    foreground: cs.onSurface.withOpacity(0.65),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+              onTap: _selectAttachment,
+              child: _attachmentBytes == null
+                  ? Row(
+                      children: [
+                        KIconCircle(
+                          icon: Icons.photo_camera_outlined,
+                          background: cs.onSurface.withOpacity(0.06),
+                          foreground: cs.onSurface.withOpacity(0.65),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Add photo (optional)',
+                                style: TextStyle(fontWeight: FontWeight.w900),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Attach an image to help the team verify the issue.',
+                                style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Add photo (optional)',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.memory(
+                              _attachmentBytes!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Tap to allow photo and video access for uploads.',
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.attachment_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _attachmentName ?? 'Attached photo',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Remove attachment',
+                              onPressed: _removeAttachment,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

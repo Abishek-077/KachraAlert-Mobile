@@ -7,12 +7,14 @@ class AuthUser {
   final String userId;
   final String email;
   final String role;
+  final String? profilePhotoUrl;
   final String? accessToken;
 
   const AuthUser({
     required this.userId,
     required this.email,
     required this.role,
+    this.profilePhotoUrl,
     this.accessToken,
   });
 }
@@ -91,11 +93,13 @@ class AuthApiService {
         _stringValue(data['role']) ??
         _stringValue(data['accountType']) ??
         fallbackRole;
+    final profilePhotoUrl = _stringValue(data['profilePhotoUrl']);
 
     return AuthUser(
       userId: userId,
       email: email,
       role: role,
+      profilePhotoUrl: profilePhotoUrl,
       accessToken: accessToken,
     );
   }

@@ -24,13 +24,14 @@ class ReportHiveModelAdapter extends TypeAdapter<ReportHiveModel> {
       location: fields[4] as String,
       message: fields[5] as String,
       status: fields[6] as String,
+      attachmentUrl: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ReportHiveModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class ReportHiveModelAdapter extends TypeAdapter<ReportHiveModel> {
       ..writeByte(5)
       ..write(obj.message)
       ..writeByte(6)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(7)
+      ..write(obj.attachmentUrl);
   }
 
   @override
