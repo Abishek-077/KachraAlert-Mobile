@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/widgets/k_widgets.dart';
+import '../../../../core/utils/media_url.dart';
+import '../../../../core/utils/time_ago.dart';
 import '../../data/models/report_hive_model.dart';
 import '../providers/report_providers.dart';
 
@@ -20,6 +23,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final reportsAsync = ref.watch(reportsProvider);
+    final apiBase = ref.watch(apiBaseUrlProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -142,6 +146,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   for (final r in list) ...[
                     _ReportCard(
                       report: r,
+                      attachmentUrl: resolveMediaUrl(apiBase, r.attachmentUrl),
                       onTap: () => context.push('/reports/create', extra: r),
                     ),
                     const SizedBox(height: 12),
@@ -165,9 +170,14 @@ List<ReportHiveModel> _applyFilter(List<ReportHiveModel> all, String filter) {
 }
 
 class _ReportCard extends StatelessWidget {
-  const _ReportCard({required this.report, required this.onTap});
+  const _ReportCard({
+    required this.report,
+    required this.onTap,
+    required this.attachmentUrl,
+  });
   final ReportHiveModel report;
   final VoidCallback onTap;
+  final String? attachmentUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -180,16 +190,32 @@ class _ReportCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: attachmentUrl == null
+                  ? Icon(
+                      Icons.image_outlined,
+                      color: cs.primary.withOpacity(0.7),
+                    )
+                  : Image.network(
+                      attachmentUrl!,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.broken_image_outlined,
+                        color: cs.primary.withOpacity(0.7),
+                      ),
+                    ),
             ),
-            alignment: Alignment.center,
-            child: Icon(Icons.image_outlined,
-                color: cs.primary.withOpacity(0.7)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -258,7 +284,7 @@ class _ReportCard extends StatelessWidget {
                         size: 16, color: cs.onSurface.withOpacity(0.55)),
                     const SizedBox(width: 6),
                     Text(
-                      _timeAgo(report.createdAt),
+                      timeAgo(report.createdAt),
                       style: TextStyle(
                         color: cs.onSurface.withOpacity(0.65),
                         fontWeight: FontWeight.w700,
@@ -317,12 +343,4 @@ class _StatusUi {
     required this.fg,
     required this.border,
   });
-}
-
-String _timeAgo(int millis) {
-  final now = DateTime.now().millisecondsSinceEpoch;
-  final diff = Duration(milliseconds: now - millis);
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  return '${diff.inDays}d ago';
 }
