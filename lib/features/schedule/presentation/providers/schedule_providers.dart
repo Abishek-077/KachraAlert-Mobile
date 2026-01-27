@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/schedule_hive_model.dart';
 import '../../data/repositories/schedule_repository_api.dart';
 import '../../domain/repositories/schedule_repository.dart';
-import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
@@ -14,27 +15,23 @@ final scheduleRepoProvider = Provider<ScheduleRepository>((ref) {
   );
 });
 
-final schedulesProvider =
-    AsyncNotifierProvider<SchedulesNotifier, List<ScheduleHiveModel>>(
-  SchedulesNotifier.new,
+final schedulesProvider = StateNotifierProvider<SchedulesNotifier,
+    AsyncValue<List<ScheduleHiveModel>>>(
+  (ref) => SchedulesNotifier(ref.watch(scheduleRepoProvider)),
 );
 
-class SchedulesNotifier extends AsyncNotifier<List<ScheduleHiveModel>> {
-  ScheduleRepository get _repo => ref.watch(scheduleRepoProvider);
-
-  @override
-  Future<List<ScheduleHiveModel>> build() async {
-    return _fetchSchedules();
+class SchedulesNotifier
+    extends StateNotifier<AsyncValue<List<ScheduleHiveModel>>> {
+  SchedulesNotifier(this._repo) : super(const AsyncValue.loading()) {
+    load();
   }
 
-  Future<List<ScheduleHiveModel>> _fetchSchedules() async {
-    return _repo.getAll();
-  }
+  final ScheduleRepository _repo;
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final list = await _fetchSchedules();
+      final list = await _repo.getAll();
       state = AsyncValue.data(list);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -59,7 +56,7 @@ class SchedulesNotifier extends AsyncNotifier<List<ScheduleHiveModel>> {
     await load();
   }
 
-  Future<void> updateSchedule(ScheduleHiveModel model) async {
+  Future<void> update(ScheduleHiveModel model) async {
     await _repo.upsert(model);
     await load();
   }
@@ -68,4 +65,6 @@ class SchedulesNotifier extends AsyncNotifier<List<ScheduleHiveModel>> {
     await _repo.deleteById(id);
     await load();
   }
+
+  Future<void> updateSchedule(ScheduleHiveModel copyWith) async {}
 }

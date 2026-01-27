@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/repositories/invoice_repository_api.dart';
 import '../../domain/repositories/invoice_repository.dart';
-import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final invoiceRepoProvider = Provider<InvoiceRepository>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
@@ -16,26 +17,21 @@ final invoiceRepoProvider = Provider<InvoiceRepository>((ref) {
 });
 
 final invoicesProvider =
-    AsyncNotifierProvider<InvoicesNotifier, List<InvoiceModel>>(
-  InvoicesNotifier.new,
+    StateNotifierProvider<InvoicesNotifier, AsyncValue<List<InvoiceModel>>>(
+  (ref) => InvoicesNotifier(ref.watch(invoiceRepoProvider)),
 );
 
-class InvoicesNotifier extends AsyncNotifier<List<InvoiceModel>> {
-  InvoiceRepository get _repo => ref.watch(invoiceRepoProvider);
-
-  @override
-  Future<List<InvoiceModel>> build() async {
-    return _fetchInvoices();
+class InvoicesNotifier extends StateNotifier<AsyncValue<List<InvoiceModel>>> {
+  InvoicesNotifier(this._repo) : super(const AsyncValue.loading()) {
+    load();
   }
 
-  Future<List<InvoiceModel>> _fetchInvoices() async {
-    return _repo.fetchInvoices();
-  }
+  final InvoiceRepository _repo;
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final invoices = await _fetchInvoices();
+      final invoices = await _repo.fetchInvoices();
       state = AsyncValue.data(invoices);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:hive/hive.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 import '../../../../core/constants/hive_table_constant.dart';
 import '../../../../core/services/hive/hive_service.dart';
-import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 const _kOnboarded = 'onboarded';
 const _kDarkMode = 'darkMode';
@@ -43,7 +44,9 @@ class SettingsState {
 }
 
 final settingsProvider =
-    AsyncNotifierProvider<SettingsNotifier, SettingsState>(SettingsNotifier.new);
+    StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
+  return SettingsNotifier()..load();
+});
 
 final isOnboardedProvider = Provider<AsyncValue<bool>>((ref) {
   final settingsAsync = ref.watch(settingsProvider);
@@ -60,7 +63,8 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
   return settings?.themeMode ?? ThemeMode.system;
 });
 
-class SettingsNotifier extends AsyncNotifier<SettingsState> {
+class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
+  SettingsNotifier() : super(const AsyncValue.loading());
 
   late final Box _box; // untyped: stores bool + int (millis)
   bool _inited = false;
@@ -74,12 +78,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
     _inited = true;
   }
 
-  @override
-  Future<SettingsState> build() async {
-    return _loadSettings();
-  }
-
-  Future<SettingsState> _loadSettings() async {
+  Future<void> load() async {
     try {
       await _init();
 
@@ -93,26 +92,25 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
           ? null
           : DateTime.fromMillisecondsSinceEpoch(splashMillis);
 
-      return SettingsState(
-        onboarded: onboarded,
-        isDarkMode: isDarkMode,
-        pickupRemindersEnabled: pickupRemindersEnabled,
-        splashShownAt: splashShownAt,
+      state = AsyncValue.data(
+        SettingsState(
+          onboarded: onboarded,
+          isDarkMode: isDarkMode,
+          pickupRemindersEnabled: pickupRemindersEnabled,
+          splashShownAt: splashShownAt,
+        ),
       );
     } catch (_) {
       // Safe defaults
-      return const SettingsState(
-        onboarded: false,
-        isDarkMode: false,
-        pickupRemindersEnabled: true,
-        splashShownAt: null,
+      state = const AsyncValue.data(
+        SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+          splashShownAt: null,
+        ),
       );
     }
-  }
-
-  Future<void> load() async {
-    state = const AsyncValue.loading();
-    state = AsyncValue.data(await _loadSettings());
   }
 
   Future<void> setOnboarded() async {

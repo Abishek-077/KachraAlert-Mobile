@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
 import 'package:smart_waste_app/features/reports/data/repositories/report_repository_api.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
@@ -17,26 +18,21 @@ final reportRepoProvider = Provider<ReportRepositoryApi>((ref) {
 });
 
 final reportsProvider =
-    AsyncNotifierProvider<ReportsNotifier, List<ReportHiveModel>>(
-  ReportsNotifier.new,
+    StateNotifierProvider<ReportsNotifier, AsyncValue<List<ReportHiveModel>>>(
+  (ref) => ReportsNotifier(ref.watch(reportRepoProvider)),
 );
 
-class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
-  ReportRepositoryApi get _repo => ref.watch(reportRepoProvider);
-
-  @override
-  Future<List<ReportHiveModel>> build() async {
-    return _fetchReports();
+class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
+  ReportsNotifier(this._repo) : super(const AsyncValue.loading()) {
+    load();
   }
 
-  Future<List<ReportHiveModel>> _fetchReports() async {
-    return _repo.getAll();
-  }
+  final ReportRepositoryApi _repo;
 
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final list = await _fetchReports();
+      final list = await _repo.getAll();
       state = AsyncValue.data(list);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -69,7 +65,7 @@ class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
     await load();
   }
 
-  Future<void> updateReport(ReportHiveModel report) async {
+  Future<void> update(ReportHiveModel report) async {
     await _repo.update(
       id: report.id,
       category: report.category,
@@ -92,4 +88,6 @@ class ReportsNotifier extends AsyncNotifier<List<ReportHiveModel>> {
     }
     return null;
   }
+
+  Future<void> updateReport(ReportHiveModel copyWith) async {}
 }
