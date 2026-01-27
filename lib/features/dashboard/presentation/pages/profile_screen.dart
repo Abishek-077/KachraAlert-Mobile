@@ -7,6 +7,7 @@ import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/ui/snackbar.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/utils/media_url.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../profile/data/services/user_profile_api_service.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
@@ -91,18 +92,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  String? _resolveMediaUrl(String baseUrl, String? raw) {
-    if (raw == null || raw.trim().isEmpty) return null;
-    final value = raw.trim();
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-    final cleanBase =
-        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    final cleanPath = value.startsWith('/') ? value : '/$value';
-    return '$cleanBase$cleanPath';
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -112,8 +101,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final apiBase = ref.watch(apiBaseUrlProvider);
-    final profilePhotoUrl =
-        _resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
+    final profilePhotoUrl = resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
 
     final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
     final myReports = (auth?.session?.userId == null)
