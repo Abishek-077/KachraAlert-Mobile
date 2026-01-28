@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
@@ -24,6 +26,7 @@ class UserProfileApiService {
           'photo',
           bytes,
           filename: filename.isNotEmpty ? filename : 'profile.jpg',
+          contentType: _resolveContentType(bytes, filename),
         ),
       ],
       accessToken: accessToken,
@@ -38,6 +41,14 @@ class UserProfileApiService {
     }
 
     throw const ApiException('Failed to update profile photo.');
+  }
+
+  MediaType? _resolveContentType(Uint8List bytes, String filename) {
+    final mimeType = lookupMimeType(filename, headerBytes: bytes);
+    if (mimeType == null || mimeType.isEmpty) {
+      return null;
+    }
+    return MediaType.parse(mimeType);
   }
 }
 
