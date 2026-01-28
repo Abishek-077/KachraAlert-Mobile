@@ -61,7 +61,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     if (email.isEmpty) return 'Email is required';
     if (_phone.text.trim().isEmpty) return 'Phone number is required';
     if (_pass.text.isEmpty) return 'Password is required';
-    if (_pass.text.length < 6) return 'Password must be at least 6 characters';
+    final passwordError = _passwordStrengthError(_pass.text);
+    if (passwordError != null) return passwordError;
     return null;
   }
 
@@ -116,6 +117,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     if (auth?.isLoggedIn == true) {
       context.go('/home');
     }
+  }
+
+  String? _passwordStrengthError(String password) {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      return 'Password must include a lowercase letter.';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Password must include an uppercase letter.';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Password must include a number.';
+    }
+    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+      return 'Password must include a special character.';
+    }
+    return null;
   }
 
   @override

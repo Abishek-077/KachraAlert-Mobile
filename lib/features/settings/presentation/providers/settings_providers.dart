@@ -198,7 +198,7 @@ final splashDelayProvider = FutureProvider<void>((ref) async {
 
   if (lastShown != null) {
     final elapsed = now.difference(lastShown);
-    if (elapsed >= const Duration(seconds: 1)) {
+    if (elapsed < const Duration(seconds: 1)) {
       return;
     }
   }
