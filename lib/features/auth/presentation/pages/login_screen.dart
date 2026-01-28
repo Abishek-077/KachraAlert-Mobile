@@ -48,7 +48,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     if (email.isEmpty) return 'Email is required';
     if (pass.isEmpty) return 'Password is required';
-    if (pass.length < 6) return 'Password must be at least 6 characters';
+    if (pass.length < 8) return 'Password must be at least 8 characters';
     return null;
   }
 

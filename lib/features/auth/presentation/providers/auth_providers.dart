@@ -47,12 +47,16 @@ class InvalidInputException extends AuthException {
 
 class PasswordTooShortException extends AuthException {
   const PasswordTooShortException()
-      : super('Password must be at least 6 characters.');
+      : super('Password must be at least 8 characters.');
 }
 
 class RoleMismatchException extends AuthException {
   const RoleMismatchException()
       : super('Selected role does not match this account.');
+}
+
+class PasswordTooWeakException extends AuthException {
+  const PasswordTooWeakException(super.message);
 }
 
 /// ✅ Auth state with errorMessage (SnackBar uses this)
@@ -151,7 +155,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (password.isEmpty) throw const InvalidInputException('Password');
-      if (password.length < 6) throw const PasswordTooShortException();
+      final passwordError = _passwordStrengthError(password);
+      if (passwordError != null) {
+        throw PasswordTooWeakException(passwordError);
+      }
       if (cleanName.isEmpty) throw const InvalidInputException('Full name');
       if (cleanPhone.isEmpty) throw const InvalidInputException('Phone');
       if (cleanSociety.isEmpty) throw const InvalidInputException('Society');
@@ -169,8 +176,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         society: cleanSociety,
         building: cleanBuilding,
         apartment: cleanApartment,
-        accountType: '',
-        name: '',
         termsAccepted: termsAccepted,
       );
 
@@ -236,7 +241,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final cleanEmail = email.trim().toLowerCase();
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (password.isEmpty) throw const InvalidInputException('Password');
-      if (password.length < 6) throw const PasswordTooShortException();
+      if (password.length < 8) throw const PasswordTooShortException();
 
       final previous = box.get('session');
 
@@ -334,5 +339,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await ref.read(settingsProvider.notifier).resetOnboarded();
       state = const AsyncValue.data(AuthState.loggedOut);
     }
+  }
+
+  String? _passwordStrengthError(String password) {
+    if (password.length < 8) return 'Password must be at least 8 characters.';
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      return 'Password must include a lowercase letter.';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Password must include an uppercase letter.';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Password must include a number.';
+    }
+    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+      return 'Password must include a special character.';
+    }
+    return null;
   }
 }
