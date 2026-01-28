@@ -27,8 +27,6 @@ class AuthApiService {
   Future<AuthUser> signup({
     required String email,
     required String password,
-    required String accountType,
-    required String name,
     required String phone,
     required String society,
     required String building,
@@ -40,8 +38,9 @@ class AuthApiService {
     final response = await _client.postJson(ApiEndpoints.signup, {
       'email': email,
       'password': password,
-      'accountType': accountType,
-      'name': name,
+      'accountType': role,
+      'role': role,
+      'name': fullName,
       'phone': phone,
       'society': society,
       'building': building,
@@ -52,7 +51,7 @@ class AuthApiService {
     return _parseUser(
       response,
       fallbackEmail: email,
-      fallbackRole: accountType,
+      fallbackRole: role,
     );
   }
 
