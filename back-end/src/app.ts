@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import path from "path";
 import authRoutes from "./routes/authRoutes.js";
 import alertRoutes from "./routes/alertsRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
@@ -22,10 +21,9 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/api/v1/health", (_req, res) => {
   res.json({ success: true, message: "OK" });

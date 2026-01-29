@@ -1,5 +1,16 @@
 import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
+const attachmentSchema = new Schema(
+  {
+    filename: { type: String, required: true },
+    originalName: { type: String, required: true },
+    mimeType: { type: String, required: true },
+    size: { type: Number, required: true },
+    uploadedAt: { type: Date, default: Date.now }
+  },
+  { _id: true }
+);
+
 const reportSchema = new Schema(
   {
     title: { type: String, required: true },
@@ -19,8 +30,8 @@ const reportSchema = new Schema(
       default: "Open",
       required: true
     },
-    attachmentUrl: { type: String },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    attachments: { type: [attachmentSchema], default: [] }
   },
   { timestamps: true }
 );

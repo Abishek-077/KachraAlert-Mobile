@@ -7,6 +7,7 @@ import { AppError } from "../utils/errors.js";
 import { hashToken, generateRandomToken, timingSafeEqual } from "../utils/crypto.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { v4 as uuidv4 } from "uuid";
+import { buildProfileImageUrl } from "../utils/userProfileImage.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
 function getRefreshExpiry(remember?: boolean) {
@@ -30,8 +31,7 @@ export async function register(payload: {
   apartment: string;
   terms: boolean;
 }, meta: { ip?: string; userAgent?: string }) {
-  const normalizedEmail = payload.email.trim().toLowerCase();
-  const existing = await userRepository.findByEmail(normalizedEmail);
+  const existing = await userRepository.findByEmail(payload.email);
   if (existing) {
     throw new AppError("Account already exists", 409, "ACCOUNT_EXISTS");
   }
@@ -40,7 +40,7 @@ export async function register(payload: {
   const user = await userRepository.create({
     accountType: payload.accountType,
     name: payload.name,
-    email: normalizedEmail,
+    email: payload.email,
     phone: payload.phone,
     passwordHash,
     society: payload.society,
@@ -53,8 +53,7 @@ export async function register(payload: {
 }
 
 export async function login(payload: { email: string; password: string; remember?: boolean }, meta: { ip?: string; userAgent?: string }) {
-  const normalizedEmail = payload.email.trim().toLowerCase();
-  const user = await userRepository.findByEmail(normalizedEmail);
+  const user = await userRepository.findByEmail(payload.email);
   if (!user) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
@@ -148,7 +147,8 @@ export async function getMe(userId: string) {
 }
 
 async function issueTokens(
-  user: { _id: { toString(): string } } & {
+  user: {
+    _id: { toString(): string };
     email: string;
     accountType: string;
     name: string;
@@ -156,7 +156,7 @@ async function issueTokens(
     society: string;
     building: string;
     apartment: string;
-    profilePhotoUrl?: string | null;
+    profileImage?: { filename?: string };
   },
   meta: { ip?: string; userAgent?: string },
   remember: boolean
@@ -188,7 +188,7 @@ async function issueTokens(
       society: user.society,
       building: user.building,
       apartment: user.apartment,
-      profilePhotoUrl: user.profilePhotoUrl ?? null
+      profileImageUrl: user.profileImage?.filename ? buildProfileImageUrl(user._id.toString()) : null
     }
   };
 }

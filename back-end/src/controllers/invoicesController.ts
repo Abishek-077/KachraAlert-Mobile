@@ -54,25 +54,64 @@ export async function createInvoice(req: AuthRequest, res: Response, next: NextF
 
 export async function payInvoice(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.user!.id });
+    const isAdmin = req.user?.accountType === "admin_driver";
+    const invoice = await Invoice.findOne(isAdmin ? { _id: req.params.id } : { _id: req.params.id, userId: req.user!.id });
     if (!invoice) {
       throw new AppError("Invoice not found", 404, "NOT_FOUND");
     }
 
-    if (invoice.status !== "Paid") {
-      invoice.status = "Paid";
-      await invoice.save();
-      await Payment.create({
-        invoiceId: invoice._id,
-        userId: req.user!.id,
-        amountNPR: invoice.amountNPR,
-        provider: "test",
-        reference: `test_${Date.now()}`,
-        status: "success"
-      });
+    if (invoice.status === "Paid") {
+      return sendSuccess(res, "Invoice already paid", mapInvoice(invoice));
     }
 
+    const paymentAmount = req.body.amountNPR as number;
+    const provider = req.body.provider ?? "test";
+    const paymentUserId = invoice.userId;
+
+    if (paymentAmount !== invoice.amountNPR) {
+      await Payment.create({
+        invoiceId: invoice._id,
+        userId: paymentUserId,
+        amountNPR: paymentAmount,
+        provider,
+        reference: `test_${Date.now()}`,
+        status: "failed"
+      });
+      throw new AppError("Payment amount does not match invoice total", 400, "AMOUNT_MISMATCH");
+    }
+
+    invoice.status = "Paid";
+    await invoice.save();
+    await Payment.create({
+      invoiceId: invoice._id,
+      userId: paymentUserId,
+      amountNPR: invoice.amountNPR,
+      provider,
+      reference: `test_${Date.now()}`,
+      status: "success"
+    });
+
     return sendSuccess(res, "Invoice paid", mapInvoice(invoice));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateInvoiceAmount(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      throw new AppError("Invoice not found", 404, "NOT_FOUND");
+    }
+
+    if (invoice.status === "Paid") {
+      throw new AppError("Paid invoices cannot be modified", 400, "INVOICE_LOCKED");
+    }
+
+    invoice.amountNPR = req.body.amountNPR;
+    await invoice.save();
+
+    return sendSuccess(res, "Invoice amount updated", mapInvoice(invoice));
   } catch (err) {
     return next(err);
   }

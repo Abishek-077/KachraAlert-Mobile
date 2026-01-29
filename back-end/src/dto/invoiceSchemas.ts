@@ -8,3 +8,12 @@ export const createInvoiceSchema = z.object({
   issuedAt: z.string().optional(),
   dueAt: z.string().optional()
 });
+
+export const payInvoiceSchema = z.object({
+  amountNPR: z.number().positive("Amount must be positive"),
+  provider: z.enum(["cash", "khalti", "esewa", "test"]).optional()
+});
+
+export const updateInvoiceAmountSchema = z.object({
+  amountNPR: z.number().positive("Amount must be positive")
+});
