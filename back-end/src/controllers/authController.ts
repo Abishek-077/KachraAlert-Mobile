@@ -32,23 +32,11 @@ function getMeta(req: Request) {
   return { ip: req.ip, userAgent: req.get("user-agent") ?? undefined };
 }
 
-function mapAuthUser(user: any) {
-  const profileImageUrl = user?.profileImage?.filename ? buildProfileImageUrl(user._id.toString()) : null;
-
-  return {
-    ...user,
-    // New field
-    profileImageUrl,
-    // Legacy alias (keeps old frontend safe)
-    profilePhotoUrl: profileImageUrl
-  };
-}
-
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { accessToken, refreshToken, user } = await authService.register(req.body, getMeta(req));
     setRefreshCookie(res, refreshToken, false);
-    return sendSuccess(res, "Registration successful", { accessToken, user: mapAuthUser(user) });
+    return sendSuccess(res, "Registration successful", { accessToken, user });
   } catch (err) {
     return next(err);
   }
@@ -58,7 +46,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { accessToken, refreshToken, user } = await authService.login(req.body, getMeta(req));
     setRefreshCookie(res, refreshToken, req.body.remember ?? false);
-    return sendSuccess(res, "Login successful", { accessToken, user: mapAuthUser(user) });
+    return sendSuccess(res, "Login successful", { accessToken, user });
   } catch (err) {
     return next(err);
   }
@@ -72,7 +60,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
     }
     const { accessToken, refreshToken: newRefreshToken, user } = await authService.refresh(refreshToken, getMeta(req));
     setRefreshCookie(res, newRefreshToken, false);
-    return sendSuccess(res, "Token refreshed", { accessToken, user: mapAuthUser(user) });
+    return sendSuccess(res, "Token refreshed", { accessToken, user });
   } catch (err) {
     clearRefreshCookie(res);
     return next(err);
@@ -93,9 +81,6 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 export async function me(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const user = await authService.getMe(req.user!.id);
-
-    const profileImageUrl = user.profileImage?.filename ? buildProfileImageUrl(user._id.toString()) : null;
-
     return sendSuccess(res, "User loaded", {
       id: user._id.toString(),
       accountType: user.accountType,
@@ -105,11 +90,7 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
       society: user.society,
       building: user.building,
       apartment: user.apartment,
-
-      // New
-      profileImageUrl,
-      // Legacy alias
-      profilePhotoUrl: profileImageUrl
+      profileImageUrl: user.profileImage?.filename ? buildProfileImageUrl(user._id.toString()) : null
     });
   } catch (err) {
     return next(err);
