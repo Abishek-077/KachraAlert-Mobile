@@ -16,7 +16,7 @@ type AttachmentResponse = {
   url: string;
 };
 
-function mapReport(report: ReportDocument) {
+function mapReport(req: AuthRequest, report: ReportDocument) {
   const attachments: AttachmentResponse[] =
     report.attachments?.map((attachment) => ({
       id: attachment._id.toString(),
@@ -26,6 +26,7 @@ function mapReport(report: ReportDocument) {
       uploadedAt: attachment.uploadedAt,
       url: `/api/v1/reports/${report._id.toString()}/attachments/${attachment._id.toString()}`
     })) ?? [];
+
   return {
     id: report._id.toString(),
     title: report.title,
@@ -41,7 +42,7 @@ export async function listReports(req: AuthRequest, res: Response, next: NextFun
   try {
     const filter = req.user!.accountType === "admin_driver" ? {} : { createdBy: req.user!.id };
     const reports = await Report.find(filter).sort({ createdAt: -1 });
-    return sendSuccess(res, "Reports loaded", reports.map(mapReport));
+    return sendSuccess(res, "Reports loaded", reports.map((report) => mapReport(req, report)));
   } catch (err) {
     return next(err);
   }
@@ -50,13 +51,13 @@ export async function listReports(req: AuthRequest, res: Response, next: NextFun
 export async function getReport(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const report = await Report.findById(req.params.id);
-    if (!report) {
-      throw new AppError("Report not found", 404, "NOT_FOUND");
-    }
+    if (!report) throw new AppError("Report not found", 404, "NOT_FOUND");
+
     if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
       throw new AppError("Not authorized", 403, "FORBIDDEN");
     }
-    return sendSuccess(res, "Report loaded", mapReport(report));
+
+    return sendSuccess(res, "Report loaded", mapReport(req, report));
   } catch (err) {
     return next(err);
   }
@@ -65,6 +66,7 @@ export async function getReport(req: AuthRequest, res: Response, next: NextFunct
 export async function createReport(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const attachments = req.body.attachment ? [writeReportAttachment(req.body.attachment)] : [];
+
     const report = await Report.create({
       title: req.body.title,
       category: req.body.category,
@@ -73,7 +75,8 @@ export async function createReport(req: AuthRequest, res: Response, next: NextFu
       status: "Open",
       attachments
     });
-    return sendSuccess(res, "Report created", mapReport(report));
+
+    return sendSuccess(res, "Report created", mapReport(req, report));
   } catch (err) {
     return next(err);
   }
@@ -89,10 +92,10 @@ export async function updateReport(req: AuthRequest, res: Response, next: NextFu
       },
       { new: true }
     );
-    if (!report) {
-      throw new AppError("Report not found", 404, "NOT_FOUND");
-    }
-    return sendSuccess(res, "Report updated", mapReport(report));
+
+    if (!report) throw new AppError("Report not found", 404, "NOT_FOUND");
+
+    return sendSuccess(res, "Report updated", mapReport(req, report));
   } catch (err) {
     return next(err);
   }
@@ -101,19 +104,19 @@ export async function updateReport(req: AuthRequest, res: Response, next: NextFu
 export async function addReportAttachment(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const report = await Report.findById(req.params.id);
-    if (!report) {
-      throw new AppError("Report not found", 404, "NOT_FOUND");
-    }
+    if (!report) throw new AppError("Report not found", 404, "NOT_FOUND");
+
     if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
       throw new AppError("Not authorized", 403, "FORBIDDEN");
     }
+
     const attachmentPayload = req.body.attachment;
-    if (!attachmentPayload) {
-      throw new AppError("Attachment is required", 400, "BAD_REQUEST");
-    }
+    if (!attachmentPayload) throw new AppError("Attachment is required", 400, "BAD_REQUEST");
+
     report.attachments.push(writeReportAttachment(attachmentPayload));
     await report.save();
-    return sendSuccess(res, "Attachment added", mapReport(report));
+
+    return sendSuccess(res, "Attachment added", mapReport(req, report));
   } catch (err) {
     return next(err);
   }
@@ -122,20 +125,18 @@ export async function addReportAttachment(req: AuthRequest, res: Response, next:
 export async function getReportAttachment(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const report = await Report.findById(req.params.id);
-    if (!report) {
-      throw new AppError("Report not found", 404, "NOT_FOUND");
-    }
+    if (!report) throw new AppError("Report not found", 404, "NOT_FOUND");
+
     if (req.user!.accountType !== "admin_driver" && report.createdBy.toString() !== req.user!.id) {
       throw new AppError("Not authorized", 403, "FORBIDDEN");
     }
+
     const attachment = report.attachments.id(req.params.attachmentId);
-    if (!attachment) {
-      throw new AppError("Attachment not found", 404, "NOT_FOUND");
-    }
+    if (!attachment) throw new AppError("Attachment not found", 404, "NOT_FOUND");
+
     const filePath = path.join(reportUploadsDir, attachment.filename);
-    if (!fs.existsSync(filePath)) {
-      throw new AppError("Attachment file missing", 404, "NOT_FOUND");
-    }
+    if (!fs.existsSync(filePath)) throw new AppError("Attachment file missing", 404, "NOT_FOUND");
+
     res.setHeader("Content-Type", attachment.mimeType);
     res.setHeader("Content-Disposition", `attachment; filename="${attachment.originalName}"`);
     return res.sendFile(filePath);
