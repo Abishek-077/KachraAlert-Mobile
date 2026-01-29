@@ -11,6 +11,6 @@ router.patch("/me", requireAuth, validateBody(updateProfileSchema), usersControl
 router.post("/me/profile-image", requireAuth, validateBody(uploadProfileImageSchema), usersController.uploadProfileImage);
 router.get("/", requireAuth, requireAdmin, usersController.listUsers);
 router.get("/:id", requireAuth, requireAdmin, usersController.getUser);
-router.get("/:id/profile-image", usersController.getProfileImage);
+router.get("/:id/profile-image", requireAuth, usersController.getProfileImage);
 
 export default router;
