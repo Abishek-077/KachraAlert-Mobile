@@ -1,4 +1,4 @@
-import type { Response, NextFunction } from "express";
+import type { Response, NextFunction, Request } from "express";
 import { User, type UserDocument } from "../models/User.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errors.js";
@@ -82,13 +82,9 @@ export async function uploadProfileImage(req: AuthRequest, res: Response, next: 
   }
 }
 
-export async function getProfileImage(req: AuthRequest, res: Response, next: NextFunction) {
+export async function getProfileImage(req: Request, res: Response, next: NextFunction) {
   try {
     const targetId = req.params.id;
-
-    if (req.user!.accountType !== "admin_driver" && req.user!.id !== targetId) {
-      throw new AppError("Not authorized", 403, "FORBIDDEN");
-    }
 
     const user = await User.findById(targetId);
     if (!user) throw new AppError("User not found", 404, "NOT_FOUND");

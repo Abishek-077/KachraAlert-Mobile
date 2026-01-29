@@ -24,6 +24,14 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authStateProvider.notifier).refreshProfile();
+    });
+  }
+
   Future<void> _changePhoto() async {
     final auth = ref.read(authStateProvider).valueOrNull;
     final token = auth?.session?.accessToken;
@@ -71,12 +79,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final bytes = await picked.readAsBytes();
     if (!mounted) return;
 
+    final mimeType = picked.mimeType ?? 'image/jpeg';
     setState(() => _uploading = true);
     try {
       final profileApi = ref.read(userProfileApiServiceProvider);
       final photoUrl = await profileApi.uploadProfilePhoto(
         bytes: bytes,
         filename: picked.name,
+        mimeType: mimeType,
         accessToken: token,
       );
       await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);

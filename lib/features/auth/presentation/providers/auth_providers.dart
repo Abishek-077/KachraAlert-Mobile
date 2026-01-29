@@ -337,6 +337,36 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     }
   }
 
+  Future<void> refreshProfile() async {
+    final current = state.valueOrNull;
+    final session = current?.session;
+    if (current == null || session == null) return;
+
+    final token = session.accessToken.trim();
+    if (token.isEmpty) return;
+
+    try {
+      final profile = await _authApi.fetchProfile(
+        accessToken: token,
+        fallbackEmail: session.email,
+        fallbackRole: session.role,
+      );
+
+      final updated = session.copyWith(
+        userId: profile.userId,
+        email: profile.email,
+        role: profile.role,
+        profilePhotoUrl: profile.profilePhotoUrl ?? session.profilePhotoUrl,
+      );
+
+      final box = await _initSessionBox();
+      await box.put('session', updated);
+      state = AsyncValue.data(current.copyWith(session: updated));
+    } catch (e, st) {
+      _logger.w('Profile refresh failed', error: e, stackTrace: st);
+    }
+  }
+
   Future<void> logout() async {
     try {
       final box = await _initSessionBox();
