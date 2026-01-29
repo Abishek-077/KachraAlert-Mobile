@@ -70,6 +70,44 @@ class AuthApiService {
     return _parseUser(response, fallbackEmail: email, fallbackRole: role);
   }
 
+  Future<AuthUser> fetchProfile({
+    required String accessToken,
+    required String fallbackEmail,
+    required String fallbackRole,
+  }) async {
+    final response = await _client.getJson(
+      ApiEndpoints.profileMe,
+      accessToken: accessToken,
+    );
+
+    final data = _extractUserPayload(response);
+    final userId =
+        _stringValue(data['userId']) ??
+        _stringValue(data['id']) ??
+        _stringValue(data['_id']);
+
+    if (userId == null || userId.isEmpty) {
+      throw const ApiException('Unexpected server response.');
+    }
+
+    final email = _stringValue(data['email']) ?? fallbackEmail;
+    final role =
+        _stringValue(data['role']) ??
+        _stringValue(data['accountType']) ??
+        fallbackRole;
+    final profilePhotoUrl =
+        _stringValue(data['profilePhotoUrl']) ??
+        _stringValue(data['profileImageUrl']);
+
+    return AuthUser(
+      userId: userId,
+      email: email,
+      role: role,
+      profilePhotoUrl: profilePhotoUrl,
+      accessToken: accessToken,
+    );
+  }
+
   AuthUser _parseUser(
     Map<String, dynamic> response, {
     required String fallbackEmail,
