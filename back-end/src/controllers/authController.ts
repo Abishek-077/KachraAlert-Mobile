@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { sendSuccess } from "../utils/response.js";
 import { env } from "../config/env.js";
 import * as authService from "../services/authService.js";
+import { toPublicUrl } from "../utils/publicUrl.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 function setRefreshCookie(res: Response, token: string, remember: boolean) {
@@ -31,11 +32,18 @@ function getMeta(req: Request) {
   return { ip: req.ip, userAgent: req.get("user-agent") ?? undefined };
 }
 
+function mapAuthUser(req: Request, user: { profilePhotoUrl?: string | null }) {
+  return {
+    ...user,
+    profilePhotoUrl: toPublicUrl(req, user.profilePhotoUrl)
+  };
+}
+
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { accessToken, refreshToken, user } = await authService.register(req.body, getMeta(req));
     setRefreshCookie(res, refreshToken, false);
-    return sendSuccess(res, "Registration successful", { accessToken, user });
+    return sendSuccess(res, "Registration successful", { accessToken, user: mapAuthUser(req, user) });
   } catch (err) {
     return next(err);
   }
@@ -45,7 +53,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { accessToken, refreshToken, user } = await authService.login(req.body, getMeta(req));
     setRefreshCookie(res, refreshToken, req.body.remember ?? false);
-    return sendSuccess(res, "Login successful", { accessToken, user });
+    return sendSuccess(res, "Login successful", { accessToken, user: mapAuthUser(req, user) });
   } catch (err) {
     return next(err);
   }
@@ -59,7 +67,7 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
     }
     const { accessToken, refreshToken: newRefreshToken, user } = await authService.refresh(refreshToken, getMeta(req));
     setRefreshCookie(res, newRefreshToken, false);
-    return sendSuccess(res, "Token refreshed", { accessToken, user });
+    return sendSuccess(res, "Token refreshed", { accessToken, user: mapAuthUser(req, user) });
   } catch (err) {
     clearRefreshCookie(res);
     return next(err);
@@ -89,7 +97,7 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
       society: user.society,
       building: user.building,
       apartment: user.apartment,
-      profilePhotoUrl: user.profilePhotoUrl ?? null
+      profilePhotoUrl: toPublicUrl(req, user.profilePhotoUrl)
     });
   } catch (err) {
     return next(err);

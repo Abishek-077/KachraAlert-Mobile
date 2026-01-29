@@ -2,9 +2,10 @@ import type { Response, NextFunction } from "express";
 import { User, type UserDocument } from "../models/User.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errors.js";
+import { toPublicUrl } from "../utils/publicUrl.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-function mapUser(user: UserDocument) {
+function mapUser(req: AuthRequest, user: UserDocument) {
   return {
     id: user._id.toString(),
     accountType: user.accountType,
@@ -14,7 +15,7 @@ function mapUser(user: UserDocument) {
     society: user.society,
     building: user.building,
     apartment: user.apartment,
-    profilePhotoUrl: user.profilePhotoUrl
+    profilePhotoUrl: toPublicUrl(req, user.profilePhotoUrl)
   };
 }
 
@@ -24,7 +25,7 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
     if (!user) {
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
-    return sendSuccess(res, "Profile loaded", mapUser(user));
+    return sendSuccess(res, "Profile loaded", mapUser(req, user));
   } catch (err) {
     return next(err);
   }
@@ -46,7 +47,7 @@ export async function updateMe(req: AuthRequest, res: Response, next: NextFuncti
     if (!user) {
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
-    return sendSuccess(res, "Profile updated", mapUser(user));
+    return sendSuccess(res, "Profile updated", mapUser(req, user));
   } catch (err) {
     return next(err);
   }
@@ -66,16 +67,16 @@ export async function updateProfilePhoto(req: AuthRequest, res: Response, next: 
     if (!user) {
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
-    return sendSuccess(res, "Profile photo updated", mapUser(user));
+    return sendSuccess(res, "Profile photo updated", mapUser(req, user));
   } catch (err) {
     return next(err);
   }
 }
 
-export async function listUsers(_req: AuthRequest, res: Response, next: NextFunction) {
+export async function listUsers(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const users = await User.find().sort({ createdAt: -1 });
-    return sendSuccess(res, "Users loaded", users.map(mapUser));
+    return sendSuccess(res, "Users loaded", users.map((user) => mapUser(req, user)));
   } catch (err) {
     return next(err);
   }
@@ -87,7 +88,7 @@ export async function getUser(req: AuthRequest, res: Response, next: NextFunctio
     if (!user) {
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
-    return sendSuccess(res, "User loaded", mapUser(user));
+    return sendSuccess(res, "User loaded", mapUser(req, user));
   } catch (err) {
     return next(err);
   }
