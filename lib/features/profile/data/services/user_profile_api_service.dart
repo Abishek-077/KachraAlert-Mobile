@@ -1,8 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 
@@ -14,18 +13,18 @@ class UserProfileApiService {
   Future<String> uploadProfilePhoto({
     required Uint8List bytes,
     required String filename,
+    required String mimeType,
     required String accessToken,
   }) async {
-    final response = await _client.postMultipart(
+    final response = await _client.postJson(
       ApiEndpoints.profilePhoto,
-      fields: const {},
-      files: [
-        http.MultipartFile.fromBytes(
-          'photo',
-          bytes,
-          filename: filename.isNotEmpty ? filename : 'profile.jpg',
-        ),
-      ],
+      {
+        'image': {
+          'name': filename.isNotEmpty ? filename : 'profile.jpg',
+          'mimeType': mimeType.isNotEmpty ? mimeType : 'image/jpeg',
+          'dataBase64': base64Encode(bytes),
+        },
+      },
       accessToken: accessToken,
     );
 
