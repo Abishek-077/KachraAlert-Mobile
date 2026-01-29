@@ -30,7 +30,8 @@ export async function register(payload: {
   apartment: string;
   terms: boolean;
 }, meta: { ip?: string; userAgent?: string }) {
-  const existing = await userRepository.findByEmail(payload.email);
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const existing = await userRepository.findByEmail(normalizedEmail);
   if (existing) {
     throw new AppError("Account already exists", 409, "ACCOUNT_EXISTS");
   }
@@ -39,7 +40,7 @@ export async function register(payload: {
   const user = await userRepository.create({
     accountType: payload.accountType,
     name: payload.name,
-    email: payload.email,
+    email: normalizedEmail,
     phone: payload.phone,
     passwordHash,
     society: payload.society,
@@ -52,7 +53,8 @@ export async function register(payload: {
 }
 
 export async function login(payload: { email: string; password: string; remember?: boolean }, meta: { ip?: string; userAgent?: string }) {
-  const user = await userRepository.findByEmail(payload.email);
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const user = await userRepository.findByEmail(normalizedEmail);
   if (!user) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
