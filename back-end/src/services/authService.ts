@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import type { SignOptions } from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { userRepository } from "../repositories/userRepository.js";
 import { refreshTokenRepository } from "../repositories/refreshTokenRepository.js";
@@ -8,6 +9,7 @@ import { hashToken, generateRandomToken, timingSafeEqual } from "../utils/crypto
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { v4 as uuidv4 } from "uuid";
 import { buildProfileImageUrl } from "../utils/userProfileImage.js";
+import type { UserDocument } from "../models/User.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
 function getRefreshExpiry(remember?: boolean) {
@@ -17,8 +19,10 @@ function getRefreshExpiry(remember?: boolean) {
 }
 
 function getRefreshExpiresIn(days: number) {
-  return `${days}d`;
+  return `${days}d` as TokenExpiresIn;
 }
+
+type TokenExpiresIn = NonNullable<SignOptions["expiresIn"]>;
 
 export async function register(payload: {
   accountType: "resident" | "admin_driver";
@@ -147,21 +151,11 @@ export async function getMe(userId: string) {
 }
 
 async function issueTokens(
-  user: {
-    _id: { toString(): string };
-    email: string;
-    accountType: string;
-    name: string;
-    phone: string;
-    society: string;
-    building: string;
-    apartment: string;
-    profileImage?: { filename?: string };
-  },
+  user: UserDocument,
   meta: { ip?: string; userAgent?: string },
   remember: boolean
 ) {
-  const accessToken = signAccessToken(user as any);
+  const accessToken = signAccessToken(user);
   const jti = uuidv4();
   const { expiresAt, days } = getRefreshExpiry(remember);
   const refreshToken = signRefreshToken(user._id.toString(), jti, getRefreshExpiresIn(days));
