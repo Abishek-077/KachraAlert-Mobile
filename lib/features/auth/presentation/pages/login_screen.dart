@@ -106,20 +106,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: isDark
-                ? [
-                    scheme.surface,
-                    scheme.surfaceContainerHighest,
-                    theme.scaffoldBackgroundColor,
-                  ]
-                : [
-                    const Color(0xFFF1FFF7),
-                    const Color(0xFFE6F4FF),
-                    Colors.white,
-                  ],
-            stops: const [0, 0.45, 1],
+                ? [scheme.surface, theme.scaffoldBackgroundColor]
+                : [const Color(0xFFE7F7EF), Colors.white],
           ),
         ),
         child: Stack(
@@ -133,53 +124,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
             Positioned(
-              right: -40,
-              bottom: 120,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      scheme.primary.withOpacity(isDark ? 0.16 : 0.18),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
               left: -70,
               bottom: 80,
               child: _GlowCircle(
                 size: 180,
                 color: scheme.secondary.withOpacity(isDark ? 0.18 : 0.1),
-              ),
-            ),
-            Positioned(
-              left: -40,
-              top: 140,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                    color: scheme.primary.withOpacity(isDark ? 0.25 : 0.2),
-                    width: 1,
-                  ),
-                  gradient: LinearGradient(
-                    colors: [
-                      scheme.surface.withOpacity(isDark ? 0.2 : 0.5),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
               ),
             ),
             SafeArea(
@@ -190,7 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       children: [
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 36),
                         FadeTransition(
                           opacity: fadeAnimation,
                           child: Column(
@@ -199,14 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 width: 72,
                                 height: 72,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      scheme.primary,
-                                      scheme.primaryContainer,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                                  color: scheme.primary,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -224,9 +166,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Welcome back',
+                                'Welcome Back',
                                 style: TextStyle(
-                                  fontSize: 30,
+                                  fontSize: 28,
                                   fontWeight: FontWeight.w900,
                                   color: scheme.onSurface,
                                   height: 1.2,
@@ -234,36 +176,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                'A unified login for residents and admins. Access alerts, reports, and schedules in one place.',
+                                'Sign in to manage alerts, reports, and schedules.',
                                 style: TextStyle(
-                                  fontSize: 15.5,
+                                  fontSize: 15,
                                   color: scheme.onSurfaceVariant,
                                   height: 1.4,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 12),
-                              Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _HeaderPill(
-                                    icon: Icons.verified_outlined,
-                                    label: 'Secure access',
-                                    scheme: scheme,
-                                  ),
-                                  _HeaderPill(
-                                    icon: Icons.cloud_outlined,
-                                    label: 'Live sync',
-                                    scheme: scheme,
-                                  ),
-                                  _HeaderPill(
-                                    icon: Icons.shield_outlined,
-                                    label: 'Trusted by cities',
-                                    scheme: scheme,
-                                  ),
-                                ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: scheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.verified_outlined,
+                                      size: 16,
+                                      color: scheme.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Secure city-grade access',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -298,11 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _SectionTitle(
-                                      title: 'Sign in',
-                                      subtitle: 'Use your email and password.',
-                                      scheme: scheme,
-                                    ),
+                                    _buildRoleSelector(loading, scheme),
                                     const SizedBox(height: 20),
                                     _buildTextField(
                                       scheme: scheme,
@@ -319,24 +264,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       label: 'Password',
                                       enabled: !loading,
                                     ),
-                                    const SizedBox(height: 12),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: loading ? null : () {},
-                                        child: Text(
-                                          'Forgot password?',
-                                          style: TextStyle(
-                                            color: scheme.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 24),
                                     _buildAuthButton(
                                       scheme: scheme,
-                                      label: 'Continue',
+                                      label: 'Login',
                                       loading: loading,
                                       onPressed: () => _login(loading),
                                     ),
@@ -377,6 +308,118 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleSelector(bool loading, ColorScheme scheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Account Type',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRoleCard(
+                title: 'Resident',
+                subtitle: 'Receive pickup alerts',
+                icon: Icons.home_work_outlined,
+                value: 'resident',
+                loading: loading,
+                scheme: scheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildRoleCard(
+                title: 'Admin/Driver',
+                subtitle: 'Manage schedules',
+                icon: Icons.local_shipping_outlined,
+                value: 'admin_driver',
+                loading: loading,
+                scheme: scheme,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required String value,
+    required bool loading,
+    required ColorScheme scheme,
+  }) {
+    final isSelected = _role == value;
+    return InkWell(
+      onTap: loading ? null : () => setState(() => _role = value),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? scheme.primary.withOpacity(0.12)
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? scheme.primary : scheme.outlineVariant,
+            width: isSelected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected ? scheme.primary : scheme.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? scheme.onPrimary : scheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -535,82 +578,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ),
       ),
-    );
-  }
-}
-
-class _HeaderPill extends StatelessWidget {
-  const _HeaderPill({
-    required this.icon,
-    required this.label,
-    required this.scheme,
-  });
-
-  final IconData icon;
-  final String label;
-  final ColorScheme scheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: scheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-    required this.scheme,
-  });
-
-  final String title;
-  final String subtitle;
-  final ColorScheme scheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
