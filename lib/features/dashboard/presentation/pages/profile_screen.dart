@@ -77,6 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final photoUrl = await profileApi.uploadProfilePhoto(
         bytes: bytes,
         filename: picked.name,
+        mimeType: picked.mimeType,
         accessToken: token,
       );
       await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);
@@ -101,6 +102,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final apiBase = ref.watch(apiBaseUrlProvider);
+    final token = auth?.session?.accessToken;
     final profilePhotoUrl = resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
 
     final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
@@ -155,6 +157,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   width: 86,
                                   height: 86,
                                   fit: BoxFit.cover,
+                                  headers: token?.isNotEmpty == true
+                                      ? {'Authorization': 'Bearer $token'}
+                                      : null,
                                   errorBuilder: (_, __, ___) => Text(
                                     initial,
                                     style: const TextStyle(
