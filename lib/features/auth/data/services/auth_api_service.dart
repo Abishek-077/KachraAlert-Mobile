@@ -63,8 +63,6 @@ class AuthApiService {
     final response = await _client.postJson(ApiEndpoints.login, {
       'email': email,
       'password': password,
-      'accountType': role,
-      'role': role,
     });
 
     return _parseUser(response, fallbackEmail: email, fallbackRole: role);
@@ -92,7 +90,9 @@ class AuthApiService {
         _stringValue(data['role']) ??
         _stringValue(data['accountType']) ??
         fallbackRole;
-    final profilePhotoUrl = _stringValue(data['profilePhotoUrl']);
+    final profilePhotoUrl =
+        _stringValue(data['profilePhotoUrl']) ??
+        _stringValue(data['profileImageUrl']);
 
     return AuthUser(
       userId: userId,

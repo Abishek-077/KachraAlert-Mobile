@@ -77,6 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final photoUrl = await profileApi.uploadProfilePhoto(
         bytes: bytes,
         filename: picked.name,
+        mimeType: picked.mimeType,
         accessToken: token,
       );
       await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);
