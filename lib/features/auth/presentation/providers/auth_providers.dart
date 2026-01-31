@@ -248,15 +248,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final box = await _initSessionBox();
 
       final cleanEmail = email.trim().toLowerCase();
+      final cleanPassword = password.trim();
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
-      if (password.isEmpty) throw const InvalidInputException('Password');
-      if (password.length < 8) throw const PasswordTooShortException();
+      if (cleanPassword.isEmpty) throw const InvalidInputException('Password');
+      if (cleanPassword.length < 8) throw const PasswordTooShortException();
 
       final previous = box.get('session');
 
       final user = await _authApi.login(
         email: cleanEmail,
-        password: password,
+        password: cleanPassword,
         role: role,
       );
 
