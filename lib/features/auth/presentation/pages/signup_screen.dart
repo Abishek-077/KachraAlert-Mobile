@@ -172,11 +172,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: isDark
-                ? [scheme.surface, theme.scaffoldBackgroundColor]
-                : [const Color(0xFFE7F7EF), Colors.white],
+                ? [
+                    scheme.surface,
+                    scheme.surfaceContainerHighest,
+                    theme.scaffoldBackgroundColor,
+                  ]
+                : [
+                    const Color(0xFFF1FFF7),
+                    const Color(0xFFE6F4FF),
+                    Colors.white,
+                  ],
+            stops: const [0, 0.45, 1],
           ),
         ),
         child: Stack(
@@ -190,11 +199,53 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
               ),
             ),
             Positioned(
+              right: -40,
+              bottom: 120,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      scheme.primary.withOpacity(isDark ? 0.16 : 0.18),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
               left: -70,
               bottom: 80,
               child: _GlowCircle(
                 size: 180,
                 color: scheme.secondary.withOpacity(isDark ? 0.18 : 0.1),
+              ),
+            ),
+            Positioned(
+              left: -40,
+              top: 140,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(
+                    color: scheme.primary.withOpacity(isDark ? 0.25 : 0.2),
+                    width: 1,
+                  ),
+                  gradient: LinearGradient(
+                    colors: [
+                      scheme.surface.withOpacity(isDark ? 0.2 : 0.5),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
               ),
             ),
             SafeArea(
@@ -226,7 +277,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                 width: 72,
                                 height: 72,
                                 decoration: BoxDecoration(
-                                  color: scheme.primary,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      scheme.primary,
+                                      scheme.primaryContainer,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -244,9 +302,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Create Account',
+                                'Create your account',
                                 style: TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 30,
                                   fontWeight: FontWeight.w900,
                                   color: scheme.onSurface,
                                   height: 1.2,
@@ -254,43 +312,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                'Set up your profile and start receiving alerts.',
+                                'Join the smart waste network and personalize pickup alerts in minutes.',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 15.5,
                                   color: scheme.onSurfaceVariant,
                                   height: 1.4,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: scheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.auto_awesome_outlined,
-                                      size: 16,
-                                      color: scheme.primary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Two-step registration',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: scheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _HeaderPill(
+                                    icon: Icons.auto_awesome_outlined,
+                                    label: 'Two-step setup',
+                                    scheme: scheme,
+                                  ),
+                                  _HeaderPill(
+                                    icon: Icons.lock_outline,
+                                    label: 'Private & secure',
+                                    scheme: scheme,
+                                  ),
+                                  _HeaderPill(
+                                    icon: Icons.timeline_outlined,
+                                    label: 'Real-time updates',
+                                    scheme: scheme,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -406,6 +457,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           ),
         ),
         _buildStepBubble(label: '2', isActive: _step == 1, scheme: scheme),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            _step == 0 ? 'Account details' : 'Location details',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -443,6 +505,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       key: const ValueKey('account_step'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _SectionTitle(
+          title: 'Account details',
+          subtitle: 'Pick a role and create your credentials.',
+          scheme: scheme,
+        ),
+        const SizedBox(height: 16),
         _buildRoleSelector(loading, scheme),
         const SizedBox(height: 20),
         _buildTextField(
@@ -493,6 +561,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       key: const ValueKey('address_step'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _SectionTitle(
+          title: 'Address & access',
+          subtitle: 'Tell us where your pickups will happen.',
+          scheme: scheme,
+        ),
+        const SizedBox(height: 16),
         _buildTextField(
           scheme: scheme,
           controller: _society,
@@ -625,14 +699,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected
-              ? scheme.primary.withOpacity(0.12)
-              : scheme.surfaceContainerHighest,
+          gradient: LinearGradient(
+            colors: isSelected
+                ? [
+                    scheme.primary.withOpacity(0.18),
+                    scheme.primaryContainer.withOpacity(0.25),
+                  ]
+                : [
+                    scheme.surfaceContainerHighest,
+                    scheme.surface,
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? scheme.primary : scheme.outlineVariant,
             width: isSelected ? 1.6 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isSelected ? 0.12 : 0.04),
+              blurRadius: isSelected ? 16 : 8,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -829,6 +920,82 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                 ),
               ),
       ),
+    );
+  }
+}
+
+class _HeaderPill extends StatelessWidget {
+  const _HeaderPill({
+    required this.icon,
+    required this.label,
+    required this.scheme,
+  });
+
+  final IconData icon;
+  final String label;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: scheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    required this.title,
+    required this.subtitle,
+    required this.scheme,
+  });
+
+  final String title;
+  final String subtitle;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 13,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
