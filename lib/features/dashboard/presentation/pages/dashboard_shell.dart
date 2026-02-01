@@ -19,7 +19,7 @@ class DashboardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: CivicBottomNavigationBar(
+      bottomNavigationBar: KBottomNavDock(
         currentIndex: navigationShell.currentIndex,
         onIndexChanged: _go,
         onFabTap: () => context.push('/reports/create'),

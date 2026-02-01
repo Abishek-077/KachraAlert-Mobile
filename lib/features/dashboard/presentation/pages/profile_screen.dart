@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/ui/snackbar.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/utils/media_url.dart';
@@ -112,64 +111,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         : reports.where((r) => r.userId == auth!.session!.userId).toList();
     final resolved = myReports.where((r) => r.status == 'resolved').length;
 
-    return AppScaffold(
-      padding: EdgeInsets.zero,
-      child: ListView(
-        padding: AppSpacing.screenInsetsBottom,
+    return Scaffold(
+      body: ListView(
+        padding: EdgeInsets.zero,
         children: [
-          Row(
-            children: [
-              Text('Profile', style: Theme.of(context).textTheme.titleLarge),
-              const Spacer(),
-              IconButton(
-                onPressed: () => context.push('/settings'),
-                icon: const Icon(Icons.edit_outlined),
+          // Header (teal gradient)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 54, 16, 16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF0E6E66), Color(0xFF0B5D56)],
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sectionSpacing),
-          CivicCard(
+            ),
             child: Row(
               children: [
                 InkWell(
                   onTap: _uploading ? null : _changePhoto,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   child: Stack(
                     children: [
                       Container(
-                        width: 72,
-                        height: 72,
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
-                          color: cs.surfaceVariant,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: cs.outlineVariant),
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: Colors.white.withOpacity(0.18)),
                         ),
                         alignment: Alignment.center,
                         child: profilePhotoUrl == null
                             ? Text(
                                 initial,
-                                style: TextStyle(
-                                  color: cs.onSurface,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               )
                             : ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(18),
                                 child: Image.network(
                                   profilePhotoUrl,
-                                  width: 72,
-                                  height: 72,
+                                  width: 86,
+                                  height: 86,
                                   fit: BoxFit.cover,
                                   headers: token?.isNotEmpty == true
                                       ? {'Authorization': 'Bearer $token'}
                                       : null,
                                   errorBuilder: (_, __, ___) => Text(
                                     initial,
-                                    style: TextStyle(
-                                      color: cs.onSurface,
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                 ),
@@ -179,177 +175,190 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         right: -2,
                         bottom: -2,
                         child: Container(
-                          width: 26,
-                          height: 26,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            color: cs.primary,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: cs.surface, width: 2),
+                            color: const Color(0xFF1ECA92),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF0B5D56), width: 3),
                           ),
                           child: _uploading
                               ? const Padding(
-                                  padding: EdgeInsets.all(4),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
+                                  padding: EdgeInsets.all(6),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
-                              : const Icon(
-                                  Icons.camera_alt_outlined,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
+                              : const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.itemSpacing),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _titleCase(displayName),
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
                       ),
-                      const SizedBox(height: AppSpacing.labelSpacing),
+                      const SizedBox(height: 4),
                       Text(
                         email.isEmpty ? 'Not signed in' : email,
-                        style: TextStyle(
-                          color: cs.onSurface.withOpacity(0.6),
-                        ),
+                        style: TextStyle(color: Colors.white.withOpacity(0.78), fontWeight: FontWeight.w600),
                       ),
-                      const SizedBox(height: AppSpacing.sectionSpacing),
-                      const StatusChip(
-                        label: 'Resident account',
-                        tone: StatusTone.neutral,
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.workspace_premium_outlined, size: 16, color: Color(0xFF1ECA92)),
+                            SizedBox(width: 8),
+                            Text('Top Contributor', style: TextStyle(color: Color(0xFF1ECA92), fontWeight: FontWeight.w900)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
+                _HeaderEditButton(onTap: () => context.push('/settings')),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionSpacing),
-          Row(
-            children: [
-              Expanded(
-                child: CivicCard(
-                  child: _StatSummary(
-                    label: 'Reports',
-                    value: '${myReports.length}',
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.itemSpacing),
-              Expanded(
-                child: CivicCard(
-                  child: _StatSummary(
-                    label: 'Resolved',
-                    value: '$resolved',
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.itemSpacing),
-              Expanded(
-                child: CivicCard(
-                  child: _StatSummary(
-                    label: 'Impact',
-                    value: '${(resolved * 47).clamp(0, 9999)}',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sectionSpacing),
-          const SectionHeader(label: 'Settings'),
-          const SizedBox(height: AppSpacing.labelSpacing),
-          Container(
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.outlineVariant),
-            ),
-            child: Column(
+
+          // Stats row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(
               children: [
-                _SettingsRow(
-                  icon: Icons.notifications_none_rounded,
-                  title: 'Notifications',
-                  subtitle: 'Manage alert preferences',
-                  onTap: () => context.go('/alerts'),
+                Expanded(child: _StatCard(label: 'REPORTS', value: '${myReports.length}', delta: '+5')),
+                const SizedBox(width: 12),
+                Expanded(child: _StatCard(label: 'RESOLVED', value: '$resolved', delta: '+3')),
+                const SizedBox(width: 12),
+                Expanded(child: _StatCard(label: 'IMPACT', value: '${(resolved * 47).clamp(0, 9999)}', delta: '+120')),
+              ],
+            ),
+          ),
+
+          // Achievements
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+            child: Text('ACHIEVEMENTS', style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w900, letterSpacing: 1.3, fontSize: 12)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: const [
+                Expanded(
+                  child: _AchievementCard(
+                    title: 'Top Contributor',
+                    subtitle: 'Top 10% this month',
+                    icon: Icons.workspace_premium_outlined,
+                    colorA: Color(0xFF1ECA92),
+                    colorB: Color(0xFF16B481),
+                  ),
                 ),
-                const Divider(height: 1),
-                _SettingsRow(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'Payments',
-                  subtitle: 'View invoices and pay dues',
-                  onTap: () => context.push('/payments'),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _AchievementCard(
+                    title: 'Quick Reporter',
+                    subtitle: '5 reports in a week',
+                    icon: Icons.eco_outlined,
+                    colorA: Color(0xFF0E6E66),
+                    colorB: Color(0xFF0B5D56),
+                  ),
                 ),
-                const Divider(height: 1),
-                _SettingsRow(
-                  icon: Icons.language_rounded,
-                  title: 'Language',
-                  subtitle: 'English',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _SettingsRow(
-                  icon: Icons.shield_outlined,
-                  title: 'Privacy',
-                  subtitle: 'Data and permissions',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final settings = ref.watch(settingsProvider).valueOrNull;
-                    final mode = (settings?.isDarkMode ?? false)
-                        ? 'Dark mode'
-                        : 'Light mode';
-                    return _SettingsRow(
-                      icon: Icons.nightlight_round,
-                      title: 'Appearance',
-                      subtitle: mode,
-                      onTap: () =>
-                          ref.read(settingsProvider.notifier).toggleTheme(),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                _SettingsRow(
-                  icon: Icons.help_outline_rounded,
-                  title: 'Help & Support',
-                  subtitle: 'FAQs and contact',
-                  onTap: () {},
-                ),
-                if (isAdmin) ...[
+              ],
+            ),
+          ),
+
+          // Settings list
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+            child: Text('SETTINGS', style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w900, letterSpacing: 1.3, fontSize: 12)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 130),
+            child: KCard(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                children: [
+                  _SettingsTile(
+                    icon: Icons.notifications_none_rounded,
+                    iconBg: const Color(0xFFE7F1FF),
+                    title: 'Notifications',
+                    subtitle: 'Manage alert preferences',
+                    onTap: () => context.go('/alerts'),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.receipt_long_outlined,
+                    iconBg: const Color(0xFFE8FFF7),
+                    title: 'Payments',
+                    subtitle: 'View invoices and pay dues',
+                    onTap: () => context.push('/payments'),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.language_rounded,
+                    iconBg: const Color(0xFFE8FFF7),
+                    title: 'Language',
+                    subtitle: 'English',
+                    onTap: () {},
+                  ),
+                  _SettingsTile(
+                    icon: Icons.shield_outlined,
+                    iconBg: const Color(0xFFFFF1E6),
+                    title: 'Privacy',
+                    subtitle: 'Data and permissions',
+                    onTap: () {},
+                  ),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final settings =
+                          ref.watch(settingsProvider).valueOrNull;
+                      final mode = (settings?.isDarkMode ?? false) ? 'Dark mode' : 'Light mode';
+                      return _SettingsTile(
+                        icon: Icons.nightlight_round,
+                        iconBg: const Color(0xFFEAF2F2),
+                        title: 'Appearance',
+                        subtitle: mode,
+                        onTap: () => ref.read(settingsProvider.notifier).toggleTheme(),
+                      );
+                    },
+                  ),
+                  _SettingsTile(
+                    icon: Icons.help_outline_rounded,
+                    iconBg: const Color(0xFFEAF2F2),
+                    title: 'Help & Support',
+                    subtitle: 'FAQs and contact',
+                    onTap: () {},
+                  ),
+                  if (isAdmin) ...[
+                    const Divider(height: 1),
+                    _SettingsTile(
+                      icon: Icons.admin_panel_settings_outlined,
+                      iconBg: const Color(0xFFE7F1FF),
+                      title: 'Admin Panel',
+                      subtitle: 'Broadcast announcements',
+                      onTap: () => context.push('/admin/broadcast'),
+                    ),
+                  ],
                   const Divider(height: 1),
-                  _SettingsRow(
-                    icon: Icons.admin_panel_settings_outlined,
-                    title: 'Admin Panel',
-                    subtitle: 'Broadcast announcements',
-                    onTap: () => context.push('/admin/broadcast'),
+                  _SettingsTile(
+                    icon: Icons.logout_rounded,
+                    iconBg: const Color(0xFFFFECEC),
+                    title: 'Logout',
+                    subtitle: 'Sign out of this device',
+                    onTap: () => ref.read(authStateProvider.notifier).logout(),
+                    danger: true,
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sectionSpacing),
-          const SectionHeader(label: 'Account'),
-          const SizedBox(height: AppSpacing.labelSpacing),
-          Container(
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.outlineVariant),
-            ),
-            child: _SettingsRow(
-              icon: Icons.logout_rounded,
-              title: 'Logout',
-              subtitle: 'Sign out of this device',
-              onTap: () => ref.read(authStateProvider.notifier).logout(),
-              danger: true,
+              ),
             ),
           ),
         ],
@@ -358,39 +367,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-class _StatSummary extends StatelessWidget {
-  const _StatSummary({required this.label, required this.value});
-
-  final String label;
-  final String value;
+class _HeaderEditButton extends StatelessWidget {
+  const _HeaderEditButton({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.12),
+          shape: BoxShape.circle,
         ),
-        const SizedBox(height: AppSpacing.labelSpacing),
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: cs.onSurface.withOpacity(0.55),
-            letterSpacing: 1.2,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
+        child: const Icon(Icons.edit_outlined, color: Colors.white),
+      ),
     );
   }
 }
 
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.label, required this.value, required this.delta});
+  final String label;
+  final String value;
+  final String delta;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return KCard(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Column(
+        children: [
+          Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w900, letterSpacing: 1.2, fontSize: 11)),
+          const SizedBox(height: 6),
+          Text('↗ $delta', style: const TextStyle(color: Color(0xFF1ECA92), fontWeight: FontWeight.w900, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementCard extends StatelessWidget {
+  const _AchievementCard({
+    required this.title,
+    required this.subtitle,
     required this.icon,
+    required this.colorA,
+    required this.colorB,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color colorA;
+  final Color colorB;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [colorA, colorB]),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(blurRadius: 24, offset: const Offset(0, 12), color: Colors.black.withOpacity(0.10)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white, size: 26),
+          const SizedBox(height: 16),
+          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+          const SizedBox(height: 6),
+          Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.iconBg,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -398,6 +464,7 @@ class _SettingsRow extends StatelessWidget {
   });
 
   final IconData icon;
+  final Color iconBg;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -409,15 +476,15 @@ class _SettingsRow extends StatelessWidget {
     final titleColor = danger ? cs.error : cs.onSurface;
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: danger ? cs.error : cs.onSurface.withOpacity(0.7)),
-      title: Text(title,
-          style: TextStyle(fontWeight: FontWeight.w700, color: titleColor)),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+        child: Icon(icon, color: danger ? cs.error : cs.primary),
       ),
-      trailing: Icon(Icons.chevron_right_rounded,
-          color: cs.onSurface.withOpacity(0.45)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: titleColor)),
+      subtitle: Text(subtitle, style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w600)),
+      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.45)),
     );
   }
 }

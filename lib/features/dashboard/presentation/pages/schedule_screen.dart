@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/k_widgets.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -20,179 +19,185 @@ class ScheduleScreen extends ConsumerWidget {
 
     final schedulesAsync = ref.watch(schedulesProvider);
 
-    return AppScaffold(
-      padding: AppSpacing.screenInsets.copyWith(bottom: 120),
-      child: RefreshIndicator(
-        onRefresh: () => ref.read(schedulesProvider.notifier).load(),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Row(
-              children: [
-                Text('Schedule', style: Theme.of(context).textTheme.titleLarge),
-                const Spacer(),
-                if (isAdmin)
-                  IconButton(
-                    tooltip: 'Manage Schedule',
-                    onPressed: () => context.push('/admin/schedule'),
-                    icon: const Icon(Icons.edit_calendar_rounded),
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () => ref.read(schedulesProvider.notifier).load(),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Schedule',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sectionSpacing),
-            schedulesAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: AppSpacing.sectionSpacing),
-                child: Center(child: CircularProgressIndicator()),
+                  const Spacer(),
+                  if (isAdmin)
+                    IconButton(
+                      tooltip: 'Manage Schedule',
+                      onPressed: () => context.push('/admin/schedule'),
+                      icon: const Icon(Icons.edit_calendar_rounded),
+                    ),
+                ],
               ),
-              error: (e, _) => CivicCard(
-                child: Column(
-                  children: [
-                    const Icon(Icons.error_outline_rounded, size: 46),
-                    const SizedBox(height: AppSpacing.labelSpacing),
-                    Text(
-                      'Failed to load schedule',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.labelSpacing),
-                    Text(
-                      '$e',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
-                    ),
-                    const SizedBox(height: AppSpacing.sectionSpacing),
-                    PrimaryButton(
-                      label: 'Retry',
-                      icon: Icons.refresh_rounded,
-                      onPressed: () =>
-                          ref.read(schedulesProvider.notifier).load(),
-                    ),
-                  ],
+              const SizedBox(height: 12),
+
+              schedulesAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-              ),
-              data: (list) {
-                if (list.isEmpty) {
-                  return CivicCard(
-                    child: Column(
-                      children: [
-                        const Icon(Icons.calendar_month_rounded, size: 52),
-                        const SizedBox(height: AppSpacing.labelSpacing),
-                        const Text(
-                          'No schedule published yet',
-                          style:
-                              TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: AppSpacing.labelSpacing),
-                        Text(
-                          'Admin will publish collection dates soon.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
-                        ),
-                        if (isAdmin) ...[
-                          const SizedBox(height: AppSpacing.sectionSpacing),
-                          PrimaryButton(
-                            label: 'Create Schedule',
-                            onPressed: () => context.push('/admin/schedule'),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                }
-
-                final upcoming = list
-                    .where((s) => s.status.toLowerCase() == 'upcoming')
-                    .toList();
-                final completed = list
-                    .where((s) => s.status.toLowerCase() != 'upcoming')
-                    .toList();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SectionHeader(label: 'Upcoming pickups'),
-                    const SizedBox(height: AppSpacing.labelSpacing),
-                    if (upcoming.isEmpty)
+                error: (e, _) => KCard(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, size: 46),
+                      const SizedBox(height: 10),
                       Text(
-                        'No upcoming pickups scheduled.',
-                        style:
-                            TextStyle(color: cs.onSurface.withOpacity(0.6)),
+                        'Failed to load schedule',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: cs.onSurface,
+                        ),
                       ),
-                    for (final s in upcoming) ...[
-                      const SizedBox(height: AppSpacing.itemSpacing),
-                      CivicCard(
-                        child: ListRow(
-                          icon: Icons.local_shipping_outlined,
-                          title: '${s.waste} • ${s.timeLabel}',
-                          subtitle: _formatDate(s.dateISO),
-                          trailing: _ScheduleStatus(status: s.status),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$e',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () =>
+                              ref.read(schedulesProvider.notifier).load(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
                         ),
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.sectionSpacing),
-                    ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      childrenPadding: EdgeInsets.zero,
-                      title: const SectionHeader(label: 'Completed'),
-                      initiallyExpanded: false,
-                      children: [
-                        for (final s in completed) ...[
-                          const SizedBox(height: AppSpacing.itemSpacing),
-                          CivicCard(
-                            child: ListRow(
-                              icon: Icons.check_circle_outline,
-                              title: '${s.waste} • ${s.timeLabel}',
-                              subtitle: _formatDate(s.dateISO),
-                              trailing: _ScheduleStatus(status: s.status),
-                            ),
+                  ),
+                ),
+                data: (list) {
+                  if (list.isEmpty) {
+                    return KCard(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.calendar_month_rounded, size: 52),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'No schedule published yet',
+                            style:
+                                TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                           ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Admin will publish collection dates soon.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                          ),
+                          if (isAdmin) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: () => context.push('/admin/schedule'),
+                                child: const Text('Create Schedule'),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      for (final s in list) ...[
+                        _ScheduleCard(
+                          title: '${s.waste} • ${s.timeLabel}',
+                          dateISO: s.dateISO,
+                          status: s.status,
+                        ),
+                        const SizedBox(height: 12),
+                      ]
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _ScheduleStatus extends StatelessWidget {
-  const _ScheduleStatus({required this.status});
+class _ScheduleCard extends StatelessWidget {
+  const _ScheduleCard({
+    required this.title,
+    required this.dateISO,
+    required this.status,
+  });
 
+  final String title;
+  final String dateISO;
   final String status;
 
   @override
   Widget build(BuildContext context) {
-    final normalized = status.toLowerCase();
-    final isUpcoming = normalized == 'upcoming';
-    final icon = isUpcoming ? Icons.access_time_rounded : Icons.check_circle;
-    final label = isUpcoming ? 'Upcoming' : 'Completed';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16),
-        const SizedBox(width: AppSpacing.labelSpacing),
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-        ),
-      ],
+    final cs = Theme.of(context).colorScheme;
+    final parsedDate = DateTime.tryParse(dateISO);
+    final dateStr = parsedDate == null
+        ? dateISO
+        : '${parsedDate.day.toString().padLeft(2, '0')}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.year}';
+    final isUpcoming = status.toLowerCase() == 'upcoming';
+
+    return KCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          KIconCircle(
+            icon: Icons.local_shipping_rounded,
+            background: cs.primary.withOpacity(0.10),
+            foreground: cs.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$dateStr  •  $status',
+                  style: TextStyle(
+                    color: cs.onSurface.withOpacity(0.65),
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(
+            isUpcoming
+                ? Icons.access_time_rounded
+                : Icons.check_circle_rounded,
+            color: isUpcoming
+                ? cs.secondary
+                : const Color(0xFF1ECA92),
+          ),
+        ],
+      ),
     );
   }
-}
-
-String _formatDate(String dateISO) {
-  final parsedDate = DateTime.tryParse(dateISO);
-  if (parsedDate == null) return dateISO;
-  final day = parsedDate.day.toString().padLeft(2, '0');
-  final month = parsedDate.month.toString().padLeft(2, '0');
-  return '$day-$month-${parsedDate.year}';
 }
