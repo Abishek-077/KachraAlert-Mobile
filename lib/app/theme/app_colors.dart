@@ -7,50 +7,50 @@ class AppColors {
   // Brand Core (Premium)
   // =========================
 
-  /// Primary: Eco Green (clean, fresh, trustworthy)
-  static const Color primary = Color(0xFF12B76A); // Emerald Green
-  static const Color primaryDark = Color(0xFF0B8B52); // Deep Green
-  static const Color primaryLight = Color(0xFF6DE2B0); // Soft Mint
+  /// Primary: Municipal Green (used for CTAs, selected states, success)
+  static const Color primary = Color(0xFF1F8F5B);
+  static const Color primaryDark = Color(0xFF156A44);
+  static const Color primaryLight = Color(0xFF62C58E);
 
   /// Secondary: Teal Mist (fresh accent)
-  static const Color secondary = Color(0xFF2DD4BF);
-  static const Color secondaryLight = Color(0xFF7AE8D9);
+  static const Color secondary = Color(0xFF2563EB);
+  static const Color secondaryLight = Color(0xFF93C5FD);
 
   /// Luxury Accent: Warm Sand (use sparingly for highlights)
-  static const Color accentGold = Color(0xFFE3C27A);
-  static const Color accentGoldSoft = Color(0xFFF6E7C1);
+  static const Color accentGold = Color(0xFFD6B25E);
+  static const Color accentGoldSoft = Color(0xFFF2E7C9);
 
   /// Supporting accents
   static const Color accentMint = Color(0xFF22C55E);
-  static const Color accentCoral = Color(0xFFFF7A7A);
+  static const Color accentCoral = Color(0xFFF87171);
 
   // =========================
   // Neutrals (Porcelain / Slate)
   // =========================
-  static const Color background = Color(0xFFF3FBF7); // Soft green wash
+  static const Color background = Color(0xFFF6F8F7); // Neutral light
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE9F5EF);
-  static const Color inputFill = Color(0xFFF0F7F3);
+  static const Color surfaceVariant = Color(0xFFF2F4F3);
+  static const Color inputFill = Color(0xFFF2F4F3);
 
   // Premium dark neutrals
-  static const Color textPrimary = Color(0xFF0B1F16); // Deep forest
-  static const Color textSecondary = Color(0xFF3E5B4D); // Muted green
-  static const Color textTertiary = Color(0xFF8AA196); // Soft sage
+  static const Color textPrimary = Color(0xFF111827);
+  static const Color textSecondary = Color(0xFF4B5563);
+  static const Color textTertiary = Color(0xFF6B7280);
 
   // Borders & dividers
-  static const Color border = Color(0xFFD7E6DE);
-  static const Color divider = Color(0xFFE5F0EA);
+  static const Color border = Color(0xFFE3E7E6);
+  static const Color divider = Color(0xFFE5E7EB);
 
   // =========================
   // Status (More premium tones)
   // =========================
-  static const Color success = Color(0xFF16A34A); // Emerald 600
-  static const Color warning = Color(0xFFF59E0B); // Amber 500
-  static const Color error = Color(0xFFEF4444); // Red 500
-  static const Color info = Color(0xFF0EA5A5); // Teal 500
+  static const Color success = Color(0xFF15803D);
+  static const Color warning = Color(0xFFB45309);
+  static const Color error = Color(0xFFDC2626);
+  static const Color info = Color(0xFF1D4ED8);
 
   // Auth Primary (keep aligned with brand)
-  static const Color authPrimary = Color(0xFF12B76A);
+  static const Color authPrimary = primary;
 
   // =========================
   // Opacity helpers
@@ -74,9 +74,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0B8B52), // primaryDark
-      Color(0xFF12B76A), // primary
-      Color(0xFF2DD4BF), // secondary
+      Color(0xFF156A44),
+      Color(0xFF1F8F5B),
+      Color(0xFF2563EB),
     ],
     stops: [0.0, 0.55, 1.0],
   );
@@ -86,7 +86,7 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFFF3FBF7),
+      Color(0xFFF6F8F7),
       Color(0xFFFFFFFF),
     ],
   );
@@ -96,7 +96,7 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFFF1E2B8),
+      Color(0xFFF2E7C9),
       Color(0xFFD6B25E),
     ],
   );
