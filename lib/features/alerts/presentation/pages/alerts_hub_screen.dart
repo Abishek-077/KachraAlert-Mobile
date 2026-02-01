@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../admin/presentation/providers/admin_alert_providers.dart';
 
@@ -21,131 +23,138 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
     final cs = Theme.of(context).colorScheme;
     final alertsAsync = ref.watch(adminAlertsProvider);
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Row(
-                children: [
-                  const Text('Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                  const Spacer(),
-                  _CircleIcon(icon: Icons.search_rounded, onTap: () {}),
-                  const SizedBox(width: 12),
-                  _CircleIcon(icon: Icons.filter_alt_outlined, onTap: () {}),
-                ],
+    return AppScaffold(
+      padding: AppSpacing.screenInsets.copyWith(bottom: 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text('Alerts', style: Theme.of(context).textTheme.titleLarge),
+              const Spacer(),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.search_rounded),
               ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Filters',
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: cs.onSurface.withOpacity(0.55)),
             ),
-            const SizedBox(height: 12),
-
-            // Filter chips
-            SizedBox(
-              height: 46,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, i) {
-                  return KChip(
-                    label: _filters[i],
-                    selected: i == _filterIndex,
-                    showDot: _filters[i] == 'Urgent',
-                    onTap: () => setState(() => _filterIndex = i),
+          ),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, i) {
+                return ChoiceChip(
+                  label: Text(_filters[i]),
+                  selected: i == _filterIndex,
+                  onSelected: (_) => setState(() => _filterIndex = i),
+                );
+              },
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: AppSpacing.labelSpacing),
+              itemCount: _filters.length,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          Expanded(
+            child: alertsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Failed to load alerts: $e')),
+              data: (alerts) {
+                final dynamicAlerts = alerts.map((a) {
+                  final type = _inferType(a.title, a.message);
+                  return _AlertItem(
+                    type: type,
+                    title: a.title,
+                    message: a.message,
+                    meta: 'Municipal Office',
+                    timeAgo: _timeAgo(a.createdAt),
                   );
-                },
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemCount: _filters.length,
-              ),
-            ),
+                }).toList();
 
-            const SizedBox(height: 12),
+                final filtered = dynamicAlerts.where((a) {
+                  final f = _filters[_filterIndex];
+                  if (f == 'All') return true;
+                  return a.type == f;
+                }).toList();
 
-            Expanded(
-              child: alertsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Failed to load alerts: $e')),
-                data: (alerts) {
-                  final dynamicAlerts = alerts.map((a) {
-                    final type = _inferType(a.title, a.message);
-                    return _AlertItem(
-                      type: type,
-                      title: a.title,
-                      message: a.message,
-                      meta: 'Municipal Office',
-                      timeAgo: _timeAgo(a.createdAt),
-                    );
-                  }).toList();
-
-                  final filtered = dynamicAlerts.where((a) {
-                    final f = _filters[_filterIndex];
-                    if (f == 'All') return true;
-                    return a.type == f;
-                  }).toList();
-
-                  if (filtered.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: KCard(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.notifications_off_outlined, size: 46, color: cs.onSurface.withOpacity(0.55)),
-                            const SizedBox(height: 12),
-                            const Text('No alerts', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                            const SizedBox(height: 6),
-                            Text('You’re all caught up.', style: TextStyle(color: cs.onSurface.withOpacity(0.62))),
-                          ],
+                if (filtered.isEmpty) {
+                  return CivicCard(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_off_outlined,
+                          size: 46,
+                          color: cs.onSurface.withOpacity(0.55),
                         ),
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return _AlertCard(item: item);
-                    },
+                        const SizedBox(height: AppSpacing.labelSpacing),
+                        const Text(
+                          'No alerts',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.labelSpacing),
+                        Text(
+                          'You’re all caught up.',
+                          style: TextStyle(
+                            color: cs.onSurface.withOpacity(0.62),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                }
 
-class _CircleIcon extends StatelessWidget {
-  const _CircleIcon({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
+                final recent = filtered
+                    .where((a) => a.timeAgo.contains('min') || a.timeAgo.contains('h'))
+                    .toList();
+                final older = filtered
+                    .where((a) => !recent.contains(a))
+                    .toList();
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: cs.surface,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 22,
-              offset: const Offset(0, 12),
-              color: Colors.black.withOpacity(0.08),
+                return ListView(
+                  padding: AppSpacing.screenInsetsBottom.copyWith(top: 0),
+                  children: [
+                    const SectionHeader(label: 'Recent'),
+                    const SizedBox(height: AppSpacing.labelSpacing),
+                    if (recent.isEmpty)
+                      Text(
+                        'No recent alerts.',
+                        style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+                      ),
+                    for (final item in recent) ...[
+                      const SizedBox(height: AppSpacing.itemSpacing),
+                      _AlertCard(item: item),
+                    ],
+                    if (older.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.sectionSpacing),
+                      const SectionHeader(label: 'Earlier'),
+                      const SizedBox(height: AppSpacing.labelSpacing),
+                      for (final item in older) ...[
+                        const SizedBox(height: AppSpacing.itemSpacing),
+                        _AlertCard(item: item),
+                      ],
+                    ],
+                  ],
+                );
+              },
             ),
-          ],
-        ),
-        child: Icon(icon, color: cs.onSurface.withOpacity(0.72)),
+          ),
+        ],
       ),
     );
   }
@@ -194,93 +203,93 @@ class _AlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final urgent = item.type == 'Urgent';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-            color: Colors.black.withOpacity(0.08),
-          ),
-        ],
-      ),
+    return CivicCard(
+      padding: const EdgeInsets.all(AppSpacing.componentPadding),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 5,
-            height: 116,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: item.accent,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(22),
-                bottomLeft: Radius.circular(22),
-              ),
+              color: urgent
+                  ? AppColors.error.withOpacity(0.12)
+                  : item.accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              item.icon,
+              color: urgent ? AppColors.error : item.accent,
             ),
           ),
+          const SizedBox(width: AppSpacing.itemSpacing),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: item.accent.withOpacity(0.10),
-                      shape: BoxShape.circle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
-                    child: Icon(item.icon, color: item.accent),
+                    if (urgent)
+                      const StatusChip(
+                        label: 'Urgent',
+                        tone: StatusTone.urgent,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.labelSpacing),
+                Text(
+                  item.message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: cs.onSurface.withOpacity(0.62),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                              ),
-                            ),
-                            Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.45)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Text(
-                              item.timeAgo,
-                              style: TextStyle(color: cs.onSurface.withOpacity(0.50), fontWeight: FontWeight.w700, fontSize: 12),
-                            ),
-                            const SizedBox(width: 10),
-                            Text('•', style: TextStyle(color: cs.onSurface.withOpacity(0.35))),
-                            const SizedBox(width: 10),
-                            Text(
-                              item.meta,
-                              style: TextStyle(color: cs.onSurface.withOpacity(0.50), fontWeight: FontWeight.w800, fontSize: 12),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(Icons.open_in_new_rounded, size: 14, color: cs.onSurface.withOpacity(0.45)),
-                          ],
-                        ),
-                      ],
+                ),
+                const SizedBox(height: AppSpacing.sectionSpacing),
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded,
+                        size: 14, color: cs.onSurface.withOpacity(0.5)),
+                    const SizedBox(width: AppSpacing.labelSpacing),
+                    Text(
+                      item.timeAgo,
+                      style: TextStyle(
+                        color: cs.onSurface.withOpacity(0.55),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: AppSpacing.itemSpacing),
+                    Text(
+                      '•',
+                      style: TextStyle(color: cs.onSurface.withOpacity(0.35)),
+                    ),
+                    const SizedBox(width: AppSpacing.itemSpacing),
+                    Icon(Icons.apartment_outlined,
+                        size: 14, color: cs.onSurface.withOpacity(0.5)),
+                    const SizedBox(width: AppSpacing.labelSpacing),
+                    Text(
+                      item.meta,
+                      style: TextStyle(
+                        color: cs.onSurface.withOpacity(0.55),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

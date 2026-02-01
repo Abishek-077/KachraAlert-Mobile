@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
@@ -20,733 +19,262 @@ class HomeScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(reportsProvider);
     final settingsAsync = ref.watch(settingsProvider);
 
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-          children: [
-            _DashboardHero(
-              location: 'Kathmandu',
-              onBellTap: () => context.go('/alerts'),
+    return AppScaffold(
+      padding: AppSpacing.screenInsets.copyWith(bottom: 120),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _HomeHeader(onBellTap: () => context.go('/alerts')),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          settingsAsync.when(
+            loading: () => const _NextPickupCard(enabled: true),
+            error: (_, __) => const _NextPickupCard(enabled: true),
+            data: (s) => _NextPickupCard(
+              enabled: s.pickupRemindersEnabled,
+              onChanged: (v) =>
+                  ref.read(settingsProvider.notifier).setPickupReminders(v),
             ),
-            const SizedBox(height: 20),
-
-            // Cleanliness score card
-            KCard(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  _ScoreRing(score: 73, color: const Color(0xFF1ECA92)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CITY CLEANLINESS',
-                          style: TextStyle(
-                            color: cs.primary.withOpacity(0.75),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Kathmandu Metro',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: cs.primary.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.trending_up_rounded, size: 16, color: cs.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                '+5% ',
-                                style: TextStyle(color: cs.primary, fontWeight: FontWeight.w900),
-                              ),
-                              Text(
-                                'this week',
-                                style: TextStyle(color: cs.primary.withOpacity(0.75), fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          PrimaryButton(
+            label: 'Report Issue',
+            icon: Icons.add_circle_outline,
+            onPressed: () => context.push('/reports/create'),
+          ),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          SecondaryButton(
+            label: 'View Pickup Schedule',
+            icon: Icons.calendar_month_outlined,
+            onPressed: () => context.go('/schedule'),
+          ),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          const SectionHeader(label: 'City score'),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          const _CityScoreCard(),
+          const SizedBox(height: AppSpacing.sectionSpacing),
+          SectionHeader(
+            label: 'Recent reports',
+            action: TextButton(
+              onPressed: () => context.push('/reports'),
+              child: const Text('View all'),
             ),
-
-            const SizedBox(height: 14),
-
-            // Next pickup
-            settingsAsync.when(
-              loading: () => _PickupCard(
-                enabled: true,
-                onChanged: (_) {},
-              ),
-              error: (_, __) => _PickupCard(
-                enabled: true,
-                onChanged: (_) {},
-              ),
-              data: (s) => _PickupCard(
-                enabled: s.pickupRemindersEnabled,
-                onChanged: (v) => ref.read(settingsProvider.notifier).setPickupReminders(v),
-              ),
+          ),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          reportsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.only(top: AppSpacing.sectionSpacing),
+              child: Center(child: CircularProgressIndicator()),
             ),
-
-            const SizedBox(height: 18),
-
-            _SectionTitle(label: 'Quick Actions'),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _QuickAction(
-                    icon: Icons.camera_alt_outlined,
-                    label: 'Report\nWaste',
-                    primary: true,
-                    onTap: () => context.push('/reports/create'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _QuickAction(
-                    icon: Icons.calendar_month_outlined,
-                    label: 'Schedule',
-                    onTap: () => context.go('/schedule'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _QuickAction(
-                    icon: Icons.description_outlined,
-                    label: 'My\nReports',
-                    onTap: () => context.push('/reports'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _QuickAction(
-                    icon: Icons.warning_amber_rounded,
-                    label: 'Emergency',
-                    onTap: () => context.go('/alerts'),
-                  ),
-                ),
-              ],
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.labelSpacing),
+              child: Text('Failed to load reports: $e'),
             ),
+            data: (all) {
+              final mine = (userId == null)
+                  ? <dynamic>[]
+                  : all.where((r) => r.userId == userId).toList();
 
-            const SizedBox(height: 22),
+              final list = mine.isEmpty ? all : mine;
+              list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              final recent = list.take(3).toList();
 
-            Row(
-              children: [
-                const _SectionTitle(label: 'Recent Reports'),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => context.push('/reports'),
-                  icon: const Text('View All'),
-                  label: const Icon(Icons.arrow_forward_rounded, size: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            reportsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text('Failed to load reports: $e'),
-              ),
-              data: (all) {
-                final mine = (userId == null)
-                    ? <dynamic>[]
-                    : all.where((r) => r.userId == userId).toList();
-
-                final list = mine.isEmpty ? all : mine;
-                list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                final recent = list.take(3).toList();
-
-                if (recent.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: KCard(
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 6),
-                          Icon(Icons.inbox_rounded, size: 46, color: cs.onSurface.withOpacity(0.55)),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'No reports yet',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Report waste to help keep your neighborhood clean.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: cs.onSurface.withOpacity(0.62)),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: () => context.push('/reports/create'),
-                              child: const Text('Report Waste'),
-                            ),
-                          ),
-                        ],
+              if (recent.isEmpty) {
+                return CivicCard(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.inbox_rounded,
+                        size: 44,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.55),
                       ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: [
-                    for (final r in recent) ...[
-                      _ReportRow(
-                        title: r.category,
-                        code: 'RPT-${r.createdAt % 10000}'.padLeft(4, '0'),
-                        location: r.location,
-                        time: _timeAgo(r.createdAt),
-                        status: r.status,
-                        onTap: () => context.push('/reports'),
+                      const SizedBox(height: AppSpacing.labelSpacing),
+                      const Text(
+                        'No reports yet',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.labelSpacing),
+                      Text(
+                        'Report an issue to keep your neighborhood clean.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sectionSpacing),
+                      PrimaryButton(
+                        label: 'Report issue',
+                        onPressed: () => context.push('/reports/create'),
+                      ),
                     ],
-                  ],
+                  ),
                 );
-              },
-            ),
-          ],
-        ),
+              }
+
+              return Column(
+                children: [
+                  for (final r in recent) ...[
+                    CivicCard(
+                      onTap: () => context.push('/reports'),
+                      child: ListRow(
+                        icon: Icons.report_outlined,
+                        title: r.category,
+                        subtitle:
+                            '${_timeAgo(r.createdAt)} • ${r.location}',
+                        trailing: _statusChipFor(r.status),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.itemSpacing),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DashboardHero extends StatelessWidget {
-  const _DashboardHero({
-    required this.location,
-    required this.onBellTap,
-  });
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.onBellTap});
 
-  final String location;
   final VoidCallback onBellTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            cs.primary.withOpacity(0.18),
-            cs.secondary.withOpacity(0.08),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: cs.primary.withOpacity(0.12),
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 30,
-            offset: const Offset(0, 18),
-            color: cs.primary.withOpacity(0.18),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -8,
-            top: -10,
-            child: _HeroOrb(
-              size: 86,
-              colors: [
-                cs.primary.withOpacity(0.45),
-                cs.primary.withOpacity(0.05),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    location,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: cs.onSurface.withOpacity(0.6),
-                  ),
-                  const Spacer(),
-                  _BellButton(
-                    hasDot: true,
-                    onTap: onBellTap,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Good morning',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withOpacity(0.68),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Let’s keep Kathmandu clean today.',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: cs.surface,
-                      borderRadius: BorderRadius.circular(999),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                          color: Colors.black.withOpacity(0.08),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.auto_awesome_rounded, size: 16, color: cs.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Clean City',
-                          style: TextStyle(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        color: cs.onSurface.withOpacity(0.55),
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.3,
-        fontSize: 12,
-      ),
-    );
-  }
-}
-
-class _BellButton extends StatelessWidget {
-  const _BellButton({required this.hasDot, required this.onTap});
-  final bool hasDot;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: cs.surface,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 22,
-              offset: const Offset(0, 12),
-              color: Colors.black.withOpacity(0.08),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
+    return Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.notifications_none_rounded, color: cs.onSurface.withOpacity(0.72)),
-            if (hasDot)
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: cs.error,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: cs.surface, width: 2),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroOrb extends StatelessWidget {
-  const _HeroOrb({required this.size, required this.colors});
-
-  final double size;
-  final List<Color> colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.3, -0.2),
-          colors: colors,
-        ),
-      ),
-    );
-  }
-}
-
-class _ScoreRing extends StatelessWidget {
-  const _ScoreRing({required this.score, required this.color});
-  final int score;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: 86,
-      height: 86,
-      child: CustomPaint(
-        painter: _RingPainter(
-          progress: (score.clamp(0, 100)) / 100,
-          color: color,
-          trackColor: cs.outlineVariant.withOpacity(0.35),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('$score', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-              Text('score', style: TextStyle(fontSize: 11, color: cs.onSurface.withOpacity(0.6), fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  _RingPainter({required this.progress, required this.color, required this.trackColor});
-  final double progress;
-  final Color color;
-  final Color trackColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 6;
-    final track = Paint()
-      ..color = trackColor
-      ..strokeWidth = 10
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    final prog = Paint()
-      ..color = color
-      ..strokeWidth = 10
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -math.pi / 2, math.pi * 2, false, track);
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -math.pi / 2, math.pi * 2 * progress, false, prog);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color || oldDelegate.trackColor != trackColor;
-}
-
-class _PickupCard extends StatelessWidget {
-  const _PickupCard({required this.enabled, required this.onChanged});
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return KCard(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          KIconCircle(
-            icon: Icons.calendar_month_outlined,
-            background: cs.primary.withOpacity(0.10),
-            foreground: cs.primary,
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('NEXT PICKUP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
-                SizedBox(height: 6),
-                Text('Tomorrow, 7:00 AM', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                SizedBox(height: 6),
-                Text('in 14 hours', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: enabled,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.primary = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final bg = primary ? cs.primary : cs.surface;
-    final fg = primary ? cs.onPrimary : cs.onSurface.withOpacity(0.78);
-    final accent = primary ? cs.primary : cs.primary.withOpacity(0.12);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              bg,
-              primary ? bg.withOpacity(0.9) : cs.surfaceVariant.withOpacity(0.4),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: primary ? Colors.white.withOpacity(0.2) : cs.outlineVariant.withOpacity(0.3),
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-              color: Colors.black.withOpacity(primary ? 0.12 : 0.08),
-            ),
-            BoxShadow(
-              blurRadius: 10,
-              offset: const Offset(-6, -6),
-              color: Colors.white.withOpacity(primary ? 0.16 : 0.5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: fg, size: 22),
-            ),
-            const SizedBox(height: 10),
             Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 12, height: 1.15),
+              'Kathmandu',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.labelSpacing),
+            Text(
+              'City services dashboard',
+              style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
             ),
           ],
         ),
+        const Spacer(),
+        IconButton(
+          onPressed: onBellTap,
+          icon: const Icon(Icons.notifications_none_rounded),
+        ),
+      ],
+    );
+  }
+}
+
+class _NextPickupCard extends StatelessWidget {
+  const _NextPickupCard({required this.enabled, this.onChanged});
+
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return CivicCard(
+      padding: const EdgeInsets.all(AppSpacing.componentPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(label: 'Next pickup'),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Tomorrow, 7:00 AM',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Switch.adaptive(
+                value: enabled,
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.labelSpacing),
+          Text(
+            'Reminder in 14 hours',
+            style: TextStyle(
+              color:
+                  Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ReportRow extends StatelessWidget {
-  const _ReportRow({
-    required this.title,
-    required this.code,
-    required this.location,
-    required this.time,
-    required this.status,
-    required this.onTap,
-  });
-
-  final String title;
-  final String code;
-  final String location;
-  final String time;
-  final String status;
-  final VoidCallback onTap;
+class _CityScoreCard extends StatelessWidget {
+  const _CityScoreCard();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
-    final statusUi = _statusUi(status, cs);
-
-    return KCard(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      onTap: onTap,
+    return CivicCard(
       child: Row(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
+              color: cs.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: Icon(Icons.image_outlined, color: cs.primary.withOpacity(0.7)),
+            child: Text(
+              '73',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.itemSpacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: statusUi.color.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: statusUi.color.withOpacity(0.18)),
-                      ),
-                      child: Text(
-                        statusUi.label,
-                        style: TextStyle(color: statusUi.color, fontWeight: FontWeight.w900, fontSize: 12),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.45)),
-                  ],
-                ),
-                const SizedBox(height: 2),
                 Text(
-                  code,
-                  style: TextStyle(color: cs.onSurface.withOpacity(0.45), fontWeight: FontWeight.w700, fontSize: 12),
+                  'Kathmandu Metro',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: cs.onSurface.withOpacity(0.45)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w700, fontSize: 12),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(Icons.access_time_rounded, size: 14, color: cs.onSurface.withOpacity(0.45)),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w700, fontSize: 12),
-                    ),
-                  ],
+                const SizedBox(height: AppSpacing.labelSpacing),
+                Text(
+                  'City score this week',
+                  style: TextStyle(
+                    color: cs.onSurface.withOpacity(0.6),
+                  ),
                 ),
               ],
             ),
           ),
+          const StatusChip(label: '+5%', tone: StatusTone.success),
         ],
       ),
     );
   }
 }
 
-({String label, Color color}) _statusUi(String status, ColorScheme cs) {
+StatusChip _statusChipFor(String status) {
   switch (status) {
     case 'resolved':
-      return (label: 'Cleaned', color: const Color(0xFF1ECA92));
+      return const StatusChip(label: 'Resolved', tone: StatusTone.success);
     case 'in_progress':
-      return (label: 'In Progress', color: const Color(0xFF0E6E66));
+      return const StatusChip(label: 'In progress', tone: StatusTone.warning);
     case 'pending':
     default:
-      return (label: 'Verified', color: const Color(0xFF1B8EF2));
+      return const StatusChip(label: 'Pending', tone: StatusTone.neutral);
   }
 }
 
