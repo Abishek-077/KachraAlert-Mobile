@@ -44,12 +44,12 @@ class AppTheme {
   }) {
     final isDark = brightness == Brightness.dark;
 
-    final radius = BorderRadius.circular(16);
-    final inputRadius = BorderRadius.circular(12);
+    final radius = BorderRadius.circular(20);
+    final inputRadius = BorderRadius.circular(16);
 
     final baseText = ThemeData(brightness: brightness).textTheme;
     // ✅ Use a single modern font across the app (matches reference UI vibe)
-    final baseFontText = GoogleFonts.interTextTheme(baseText);
+    final baseFontText = GoogleFonts.manropeTextTheme(baseText);
     final textTheme = baseFontText.copyWith(
       headlineSmall: baseFontText.headlineSmall?.copyWith(
         fontWeight: FontWeight.w800,
@@ -70,11 +70,6 @@ class AppTheme {
       ),
       labelLarge: baseFontText.labelLarge?.copyWith(
         fontWeight: FontWeight.w700,
-      ),
-      labelSmall: baseFontText.labelSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.4,
-        fontSize: 11,
       ),
     );
 
@@ -116,7 +111,7 @@ class AppTheme {
         fillColor: isDark ? AppColors.darkInputFill : AppColors.inputFill,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 14,
+          vertical: 16,
         ),
         border: OutlineInputBorder(
           borderRadius: inputRadius,
@@ -184,7 +179,7 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         elevation: 0,
-        indicatorColor: scheme.primary.withOpacity(isDark ? 0.16 : 0.10),
+        indicatorColor: scheme.primary.withOpacity(isDark ? 0.18 : 0.12),
         labelTextStyle: WidgetStatePropertyAll(
           textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
