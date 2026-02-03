@@ -18,4 +18,7 @@ class HiveTableConstant {
   static const schedulesBox = 'schedules_box';
 
   static const reportsBox = 'reports_box';
+
+  // Collection points
+  static const collectionPointsBox = 'collection_points_box';
 }

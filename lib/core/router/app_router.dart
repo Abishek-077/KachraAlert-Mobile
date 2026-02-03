@@ -27,6 +27,7 @@ import 'package:smart_waste_app/features/dashboard/presentation/pages/home_scree
 import 'package:smart_waste_app/features/dashboard/presentation/pages/profile_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/schedule_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/splash_screen.dart';
+import 'package:smart_waste_app/features/dashboard/presentation/pages/map_screen.dart';
 import 'package:smart_waste_app/features/payments/presentation/pages/payments_screen.dart';
 
 // Onboarding + Settings
@@ -55,6 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAlertsCreate = loc == '/alerts/create';
       final isReportsCreate = loc == '/reports/create';
       final isReportsList = loc == '/reports';
+      final isMap = loc == '/map';
 
       final isShell =
           loc == '/home' ||
@@ -120,6 +122,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           isPayments ||
           isReportsList ||
           isReportsCreate ||
+          isMap ||
           (isAdmin && userIsAdmin) ||
           isAlertsCreate;
 
@@ -136,6 +139,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
+      GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
 
       GoRoute(
         path: '/admin/broadcast',
