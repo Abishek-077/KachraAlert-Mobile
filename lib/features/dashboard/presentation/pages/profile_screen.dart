@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/ui/snackbar.dart';
 import '../../../../core/widgets/k_widgets.dart';
@@ -25,11 +26,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploading = false;
 
   Future<void> _changePhoto() async {
+    final l10n = AppLocalizations.of(context);
     final auth = ref.read(authStateProvider).valueOrNull;
     final token = auth?.session?.accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) {
-        AppSnack.show(context, 'Please sign in to update your photo.', error: true);
+        AppSnack.show(context, l10n.signInToUpdatePhoto, error: true);
       }
       return;
     }
@@ -47,12 +49,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(l10n.chooseFromGallery),
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              title: Text(l10n.takePhoto),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
           ],
@@ -82,28 +84,88 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);
       if (mounted) {
-        AppSnack.show(context, 'Profile photo updated.', error: false);
+        AppSnack.show(context, l10n.profilePhotoUpdated, error: false);
       }
     } catch (e) {
       if (mounted) {
-        AppSnack.show(context, 'Failed to update profile photo: $e', error: true);
+        AppSnack.show(context, l10n.profilePhotoUpdateFailed(e.toString()), error: true);
       }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
   }
 
+  Future<void> _showLanguageSelector(AppLocalizations l10n) async {
+    final settings = ref.read(settingsProvider).valueOrNull;
+    final current = settings?.languageCode ?? 'en';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.languageSelectionTitle,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.languageSelectionSubtitle,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _LanguageOptionTile(
+                  title: l10n.english,
+                  subtitle: 'English',
+                  selected: current == 'en',
+                  onTap: () => _setLanguage('en'),
+                ),
+                const SizedBox(height: 12),
+                _LanguageOptionTile(
+                  title: l10n.nepali,
+                  subtitle: 'नेपाली',
+                  selected: current == 'ne',
+                  onTap: () => _setLanguage('ne'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _setLanguage(String code) async {
+    await ref.read(settingsProvider.notifier).setLanguageCode(code);
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final auth = ref.watch(authStateProvider).valueOrNull;
     final email = (auth?.session?.email ?? '').trim();
     final isAdmin = auth?.session?.role == 'admin_driver';
-    final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
+    final displayName =
+        email.isEmpty ? l10n.guestUser : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final apiBase = ref.watch(apiBaseUrlProvider);
     final token = auth?.session?.accessToken;
     final profilePhotoUrl = resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
+    final settings = ref.watch(settingsProvider).valueOrNull;
+    final languageCode = settings?.languageCode ?? 'en';
 
     final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
     final myReports = (auth?.session?.userId == null)
@@ -205,7 +267,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        email.isEmpty ? 'Not signed in' : email,
+                        email.isEmpty ? l10n.notSignedIn : email,
                         style: TextStyle(color: Colors.white.withOpacity(0.78), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 10),
@@ -215,12 +277,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           color: Colors.white.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.workspace_premium_outlined, size: 16, color: Color(0xFF1ECA92)),
-                            SizedBox(width: 8),
-                            Text('Top Contributor', style: TextStyle(color: Color(0xFF1ECA92), fontWeight: FontWeight.w900)),
+                            const Icon(Icons.workspace_premium_outlined, size: 16, color: Color(0xFF1ECA92)),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.topContributor,
+                              style: const TextStyle(color: Color(0xFF1ECA92), fontWeight: FontWeight.w900),
+                            ),
                           ],
                         ),
                       ),
@@ -237,11 +302,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(
               children: [
-                Expanded(child: _StatCard(label: 'REPORTS', value: '${myReports.length}', delta: '+5')),
+                Expanded(
+                  child: _StatCard(
+                    label: l10n.reports.toUpperCase(),
+                    value: '${myReports.length}',
+                    delta: '+5',
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _StatCard(label: 'RESOLVED', value: '$resolved', delta: '+3')),
+                Expanded(
+                  child: _StatCard(
+                    label: l10n.resolved.toUpperCase(),
+                    value: '$resolved',
+                    delta: '+3',
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _StatCard(label: 'IMPACT', value: '${(resolved * 47).clamp(0, 9999)}', delta: '+120')),
+                Expanded(
+                  child: _StatCard(
+                    label: l10n.impact.toUpperCase(),
+                    value: '${(resolved * 47).clamp(0, 9999)}',
+                    delta: '+120',
+                  ),
+                ),
               ],
             ),
           ),
@@ -249,26 +332,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // Achievements
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-            child: Text('ACHIEVEMENTS', style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w900, letterSpacing: 1.3, fontSize: 12)),
+            child: Text(
+              l10n.achievements.toUpperCase(),
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.55),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.3,
+                fontSize: 12,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(
-              children: const [
+              children: [
                 Expanded(
                   child: _AchievementCard(
-                    title: 'Top Contributor',
-                    subtitle: 'Top 10% this month',
+                    title: l10n.topContributor,
+                    subtitle: l10n.topContributorTitle,
                     icon: Icons.workspace_premium_outlined,
                     colorA: Color(0xFF1ECA92),
                     colorB: Color(0xFF16B481),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _AchievementCard(
-                    title: 'Quick Reporter',
-                    subtitle: '5 reports in a week',
+                    title: l10n.quickReporter,
+                    subtitle: l10n.reportsInWeek,
                     icon: Icons.eco_outlined,
                     colorA: Color(0xFF0E6E66),
                     colorB: Color(0xFF0B5D56),
@@ -281,7 +372,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // Settings list
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-            child: Text('SETTINGS', style: TextStyle(color: cs.onSurface.withOpacity(0.55), fontWeight: FontWeight.w900, letterSpacing: 1.3, fontSize: 12)),
+            child: Text(
+              l10n.settings.toUpperCase(),
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.55),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.3,
+                fontSize: 12,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 130),
@@ -292,40 +391,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _SettingsTile(
                     icon: Icons.notifications_none_rounded,
                     iconBg: const Color(0xFFE7F1FF),
-                    title: 'Notifications',
-                    subtitle: 'Manage alert preferences',
+                    title: l10n.notifications,
+                    subtitle: l10n.manageAlertPrefs,
                     onTap: () => context.go('/alerts'),
                   ),
                   _SettingsTile(
                     icon: Icons.receipt_long_outlined,
                     iconBg: const Color(0xFFE8FFF7),
-                    title: 'Payments',
-                    subtitle: 'View invoices and pay dues',
+                    title: l10n.payments,
+                    subtitle: l10n.viewInvoices,
                     onTap: () => context.push('/payments'),
                   ),
                   _SettingsTile(
                     icon: Icons.language_rounded,
                     iconBg: const Color(0xFFE8FFF7),
-                    title: 'Language',
-                    subtitle: 'English',
-                    onTap: () {},
+                    title: l10n.language,
+                    subtitle:
+                        languageCode == 'ne' ? l10n.nepali : l10n.english,
+                    onTap: () => _showLanguageSelector(l10n),
                   ),
                   _SettingsTile(
                     icon: Icons.shield_outlined,
                     iconBg: const Color(0xFFFFF1E6),
-                    title: 'Privacy',
-                    subtitle: 'Data and permissions',
+                    title: l10n.privacy,
+                    subtitle: l10n.dataPermissions,
                     onTap: () {},
                   ),
                   Consumer(
                     builder: (context, ref, _) {
                       final settings =
                           ref.watch(settingsProvider).valueOrNull;
-                      final mode = (settings?.isDarkMode ?? false) ? 'Dark mode' : 'Light mode';
+                      final mode = (settings?.isDarkMode ?? false)
+                          ? l10n.darkMode
+                          : l10n.lightMode;
                       return _SettingsTile(
                         icon: Icons.nightlight_round,
                         iconBg: const Color(0xFFEAF2F2),
-                        title: 'Appearance',
+                        title: l10n.appearance,
                         subtitle: mode,
                         onTap: () => ref.read(settingsProvider.notifier).toggleTheme(),
                       );
@@ -334,8 +436,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _SettingsTile(
                     icon: Icons.help_outline_rounded,
                     iconBg: const Color(0xFFEAF2F2),
-                    title: 'Help & Support',
-                    subtitle: 'FAQs and contact',
+                    title: l10n.helpSupport,
+                    subtitle: l10n.faqContact,
                     onTap: () {},
                   ),
                   if (isAdmin) ...[
@@ -343,8 +445,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _SettingsTile(
                       icon: Icons.admin_panel_settings_outlined,
                       iconBg: const Color(0xFFE7F1FF),
-                      title: 'Admin Panel',
-                      subtitle: 'Broadcast announcements',
+                      title: l10n.adminPanel,
+                      subtitle: l10n.broadcastAnnouncements,
                       onTap: () => context.push('/admin/broadcast'),
                     ),
                   ],
@@ -352,8 +454,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _SettingsTile(
                     icon: Icons.logout_rounded,
                     iconBg: const Color(0xFFFFECEC),
-                    title: 'Logout',
-                    subtitle: 'Sign out of this device',
+                    title: l10n.logout,
+                    subtitle: l10n.signOutDevice,
                     onTap: () => ref.read(authStateProvider.notifier).logout(),
                     danger: true,
                   ),
@@ -485,6 +587,87 @@ class _SettingsTile extends StatelessWidget {
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, color: titleColor)),
       subtitle: Text(subtitle, style: TextStyle(color: cs.onSurface.withOpacity(0.62), fontWeight: FontWeight.w600)),
       trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.45)),
+    );
+  }
+}
+
+class _LanguageOptionTile extends StatelessWidget {
+  const _LanguageOptionTile({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final borderColor =
+        selected ? cs.primary : cs.onSurface.withOpacity(0.08);
+    final background =
+        selected ? cs.primary.withOpacity(0.08) : cs.surface;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: selected ? 2 : 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.language_rounded,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: cs.onSurface.withOpacity(0.6),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                color: selected ? cs.primary : cs.onSurface.withOpacity(0.4),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

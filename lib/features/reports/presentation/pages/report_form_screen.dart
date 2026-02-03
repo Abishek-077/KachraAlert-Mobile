@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../../core/utils/media_permissions.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -47,6 +48,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
   Future<void> _save() async {
     if (_saving) return;
+    final l10n = AppLocalizations.of(context);
     final auth = ref.read(authStateProvider).valueOrNull;
     final userId = auth?.session?.userId;
 
@@ -54,7 +56,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       if (mounted) {
         AppSnack.show(
           context,
-          'You must be logged in to create a report',
+          l10n.mustLoginReport,
           error: true,
         );
       }
@@ -67,7 +69,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       if (mounted) {
         AppSnack.show(
           context,
-          'Location and message are required',
+          l10n.locationMessageRequired,
           error: true,
         );
       }
@@ -101,14 +103,14 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       AppSnack.show(
         context,
         e == null
-            ? 'Report created successfully'
-            : 'Report updated successfully',
+            ? l10n.reportCreated
+            : l10n.reportUpdated,
         error: false,
       );
       context.pop();
     } catch (e) {
       if (mounted) {
-        AppSnack.show(context, 'Failed to save report: $e', error: true);
+        AppSnack.show(context, l10n.reportSaveFailed(e.toString()), error: true);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -116,6 +118,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Future<void> _selectAttachment() async {
+    final l10n = AppLocalizations.of(context);
     await MediaPermissions.requestPhotoVideoAccess(context);
     if (!mounted) return;
     final source = await showModalBottomSheet<ImageSource>(
@@ -127,12 +130,12 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(l10n.chooseFromGallery),
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              title: Text(l10n.takePhoto),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
           ],
@@ -169,6 +172,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final categories = const <String>[
       'Missed Pickup',
@@ -186,12 +190,12 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
             Row(
               children: [
                 Text(
-                  isEdit ? 'Edit Report' : 'New Report',
+                  isEdit ? l10n.editReport : l10n.newReportTitle,
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: l10n.close,
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.close_rounded),
                 ),
@@ -201,7 +205,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
             // Category chips
             Text(
-              'CATEGORY',
+              l10n.category.toUpperCase(),
               style: TextStyle(
                 color: cs.onSurface.withOpacity(0.55),
                 fontWeight: FontWeight.w900,
@@ -216,7 +220,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                 children: [
                   for (final c in categories) ...[
                     KChip(
-                      label: c,
+                      label: _localizedCategory(c, l10n),
                       selected: _category == c,
                       onTap: () => setState(() => _category = c),
                     ),
@@ -230,7 +234,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
             // Location
             Text(
-              'LOCATION',
+              l10n.location.toUpperCase(),
               style: TextStyle(
                 color: cs.onSurface.withOpacity(0.55),
                 fontWeight: FontWeight.w900,
@@ -253,7 +257,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                     child: TextField(
                       controller: _location,
                       decoration: InputDecoration(
-                        hintText: 'e.g. Ward 10, Baneshwor',
+                        hintText: l10n.locationHint,
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.45)),
                       ),
@@ -268,7 +272,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
             // Description
             Text(
-              'DETAILS',
+              l10n.details.toUpperCase(),
               style: TextStyle(
                 color: cs.onSurface.withOpacity(0.55),
                 fontWeight: FontWeight.w900,
@@ -293,7 +297,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                       controller: _message,
                       maxLines: 5,
                       decoration: InputDecoration(
-                        hintText: 'Describe the issue (what, where, how urgent)',
+                        hintText: l10n.detailsHint,
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.45)),
                       ),
@@ -322,13 +326,13 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Add photo (optional)',
-                                style: TextStyle(fontWeight: FontWeight.w900),
-                              ),
-                              SizedBox(height: 4),
                               Text(
-                                'Attach an image to help the team verify the issue.',
+                                l10n.addPhotoOptional,
+                                style: const TextStyle(fontWeight: FontWeight.w900),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.photoHelp,
                                 style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
                               ),
                             ],
@@ -356,14 +360,14 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _attachmentName ?? 'Attached photo',
+                                _attachmentName ?? l10n.attachedPhoto,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Remove attachment',
+                              tooltip: l10n.removeAttachment,
                               onPressed: _removeAttachment,
                               icon: const Icon(Icons.close_rounded),
                             ),
@@ -399,7 +403,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                   const SizedBox(width: 12),
                 ],
                 Text(
-                  isEdit ? 'Save Changes' : 'Submit Report',
+                  isEdit ? l10n.saveChanges : l10n.submitReport,
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                 ),
                 const SizedBox(width: 10),
@@ -410,5 +414,20 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         ),
       ),
     );
+  }
+}
+
+String _localizedCategory(String category, AppLocalizations l10n) {
+  switch (category) {
+    case 'Missed Pickup':
+      return l10n.missedPickup;
+    case 'Overflowing Bin':
+      return l10n.overflowingBin;
+    case 'Bad Smell':
+      return l10n.badSmell;
+    case 'Other':
+      return l10n.other;
+    default:
+      return category;
   }
 }

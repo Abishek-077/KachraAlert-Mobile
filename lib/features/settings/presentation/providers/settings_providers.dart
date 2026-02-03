@@ -11,27 +11,32 @@ const _kOnboarded = 'onboarded';
 const _kDarkMode = 'darkMode';
 const _kPickupReminders = 'pickupReminders';
 const _kSplashShownAt = 'splashShownAt';
+const _kLanguageCode = 'languageCode';
 
 class SettingsState {
   final bool onboarded;
   final bool isDarkMode;
   final bool pickupRemindersEnabled;
   final DateTime? splashShownAt;
+  final String languageCode;
 
   const SettingsState({
     required this.onboarded,
     required this.isDarkMode,
     required this.pickupRemindersEnabled,
     this.splashShownAt,
+    required this.languageCode,
   });
 
   ThemeMode get themeMode => isDarkMode ? ThemeMode.dark : ThemeMode.light;
+  Locale get locale => Locale(languageCode);
 
   SettingsState copyWith({
     bool? onboarded,
     bool? isDarkMode,
     bool? pickupRemindersEnabled,
     DateTime? splashShownAt,
+    String? languageCode,
   }) {
     return SettingsState(
       onboarded: onboarded ?? this.onboarded,
@@ -39,6 +44,7 @@ class SettingsState {
       pickupRemindersEnabled:
           pickupRemindersEnabled ?? this.pickupRemindersEnabled,
       splashShownAt: splashShownAt ?? this.splashShownAt,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 }
@@ -61,6 +67,11 @@ final isOnboardedProvider = Provider<AsyncValue<bool>>((ref) {
 final themeModeProvider = Provider<ThemeMode>((ref) {
   final settings = ref.watch(settingsProvider).valueOrNull;
   return settings?.themeMode ?? ThemeMode.system;
+});
+
+final localeProvider = Provider<Locale>((ref) {
+  final settings = ref.watch(settingsProvider).valueOrNull;
+  return settings?.locale ?? const Locale('en');
 });
 
 class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
@@ -86,6 +97,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       final isDarkMode = (_box.get(_kDarkMode, defaultValue: false) as bool);
       final pickupRemindersEnabled =
           (_box.get(_kPickupReminders, defaultValue: true) as bool);
+      final languageCode =
+          (_box.get(_kLanguageCode, defaultValue: 'en') as String);
 
       final splashMillis = _box.get(_kSplashShownAt) as int?;
       final splashShownAt = splashMillis == null
@@ -98,6 +111,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: isDarkMode,
           pickupRemindersEnabled: pickupRemindersEnabled,
           splashShownAt: splashShownAt,
+          languageCode: languageCode,
         ),
       );
     } catch (_) {
@@ -108,6 +122,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           splashShownAt: null,
+          languageCode: 'en',
         ),
       );
     }
@@ -122,6 +137,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           onboarded: false,
           isDarkMode: false,
           pickupRemindersEnabled: true,
+          languageCode: 'en',
         );
 
     state = AsyncValue.data(current.copyWith(onboarded: true));
@@ -136,6 +152,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           onboarded: false,
           isDarkMode: false,
           pickupRemindersEnabled: true,
+          languageCode: 'en',
         );
 
     state = AsyncValue.data(current.copyWith(onboarded: false));
@@ -149,6 +166,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           onboarded: false,
           isDarkMode: false,
           pickupRemindersEnabled: true,
+          languageCode: 'en',
         );
 
     final next = !current.isDarkMode;
@@ -165,6 +183,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           onboarded: false,
           isDarkMode: false,
           pickupRemindersEnabled: true,
+          languageCode: 'en',
         );
 
     await _box.put(_kPickupReminders, enabled);
@@ -183,9 +202,25 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           onboarded: false,
           isDarkMode: false,
           pickupRemindersEnabled: true,
+          languageCode: 'en',
         );
 
     state = AsyncValue.data(current.copyWith(splashShownAt: now));
+  }
+
+  Future<void> setLanguageCode(String languageCode) async {
+    await _init();
+
+    final current = state.valueOrNull ??
+        const SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+          languageCode: 'en',
+        );
+
+    await _box.put(_kLanguageCode, languageCode);
+    state = AsyncValue.data(current.copyWith(languageCode: languageCode));
   }
 }
 

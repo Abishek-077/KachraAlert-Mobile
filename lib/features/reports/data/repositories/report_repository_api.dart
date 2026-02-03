@@ -168,6 +168,8 @@ class ReportRepositoryApi {
       message: message,
       status: normalizedStatus,
       attachmentUrl: mapped.attachmentUrl,
+      reporterName: mapped.reporterName,
+      reporterPhotoUrl: mapped.reporterPhotoUrl,
     );
   }
 
