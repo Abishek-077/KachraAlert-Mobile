@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -67,7 +68,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 KChip(
                   label: l10n.reportFiltersInProgress,
                   selected: _filter == ReportFilter.inProgress,
-                  onTap: () => setState(() => _filter = ReportFilter.inProgress),
+                  onTap: () =>
+                      setState(() => _filter = ReportFilter.inProgress),
                 ),
                 const SizedBox(width: 10),
                 KChip(
@@ -79,7 +81,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ),
           const SizedBox(height: 14),
-
           reportsAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.only(top: 40),
@@ -88,8 +89,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             error: (e, _) => KCard(
               child: Column(
                 children: [
-                  Icon(Icons.error_outline_rounded,
-                      size: 46, color: cs.error),
+                  Icon(Icons.error_outline_rounded, size: 46, color: cs.error),
                   const SizedBox(height: 10),
                   Text(
                     l10n.failedLoadReports,
@@ -109,7 +109,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () => ref.read(reportsProvider.notifier).load(),
+                      onPressed: () =>
+                          ref.read(reportsProvider.notifier).load(),
                       icon: const Icon(Icons.refresh_rounded),
                       label: Text(l10n.retry),
                     ),
@@ -519,13 +520,15 @@ class _ReporterAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final initial =
-        name.trim().isNotEmpty ? name.trim().substring(0, 1).toUpperCase() : 'U';
+    final initial = name.trim().isNotEmpty
+        ? name.trim().substring(0, 1).toUpperCase()
+        : 'U';
     return CircleAvatar(
       radius: 12,
       backgroundColor: cs.primary.withOpacity(0.12),
-      foregroundImage:
-          photoUrl == null ? null : NetworkImage(photoUrl!, headers: photoHeaders),
+      foregroundImage: photoUrl == null
+          ? null
+          : NetworkImage(photoUrl!, headers: photoHeaders),
       child: photoUrl == null
           ? Text(
               initial,

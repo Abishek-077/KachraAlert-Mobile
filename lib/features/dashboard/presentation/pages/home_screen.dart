@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../../../../core/widgets/k_widgets.dart';
+import '../../../../core/widgets/stats_ring.dart';
+import '../../../../core/widgets/floating_action_card.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/widgets/animated_gradient_card.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
@@ -34,50 +39,106 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // Cleanliness score card
-            KCard(
-              padding: const EdgeInsets.all(18),
+            // Cleanliness score card - PREMIUM UPGRADE
+            AnimatedGradientCard(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  cs.surface,
+                  cs.primary.withOpacity(0.05),
+                ],
+              ),
               child: Row(
                 children: [
-                  _ScoreRing(score: 73, color: const Color(0xFF1ECA92)),
-                  const SizedBox(width: 16),
+                  // Animated stats ring with gradient
+                  StatsRing(
+                    value: 73,
+                    maxValue: 100,
+                    size: 100,
+                    strokeWidth: 10,
+                    gradient: AppColors.tealEmeraldGradient,
+                    label: 'score',
+                  ),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'CITY CLEANLINESS',
-                          style: TextStyle(
-                            color: cs.primary.withOpacity(0.75),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                            fontSize: 11,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.tealEmeraldGradient,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'CITY',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'CLEANLINESS',
+                              style: TextStyle(
+                                color: cs.onSurface.withOpacity(0.6),
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         const Text(
                           'Kathmandu Metro',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                           decoration: BoxDecoration(
-                            color: cs.primary.withOpacity(0.10),
+                            gradient: LinearGradient(
+                              colors: [
+                                cs.primary.withOpacity(0.15),
+                                cs.primary.withOpacity(0.08),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: cs.primary.withOpacity(0.2),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.trending_up_rounded, size: 16, color: cs.primary),
+                              Icon(Icons.trending_up_rounded, size: 18, color: cs.primary),
                               const SizedBox(width: 6),
                               Text(
                                 '+5% ',
-                                style: TextStyle(color: cs.primary, fontWeight: FontWeight.w900),
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
                               ),
                               Text(
                                 'this week',
-                                style: TextStyle(color: cs.primary.withOpacity(0.75), fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: cs.primary.withOpacity(0.7),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -112,37 +173,40 @@ class HomeScreen extends ConsumerWidget {
             _SectionTitle(label: 'Quick Actions'),
             const SizedBox(height: 12),
 
+            // PREMIUM QUICK ACTIONS
             Row(
               children: [
                 Expanded(
-                  child: _QuickAction(
-                    icon: Icons.camera_alt_outlined,
+                  child: FloatingActionCard(
+                    icon: Icons.camera_alt_rounded,
                     label: 'Report\nWaste',
-                    primary: true,
+                    isEmphasized: true,
+                    gradient: AppColors.tealEmeraldGradient,
                     onTap: () => context.push('/reports/create'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _QuickAction(
-                    icon: Icons.calendar_month_outlined,
+                  child: FloatingActionCard(
+                    icon: Icons.calendar_month_rounded,
                     label: 'Schedule',
                     onTap: () => context.go('/schedule'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _QuickAction(
-                    icon: Icons.description_outlined,
+                  child: FloatingActionCard(
+                    icon: Icons.description_rounded,
                     label: 'My\nReports',
                     onTap: () => context.push('/reports'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _QuickAction(
+                  child: FloatingActionCard(
                     icon: Icons.warning_amber_rounded,
-                    label: 'Emergency',
+                    label: 'Alerts',
+                    badgeCount: 3,
                     onTap: () => context.go('/alerts'),
                   ),
                 ),
@@ -165,9 +229,19 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 8),
 
             reportsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: Center(child: CircularProgressIndicator()),
+              loading: () => const ShimmerLoading(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 14),
+                  child: Column(
+                    children: [
+                      ListItemSkeleton(),
+                      SizedBox(height: 12),
+                      ListItemSkeleton(),
+                      SizedBox(height: 12),
+                      ListItemSkeleton(),
+                    ],
+                  ),
+                ),
               ),
               error: (e, _) => Padding(
                 padding: const EdgeInsets.only(top: 10),

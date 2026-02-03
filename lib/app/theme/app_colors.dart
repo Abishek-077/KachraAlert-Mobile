@@ -121,6 +121,89 @@ class AppColors {
   );
 
   // =========================
+  // Premium Accent Gradients (NEW)
+  // =========================
+
+  /// Purple to Pink gradient (achievements, premium features)
+  static const LinearGradient purplePinkGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+  );
+
+  /// Blue to Cyan gradient (water, clean, tech)
+  static const LinearGradient blueCyanGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+  );
+
+  /// Orange to Red gradient (urgent, critical)
+  static const LinearGradient orangeRedGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+  );
+
+  /// Teal to Emerald gradient (eco-friendly)
+  static const LinearGradient tealEmeraldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF14B8A6), Color(0xFF10B981)],
+  );
+
+  /// Mesh gradient for animated backgrounds
+  static const List<Color> meshGradientColors = [
+    Color(0xFF12B76A),
+    Color(0xFF2DD4BF),
+    Color(0xFF6DE2B0),
+    Color(0xFF0B8B52),
+  ];
+
+  // =========================
+  // Glassmorphism Colors (NEW)
+  // =========================
+
+  static const Color glassWhite10 = Color(0x1AFFFFFF);
+  static const Color glassWhite20 = Color(0x33FFFFFF);
+  static const Color glassWhite30 = Color(0x4DFFFFFF);
+  static const Color glassBlack10 = Color(0x1A000000);
+  static const Color glassBlack20 = Color(0x33000000);
+
+  // =========================
+  // Shimmer Effect Colors (NEW)
+  // =========================
+
+  static const Color shimmerBase = Color(0xFFE0E0E0);
+  static const Color shimmerHighlight = Color(0xFFF5F5F5);
+  static const Color shimmerBaseDark = Color(0xFF2A2A2A);
+  static const Color shimmerHighlightDark = Color(0xFF3A3A3A);
+
+  // =========================
+  // Neon Glow Accents (NEW)
+  // =========================
+
+  static const Color neonGreen = Color(0xFF00FF88);
+  static const Color neonBlue = Color(0xFF00D9FF);
+  static const Color neonPurple = Color(0xFFBF00FF);
+  static const Color neonPink = Color(0xFFFF0099);
+
+  // =========================
+  // Data Visualization Palette (NEW)
+  // =========================
+
+  static const List<Color> chartColors = [
+    Color(0xFF12B76A), // Emerald
+    Color(0xFF3B82F6), // Blue
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFEC4899), // Pink
+    Color(0xFF8B5CF6), // Violet
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFFF97316), // Orange
+    Color(0xFF10B981), // Green
+  ];
+
+  // =========================
   // Dark Theme (Premium dark)
   // =========================
   static const Color darkBackground = Color(0xFF0B1020); // Deep Navy
