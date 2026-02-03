@@ -28,6 +28,12 @@ class ReportHiveModel extends HiveObject {
   @HiveField(7)
   final String? attachmentUrl;
 
+  @HiveField(8)
+  final String? reporterName;
+
+  @HiveField(9)
+  final String? reporterPhotoUrl;
+
   ReportHiveModel({
     required this.id,
     required this.userId,
@@ -37,9 +43,34 @@ class ReportHiveModel extends HiveObject {
     required this.message,
     required this.status,
     this.attachmentUrl,
+    this.reporterName,
+    this.reporterPhotoUrl,
   });
 
   factory ReportHiveModel.fromJson(Map<String, dynamic> json) {
+    final reporter = json['user'] ??
+        json['createdBy'] ??
+        json['reporter'] ??
+        json['author'];
+    final reporterMap = reporter is Map ? reporter.cast<String, dynamic>() : null;
+    final reporterName = _nullableString(
+      json['userName'] ??
+          json['createdByName'] ??
+          json['reporterName'] ??
+          reporterMap?['fullName'] ??
+          reporterMap?['name'] ??
+          reporterMap?['email'],
+    );
+    final reporterPhotoUrl = _nullableString(
+      json['userPhotoUrl'] ??
+          json['createdByPhotoUrl'] ??
+          json['reporterPhotoUrl'] ??
+          reporterMap?['profilePhotoUrl'] ??
+          reporterMap?['photoUrl'] ??
+          reporterMap?['avatar'] ??
+          reporterMap?['photo'],
+    );
+
     return ReportHiveModel(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
       userId: (json['userId'] ?? json['createdBy'] ?? '').toString(),
@@ -50,6 +81,8 @@ class ReportHiveModel extends HiveObject {
           (json['message'] ?? json['note'] ?? json['description'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       attachmentUrl: _nullableString(json['attachmentUrl'] ?? json['attachment']),
+      reporterName: reporterName,
+      reporterPhotoUrl: reporterPhotoUrl,
     );
   }
 
@@ -63,6 +96,8 @@ class ReportHiveModel extends HiveObject {
       'message': message,
       'status': status,
       'attachmentUrl': attachmentUrl,
+      'reporterName': reporterName,
+      'reporterPhotoUrl': reporterPhotoUrl,
     };
   }
 
@@ -72,6 +107,8 @@ class ReportHiveModel extends HiveObject {
     String? message,
     String? status,
     String? attachmentUrl,
+    String? reporterName,
+    String? reporterPhotoUrl,
   }) {
     return ReportHiveModel(
       id: id,
@@ -82,6 +119,8 @@ class ReportHiveModel extends HiveObject {
       message: message ?? this.message,
       status: status ?? this.status,
       attachmentUrl: attachmentUrl ?? this.attachmentUrl,
+      reporterName: reporterName ?? this.reporterName,
+      reporterPhotoUrl: reporterPhotoUrl ?? this.reporterPhotoUrl,
     );
   }
 }
