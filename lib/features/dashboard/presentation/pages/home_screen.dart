@@ -141,9 +141,9 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _QuickAction(
-                    icon: Icons.warning_amber_rounded,
-                    label: 'Emergency',
-                    onTap: () => context.go('/alerts'),
+                    icon: Icons.place_outlined,
+                    label: 'Collection\nPoints',
+                    onTap: () => context.push('/map'),
                   ),
                 ),
               ],

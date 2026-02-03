@@ -49,5 +49,7 @@
 	<string>Kachra Alert needs access to your photos and videos to attach them to reports.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Kachra Alert needs permission to save report photos and videos.</string>
+	<key>GMSApiKey</key>
+	<string>YOUR_GOOGLE_MAPS_API_KEY</string>
 </dict>
 </plist>

@@ -8,6 +8,7 @@ import '../../../features/alerts/data/models/alert_hive_model.dart';
 import '../../../features/admin/data/models/admin_alert_hive_model.dart';
 import '../../../features/schedule/data/models/schedule_hive_model.dart';
 import '../../../features/reports/data/models/report_hive_model.dart';
+import '../../../features/collection_points/data/models/collection_point_hive_model.dart';
 
 class HiveService {
   static bool _initialized = false;
@@ -30,6 +31,10 @@ class HiveService {
     _registerAdapter<AdminAlertHiveModel>(14, AdminAlertHiveModelAdapter());
     _registerAdapter<ScheduleHiveModel>(21, ScheduleHiveModelAdapter());
     _registerAdapter<ReportHiveModel>(31, ReportHiveModelAdapter());
+    _registerAdapter<CollectionPointHiveModel>(
+      41,
+      CollectionPointHiveModelAdapter(),
+    );
 
     // ✅ Open settings_box as untyped Box (because you store bools/strings)
     await _openUntypedBox(HiveTableConstant.settingsBox);
@@ -41,6 +46,9 @@ class HiveService {
     await _openTypedBox<AdminAlertHiveModel>(HiveTableConstant.adminAlertsBox);
     await _openTypedBox<ScheduleHiveModel>(HiveTableConstant.schedulesBox);
     await _openTypedBox<ReportHiveModel>(HiveTableConstant.reportsBox);
+    await _openTypedBox<CollectionPointHiveModel>(
+      HiveTableConstant.collectionPointsBox,
+    );
 
     _initialized = true;
   }

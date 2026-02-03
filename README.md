@@ -17,6 +17,7 @@ The app helps citizens report waste issues, view alerts, track report status, an
 - ✅ **Report Waste** flow (category, description, photo/location optional)
 - ✅ **Alerts system** (user alerts + admin alerts)
 - ✅ **Schedule / Pickup reminders**
+- ✅ **Collection points map** (admin selects pickup locations, residents view on map)
 - ✅ **Profile** with achievements + settings
 - ✅ Premium modern UI (soft shadows, rounded cards, chips, dock navigation)
 - ✅ Loading / empty / error states
@@ -37,6 +38,7 @@ The app helps citizens report waste issues, view alerts, track report status, an
 - **Hive** (Local DB / Offline persistence)
 - **SharedPreferences** (Lightweight local session config)
 - **Google Fonts** (Premium typography / UI consistency)
+- **Google Maps SDK** (collection points map)
 
 ### Backend (Planned)
 - **Node.js + TypeScript**
@@ -50,5 +52,32 @@ The app helps citizens report waste issues, view alerts, track report status, an
 
 ## 🗂️ Project Structure (Clean Architecture)
 
-This project follows a scalable clean architecture structure:
+---
 
+## 🗺️ Google Maps Setup
+
+To enable the collection points map, add your Google Maps API key in the following files:
+
+### Android
+Update the placeholder in `android/app/build.gradle.kts`:
+
+```kotlin
+manifestPlaceholders["MAPS_API_KEY"] = "YOUR_GOOGLE_MAPS_API_KEY"
+```
+
+### iOS
+Set the key in `ios/Runner/Info.plist`:
+
+```xml
+<key>GMSApiKey</key>
+<string>YOUR_GOOGLE_MAPS_API_KEY</string>
+```
+
+### Web
+Replace the placeholder in `web/index.html`:
+
+```html
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+```
+
+This project follows a scalable clean architecture structure:
