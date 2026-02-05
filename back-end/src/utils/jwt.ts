@@ -1,6 +1,7 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../config/env.js";
 import type { UserDocument } from "../models/User.js";
+import { normalizeAccountType } from "./accountType.js";
 
 export type AccessTokenPayload = {
   sub: string;
@@ -19,7 +20,7 @@ export function signAccessToken(user: UserDocument) {
   const payload: AccessTokenPayload = {
     sub: user._id.toString(),
     email: user.email,
-    accountType: user.accountType
+    accountType: normalizeAccountType(user.accountType)
   };
   return jwt.sign(payload, env.jwtAccessSecret, { expiresIn: env.accessTokenTtl });
 }

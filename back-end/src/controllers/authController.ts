@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import * as authService from "../services/authService.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { buildProfileImageUrl } from "../utils/userProfileImage.js";
+import { normalizeAccountType } from "../utils/accountType.js";
 
 function setRefreshCookie(res: Response, token: string, remember: boolean) {
   const days = remember ? env.refreshTokenRememberDays : env.refreshTokenDays;
@@ -83,7 +84,7 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction) {
     const user = await authService.getMe(req.user!.id);
     return sendSuccess(res, "User loaded", {
       id: user._id.toString(),
-      accountType: user.accountType,
+      accountType: normalizeAccountType(user.accountType),
       name: user.name,
       email: user.email,
       phone: user.phone,

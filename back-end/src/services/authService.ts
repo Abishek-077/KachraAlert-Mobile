@@ -9,6 +9,7 @@ import { hashToken, generateRandomToken, timingSafeEqual } from "../utils/crypto
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { v4 as uuidv4 } from "uuid";
 import { buildProfileImageUrl } from "../utils/userProfileImage.js";
+import { normalizeAccountType } from "../utils/accountType.js";
 import type { UserDocument } from "../models/User.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
@@ -61,6 +62,9 @@ export async function login(payload: { email: string; password: string; remember
   if (!user) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
+  if (user.isBanned) {
+    throw new AppError("Account is suspended", 403, "ACCOUNT_BANNED");
+  }
 
   const matches = await bcrypt.compare(payload.password, user.passwordHash);
   if (!matches) {
@@ -105,6 +109,9 @@ export async function refresh(refreshToken: string, meta: { ip?: string; userAge
   if (!user) {
     throw new AppError("User not found", 404, "USER_NOT_FOUND");
   }
+  if (user.isBanned) {
+    throw new AppError("Account is suspended", 403, "ACCOUNT_BANNED");
+  }
 
   return issueTokens(user, meta, false);
 }
@@ -147,6 +154,9 @@ export async function resetPassword(token: string, password: string) {
 export async function getMe(userId: string) {
   const user = await userRepository.findById(userId);
   if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  if (user.isBanned) {
+    throw new AppError("Account is suspended", 403, "ACCOUNT_BANNED");
+  }
   return user;
 }
 
@@ -175,7 +185,7 @@ async function issueTokens(
     refreshToken,
     user: {
       id: user._id.toString(),
-      accountType: user.accountType,
+      accountType: normalizeAccountType(user.accountType),
       name: user.name,
       email: user.email,
       phone: user.phone,

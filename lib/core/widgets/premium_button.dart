@@ -31,7 +31,7 @@ class _PremiumButtonState extends State<PremiumButton>
   late AnimationController _shimmerController;
   late AnimationController _scaleController;
   late AnimationController _successController;
-  
+
   late Animation<double> _shimmerAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _successAnimation;
@@ -39,7 +39,7 @@ class _PremiumButtonState extends State<PremiumButton>
   @override
   void initState() {
     super.initState();
-    
+
     _shimmerController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -72,7 +72,7 @@ class _PremiumButtonState extends State<PremiumButton>
   @override
   void didUpdateWidget(PremiumButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     if (widget.loading && !oldWidget.loading) {
       _shimmerController.repeat();
     } else if (!widget.loading && oldWidget.loading) {
@@ -179,9 +179,11 @@ class _PremiumButtonState extends State<PremiumButton>
                                       Colors.transparent,
                                     ],
                                     stops: [
-                                      (_shimmerAnimation.value - 1).clamp(0.0, 1.0),
+                                      (_shimmerAnimation.value - 1)
+                                          .clamp(0.0, 1.0),
                                       _shimmerAnimation.value.clamp(0.0, 1.0),
-                                      (_shimmerAnimation.value + 1).clamp(0.0, 1.0),
+                                      (_shimmerAnimation.value + 1)
+                                          .clamp(0.0, 1.0),
                                     ],
                                   ).createShader(bounds);
                                 },
@@ -215,7 +217,8 @@ class _PremiumButtonState extends State<PremiumButton>
                                       ),
                                     )
                                   : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         if (widget.icon != null) ...[
                                           Icon(

@@ -1,8 +1,12 @@
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { fileURLToPath } from "url";
 
-export const reportUploadsDir = path.resolve(process.cwd(), "uploads", "reports");
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const uploadsRoot = path.resolve(currentDir, "../../uploads");
+
+export const reportUploadsDir = path.join(uploadsRoot, "reports");
 
 fs.mkdirSync(reportUploadsDir, { recursive: true });
 

@@ -38,7 +38,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _labelAnimation;
-  
+
   bool _isFocused = false;
   String? _errorText;
 
@@ -98,26 +98,23 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final hasText = widget.controller.text.isNotEmpty;
-    final showFloatingLabel = _isFocused || hasText;
     final isValid = widget.isValid ?? (_errorText == null && hasText);
     final hasError = _errorText != null;
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
+        final labelProgress = hasText ? 1.0 : _labelAnimation.value;
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Floating label
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: showFloatingLabel ? 1.0 : 0.0,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 200),
-                  offset: showFloatingLabel ? Offset.zero : const Offset(0, 0.5),
-                  curve: Curves.easeOutCubic,
+              Opacity(
+                opacity: labelProgress,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - labelProgress) * 8),
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4, bottom: 8),
                     child: Row(
@@ -127,9 +124,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: _isFocused
-                                ? cs.primary
-                                : cs.onSurfaceVariant,
+                            color: _isFocused ? cs.primary : cs.onSurfaceVariant,
                           ),
                         ),
                         if (isValid && !hasError) ...[
@@ -152,7 +147,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                   boxShadow: _isFocused
                       ? [
                           BoxShadow(
-                            color: cs.primary.withOpacity(0.15),
+                            color: cs.primary.withValues(alpha: 0.15),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -174,7 +169,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                   decoration: InputDecoration(
                     hintText: widget.label,
                     hintStyle: TextStyle(
-                      color: cs.onSurfaceVariant.withOpacity(0.5),
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
                     ),
@@ -185,7 +180,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                         size: 20,
                         color: _isFocused
                             ? cs.primary
-                            : cs.onSurfaceVariant.withOpacity(0.7),
+                            : cs.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                     ),
                     suffixIcon: widget.suffixIcon ??

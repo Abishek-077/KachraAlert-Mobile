@@ -1,25 +1,15 @@
 import type { Response, NextFunction } from "express";
-import { User, type UserDocument } from "../models/User.js";
+import { User } from "../models/User.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errors.js";
 import type { AuthRequest } from "../middleware/auth.js";
-import { buildProfileImageUrl, profileUploadsDir, writeProfileImage } from "../utils/userProfileImage.js";
+import { profileUploadsDir, writeProfileImage, writeProfileImageFile } from "../utils/userProfileImage.js";
+import { mapUser } from "../utils/userMapper.js";
 import fs from "fs";
 import path from "path";
+import bcrypt from "bcryptjs";
 
-function mapUser(user: UserDocument) {
-  return {
-    id: user._id.toString(),
-    accountType: user.accountType,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    society: user.society,
-    building: user.building,
-    apartment: user.apartment,
-    profileImageUrl: user.profileImage?.filename ? buildProfileImageUrl(user._id.toString()) : null
-  };
-}
+type MulterAuthRequest = AuthRequest & { file?: Express.Multer.File };
 
 export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -120,6 +110,158 @@ export async function getUser(req: AuthRequest, res: Response, next: NextFunctio
       throw new AppError("User not found", 404, "NOT_FOUND");
     }
     return sendSuccess(res, "User loaded", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function createUser(req: MulterAuthRequest, res: Response, next: NextFunction) {
+  try {
+    const existing = await User.findOne({ email: req.body.email });
+    if (existing) {
+      throw new AppError("Account already exists", 409, "ACCOUNT_EXISTS");
+    }
+
+    const passwordHash = await bcrypt.hash(req.body.password, 12);
+    const profileImage = req.file ? writeProfileImageFile(req.file) : undefined;
+
+    const user = await User.create({
+      accountType: req.body.accountType,
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      passwordHash,
+      society: req.body.society,
+      building: req.body.building,
+      apartment: req.body.apartment,
+      profileImage,
+      termsAcceptedAt: new Date()
+    });
+
+    return sendSuccess(res, "User created", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateUser(req: MulterAuthRequest, res: Response, next: NextFunction) {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      throw new AppError("User not found", 404, "NOT_FOUND");
+    }
+
+    if (req.body.email && req.body.email !== user.email) {
+      const existing = await User.findOne({ email: req.body.email });
+      if (existing && existing._id.toString() !== user._id.toString()) {
+        throw new AppError("Account already exists", 409, "ACCOUNT_EXISTS");
+      }
+    }
+
+    user.accountType = req.body.accountType ?? user.accountType;
+    user.name = req.body.name ?? user.name;
+    user.email = req.body.email ?? user.email;
+    user.phone = req.body.phone ?? user.phone;
+    user.society = req.body.society ?? user.society;
+    user.building = req.body.building ?? user.building;
+    user.apartment = req.body.apartment ?? user.apartment;
+    if (typeof req.body.isBanned === "boolean") {
+      user.isBanned = req.body.isBanned;
+    }
+    if (typeof req.body.lateFeePercent === "number") {
+      user.lateFeePercent = req.body.lateFeePercent;
+    }
+
+    if (req.body.password) {
+      user.passwordHash = await bcrypt.hash(req.body.password, 12);
+    }
+
+    if (req.file) {
+      if (user.profileImage?.filename) {
+        const existingPath = path.join(profileUploadsDir, user.profileImage.filename);
+        if (fs.existsSync(existingPath)) {
+          fs.unlinkSync(existingPath);
+        }
+      }
+      user.profileImage = writeProfileImageFile(req.file);
+    }
+
+    await user.save();
+    return sendSuccess(res, "User updated", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateUserStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      throw new AppError("User not found", 404, "NOT_FOUND");
+    }
+
+    if (typeof req.body.isBanned === "boolean") {
+      user.isBanned = req.body.isBanned;
+    }
+    if (typeof req.body.lateFeePercent === "number") {
+      user.lateFeePercent = req.body.lateFeePercent;
+    }
+
+    await user.save();
+    return sendSuccess(res, "User status updated", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateUserFromAuth(req: MulterAuthRequest, res: Response, next: NextFunction) {
+  try {
+    const targetId = req.params.id;
+    if (req.user!.accountType !== "admin_driver" && req.user!.id !== targetId) {
+      throw new AppError("Not authorized", 403, "FORBIDDEN");
+    }
+    const user = await User.findById(targetId);
+    if (!user) {
+      throw new AppError("User not found", 404, "NOT_FOUND");
+    }
+
+    user.name = req.body.name ?? user.name;
+    user.phone = req.body.phone ?? user.phone;
+    user.society = req.body.society ?? user.society;
+    user.building = req.body.building ?? user.building;
+    user.apartment = req.body.apartment ?? user.apartment;
+
+    if (req.file) {
+      if (user.profileImage?.filename) {
+        const existingPath = path.join(profileUploadsDir, user.profileImage.filename);
+        if (fs.existsSync(existingPath)) {
+          fs.unlinkSync(existingPath);
+        }
+      }
+      user.profileImage = writeProfileImageFile(req.file);
+    }
+
+    await user.save();
+    return sendSuccess(res, "User updated", mapUser(user));
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function deleteUser(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      throw new AppError("User not found", 404, "NOT_FOUND");
+    }
+    if (user.profileImage?.filename) {
+      const existingPath = path.join(profileUploadsDir, user.profileImage.filename);
+      if (fs.existsSync(existingPath)) {
+        fs.unlinkSync(existingPath);
+      }
+    }
+    await user.deleteOne();
+    return sendSuccess(res, "User deleted");
   } catch (err) {
     return next(err);
   }

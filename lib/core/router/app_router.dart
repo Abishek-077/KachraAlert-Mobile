@@ -27,6 +27,7 @@ import 'package:smart_waste_app/features/dashboard/presentation/pages/home_scree
 import 'package:smart_waste_app/features/dashboard/presentation/pages/profile_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/schedule_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/splash_screen.dart';
+import 'package:smart_waste_app/features/messages/presentation/pages/messages_screen.dart';
 import 'package:smart_waste_app/features/payments/presentation/pages/payments_screen.dart';
 
 // Onboarding + Settings
@@ -59,6 +60,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isShell =
           loc == '/home' ||
           loc == '/schedule' ||
+          loc == '/messages' ||
+          loc.startsWith('/messages/') ||
           loc == '/alerts' ||
           loc == '/profile' ||
           loc.startsWith('/profile/');
@@ -181,6 +184,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/schedule',
                 builder: (_, __) => const ScheduleScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/messages',
+                builder: (_, __) => const MessagesScreen(),
               ),
             ],
           ),

@@ -14,6 +14,8 @@ const userSchema = new Schema(
     society: { type: String, required: true },
     building: { type: String, required: true },
     apartment: { type: String, required: true },
+    isBanned: { type: Boolean, default: false },
+    lateFeePercent: { type: Number, default: 0 },
     profileImage: {
       filename: { type: String },
       originalName: { type: String },

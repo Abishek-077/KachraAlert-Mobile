@@ -49,11 +49,34 @@ class _KBottomNavDockState extends State<KBottomNavDock>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     const items = <_DockItem>[
-      _DockItem(icon: Icons.home_rounded, label: 'Home'),
-      _DockItem(icon: Icons.calendar_month_outlined, label: 'Schedule'),
-      _DockItem(icon: Icons.notifications_none_rounded, label: 'Alerts'),
-      _DockItem(icon: Icons.person_outline_rounded, label: 'Profile'),
+      _DockItem(icon: Icons.home_rounded, label: 'Home', branchIndex: 0),
+      _DockItem(
+        icon: Icons.calendar_month_outlined,
+        label: 'Schedule',
+        branchIndex: 1,
+      ),
+      _DockItem(
+        icon: Icons.chat_bubble_outline_rounded,
+        label: 'Messages',
+        branchIndex: 2,
+      ),
+      _DockItem(
+        icon: Icons.person_outline_rounded,
+        label: 'Profile',
+        branchIndex: 4,
+      ),
     ];
+
+    Widget navItem(_DockItem item) {
+      return _NavItem(
+        item: item,
+        selected: widget.currentIndex == item.branchIndex,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          widget.onIndexChanged(item.branchIndex);
+        },
+      );
+    }
 
     return SafeArea(
       top: false,
@@ -103,40 +126,12 @@ class _KBottomNavDockState extends State<KBottomNavDock>
                 ),
                 child: Row(
                   children: [
-                    _NavItem(
-                      item: items[0],
-                      selected: widget.currentIndex == 0,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        widget.onIndexChanged(0);
-                      },
-                    ),
-                    _NavItem(
-                      item: items[1],
-                      selected: widget.currentIndex == 1,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        widget.onIndexChanged(1);
-                      },
-                    ),
+                    navItem(items[0]),
+                    navItem(items[1]),
                     // Center FAB gap
-                    const SizedBox(width: 74),
-                    _NavItem(
-                      item: items[2],
-                      selected: widget.currentIndex == 2,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        widget.onIndexChanged(2);
-                      },
-                    ),
-                    _NavItem(
-                      item: items[3],
-                      selected: widget.currentIndex == 3,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        widget.onIndexChanged(3);
-                      },
-                    ),
+                    const SizedBox(width: 86),
+                    navItem(items[2]),
+                    navItem(items[3]),
                   ],
                 ),
               ),
@@ -200,7 +195,13 @@ class _KBottomNavDockState extends State<KBottomNavDock>
 class _DockItem {
   final IconData icon;
   final String label;
-  const _DockItem({required this.icon, required this.label});
+  final int branchIndex;
+
+  const _DockItem({
+    required this.icon,
+    required this.label,
+    required this.branchIndex,
+  });
 }
 
 class _NavItem extends StatefulWidget {

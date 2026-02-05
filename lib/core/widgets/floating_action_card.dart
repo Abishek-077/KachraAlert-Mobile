@@ -29,7 +29,6 @@ class _FloatingActionCardState extends State<FloatingActionCard>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -55,19 +54,16 @@ class _FloatingActionCardState extends State<FloatingActionCard>
   }
 
   void _handleTapDown(TapDownDetails details) {
-    setState(() => _isPressed = true);
     _controller.forward();
     HapticFeedback.lightImpact();
   }
 
   void _handleTapUp(TapUpDetails details) {
-    setState(() => _isPressed = false);
     _controller.reverse();
     widget.onTap();
   }
 
   void _handleTapCancel() {
-    setState(() => _isPressed = false);
     _controller.reverse();
   }
 
@@ -92,28 +88,28 @@ class _FloatingActionCardState extends State<FloatingActionCard>
                         LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [cs.primary, cs.primary.withOpacity(0.8)],
+                          colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
                         ))
                     : null,
                 color: widget.isEmphasized ? null : cs.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: widget.isEmphasized
-                      ? Colors.white.withOpacity(0.2)
-                      : cs.outlineVariant.withOpacity(0.5),
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : cs.outlineVariant.withValues(alpha: 0.5),
                   width: widget.isEmphasized ? 1.5 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: widget.isEmphasized
-                        ? cs.primary.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.08),
+                        ? cs.primary.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.08),
                     blurRadius: _elevationAnimation.value * 2,
                     offset: Offset(0, _elevationAnimation.value),
                   ),
                   if (widget.isEmphasized)
                     BoxShadow(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(-4, -4),
                     ),
@@ -130,8 +126,8 @@ class _FloatingActionCardState extends State<FloatingActionCard>
                         height: 44,
                         decoration: BoxDecoration(
                           color: widget.isEmphasized
-                              ? Colors.white.withOpacity(0.2)
-                              : cs.primary.withOpacity(0.1),
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : cs.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
