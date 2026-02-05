@@ -62,6 +62,17 @@ class MessageConversationNotifier
     await _loadConversation(showLoadingOnError: true);
   }
 
+  Future<void> restoreConversation(String? contactId) async {
+    final normalizedId = contactId?.trim();
+    if (normalizedId == null || normalizedId.isEmpty) {
+      _activeContactId = null;
+      state = const AsyncValue.data([]);
+      return;
+    }
+    _activeContactId = normalizedId;
+    await _loadConversation(showLoadingOnError: false);
+  }
+
   Future<void> refresh() async {
     await _loadConversation(showLoadingOnError: false);
   }

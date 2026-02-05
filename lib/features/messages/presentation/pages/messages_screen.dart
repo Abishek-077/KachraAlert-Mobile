@@ -56,11 +56,30 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Future<void> _selectContact(ChatContact contact) async {
     if (_selectedContactId == contact.id) return;
+    final previousSelectedId = _selectedContactId;
     setState(() => _selectedContactId = contact.id);
     _autoSelectScheduled = false;
-    await ref
-        .read(messageConversationProvider.notifier)
-        .openConversation(contact.id);
+    try {
+      await ref
+          .read(messageConversationProvider.notifier)
+          .openConversation(contact.id);
+    } catch (e) {
+      if (!mounted) return;
+      final contacts = ref.read(messageContactsProvider).valueOrNull ?? [];
+      final hasPrevious = previousSelectedId != null &&
+          contacts.any((contact) => contact.id == previousSelectedId);
+      final fallbackSelectedId = hasPrevious ? previousSelectedId : null;
+      setState(() => _selectedContactId = fallbackSelectedId);
+      _autoSelectScheduled = true;
+      AppSnack.show(context, 'Failed to open conversation: $e');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _autoSelectScheduled = false;
+      });
+      await ref
+          .read(messageConversationProvider.notifier)
+          .restoreConversation(fallbackSelectedId);
+    }
   }
 
   Future<void> _refreshAll() async {
