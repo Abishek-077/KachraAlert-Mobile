@@ -12,20 +12,46 @@ class MessageRepositoryApi {
   final ApiClient _client;
   final String? accessToken;
 
-  Future<List<ChatContact>> getContacts() async {
+  Future<List<ChatContact>> getContacts({
+    int? limit,
+    String? query,
+  }) async {
     final token = _requireAccessToken();
+    final params = <String, String>{};
+    if (limit != null && limit > 0) {
+      params['limit'] = limit.toString();
+    }
+    final trimmedQuery = query?.trim();
+    if (trimmedQuery != null && trimmedQuery.isNotEmpty) {
+      params['query'] = trimmedQuery;
+    }
+    final queryString =
+        params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
     final response = await _client.getJson(
-      '${ApiEndpoints.messages}/contacts',
+      '${ApiEndpoints.messages}/contacts$queryString',
       accessToken: token,
     );
     final items = _extractList(response);
     return items.map(ChatContact.fromJson).toList();
   }
 
-  Future<List<ChatMessage>> getConversation(String contactId) async {
+  Future<List<ChatMessage>> getConversation(
+    String contactId, {
+    int? limit,
+    DateTime? before,
+  }) async {
     final token = _requireAccessToken();
+    final query = <String, String>{};
+    if (limit != null && limit > 0) {
+      query['limit'] = limit.toString();
+    }
+    if (before != null) {
+      query['before'] = before.toIso8601String();
+    }
+    final queryString =
+        query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _client.getJson(
-      '${ApiEndpoints.messages}/${Uri.encodeComponent(contactId)}',
+      '${ApiEndpoints.messages}/${Uri.encodeComponent(contactId)}$queryString',
       accessToken: token,
     );
     final items = _extractList(response);

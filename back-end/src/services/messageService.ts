@@ -96,33 +96,49 @@ function assertMessagingAllowed(sender: UserDocument, recipient: UserDocument) {
   }
 }
 
-export async function listContactsForUser(userId: string, accountType: string) {
+export async function listContactsForUser(
+  userId: string,
+  accountType: string,
+  options: { limit?: number; query?: string } = {}
+) {
   ensureObjectId(userId, "User id");
   const requesterType = normalizeAccountType(accountType);
-  const preferredFilter =
+
+  // Residents can only message admins/drivers.
+  // Admins/drivers can only message residents.
+  const filter =
     requesterType === "admin_driver"
       ? { accountType: "resident" as const }
       : { accountType: { $in: ["admin_driver", "admin"] } };
 
-  const preferredContacts = await User.find({
-    ...preferredFilter,
-    isBanned: { $ne: true },
-    _id: { $ne: userId }
-  }).sort({ name: 1 });
+  const requestedLimit = options.limit ?? 200;
+  const limit = Math.min(Math.max(requestedLimit, 1), 200);
+  const query = options.query?.trim();
 
-  if (preferredContacts.length > 0) {
-    return preferredContacts.map(mapContact);
+  const search: Record<string, unknown> = {};
+  if (query) {
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(escaped, "i");
+    search.$or = [{ name: rx }, { email: rx }, { phone: rx }];
   }
 
-  // Fallback for legacy/inconsistent seed data: show other active accounts.
-  const fallbackContacts = await User.find({
+  const contacts = await User.find({
+    ...filter,
+    ...search,
     isBanned: { $ne: true },
     _id: { $ne: userId }
-  }).sort({ name: 1 });
-  return fallbackContacts.map(mapContact);
+  })
+    .sort({ name: 1 })
+    .limit(limit);
+
+  return contacts.map(mapContact);
 }
 
-export async function listConversation(requesterId: string, contactId: string) {
+export async function listConversation(
+  requesterId: string,
+  contactId: string,
+  options: { limit?: number; before?: Date | null } = {}
+) {
   const requester = await getUserOrThrow(requesterId, "User");
   const contact = await getUserOrThrow(contactId, "Contact");
   assertMessagingAllowed(requester, contact);
@@ -132,16 +148,27 @@ export async function listConversation(requesterId: string, contactId: string) {
     { $set: { readAt: new Date() } }
   );
 
-  const messages = await Message.find({
+  const requestedLimit = options.limit ?? 500;
+  const limit = Math.min(Math.max(requestedLimit, 1), 500);
+  const before = options.before ?? null;
+
+  const filter: Record<string, unknown> = {
     $or: [
       { sender: requester._id, recipient: contact._id },
       { sender: contact._id, recipient: requester._id }
     ]
-  })
-    .sort({ createdAt: 1 })
-    .limit(500);
+  };
 
-  return messages.map(mapMessage);
+  if (before instanceof Date && !Number.isNaN(before.getTime())) {
+    filter.createdAt = { $lt: before };
+  }
+
+  // Query newest first for efficient limit, then reverse to keep ascending order.
+  const messages = await Message.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  return messages.reverse().map(mapMessage);
 }
 
 export async function sendMessage(input: { senderId: string; recipientId: string; body: string }) {

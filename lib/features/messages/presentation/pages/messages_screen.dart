@@ -23,9 +23,11 @@ class MessagesScreen extends ConsumerStatefulWidget {
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final TextEditingController _composerController = TextEditingController();
   String? _selectedContactId;
+  String? _lastFailedContactId;
   bool _sending = false;
   bool _pollInProgress = false;
   bool _autoSelectScheduled = false;
+  bool _isAutoSelecting = false;
   Timer? _pollTimer;
 
   @override
@@ -59,12 +61,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final previousSelectedId = _selectedContactId;
     setState(() => _selectedContactId = contact.id);
     _autoSelectScheduled = false;
+    _isAutoSelecting = true;
     try {
       await ref
           .read(messageConversationProvider.notifier)
           .openConversation(contact.id);
+      _lastFailedContactId = null;
     } catch (e) {
       if (!mounted) return;
+      _lastFailedContactId = contact.id;
       final contacts = ref.read(messageContactsProvider).valueOrNull ?? [];
       final hasPrevious = previousSelectedId != null &&
           contacts.any((contact) => contact.id == previousSelectedId);
@@ -79,11 +84,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       await ref
           .read(messageConversationProvider.notifier)
           .restoreConversation(fallbackSelectedId);
+    } finally {
+      _isAutoSelecting = false;
     }
   }
 
   Future<void> _refreshAll() async {
-    await ref.read(messageContactsProvider.notifier).load();
+    await ref.read(messageContactsProvider.notifier).load(silent: true);
     await ref.read(messageConversationProvider.notifier).refresh();
   }
 
@@ -116,7 +123,18 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final selectedId = _selectedContactId;
     final hasSelected = selectedId != null &&
         contacts.any((contact) => contact.id == selectedId);
-    if (hasSelected || _autoSelectScheduled) return;
+    if (hasSelected || _autoSelectScheduled || _isAutoSelecting) return;
+
+    // Avoid automatically re-selecting a contact that just failed.
+    final firstValidContact = contacts.firstWhere(
+      (c) => c.id != _lastFailedContactId,
+      orElse: () => contacts.first,
+    );
+
+    if (firstValidContact.id == _lastFailedContactId) {
+      // If the only contact available is the one that just failed, stop auto-selecting.
+      return;
+    }
 
     _autoSelectScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -125,13 +143,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         return;
       }
       final selectedId = _selectedContactId;
-      final hasSelected = selectedId != null &&
-          contacts.any((contact) => contact.id == selectedId);
-      if (hasSelected) {
+      if (selectedId != null) {
         _autoSelectScheduled = false;
         return;
       }
-      unawaited(_selectContact(contacts.first).whenComplete(() {
+      unawaited(_selectContact(firstValidContact).whenComplete(() {
         _autoSelectScheduled = false;
       }));
     });
@@ -142,12 +158,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final cs = Theme.of(context).colorScheme;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final myUserId = auth?.session?.userId ?? '';
+    final isWide = MediaQuery.of(context).size.width >= 900;
 
     final contactsAsync = ref.watch(messageContactsProvider);
     final conversationAsync = ref.watch(messageConversationProvider);
 
     final contacts = contactsAsync.valueOrNull ?? const <ChatContact>[];
-    _ensureSelectedContact(contacts);
+    if (isWide) {
+      _ensureSelectedContact(contacts);
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -173,122 +192,260 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             ),
             Expanded(
               child: contactsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: KCard(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline_rounded, size: 42),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Could not load contacts',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '$e',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            onPressed: () =>
-                                ref.read(messageContactsProvider.notifier).load(),
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Retry'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                data: (contacts) {
-                  if (contacts.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: KCard(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.forum_outlined,
-                              size: 46,
-                              color: cs.onSurface.withOpacity(0.6),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No contacts available',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Residents can message admins and admins can message residents.',
-                              textAlign: TextAlign.center,
-                              style:
-                                  TextStyle(color: cs.onSurface.withOpacity(0.65)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                loading: () {
+                  if (contacts.isNotEmpty) {
+                    return isWide
+                        ? _buildContactsAndPane(
+                            contacts,
+                            conversationAsync,
+                            myUserId,
+                            cs,
+                          )
+                        : _buildMobileContactsList(contacts, myUserId, cs);
                   }
-
-                  final activeContact = _findSelectedContact(contacts);
-
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: 84,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (_, i) {
-                            final c = contacts[i];
-                            final selected = c.id == activeContact?.id;
-                            return _ContactChip(
-                              contact: c,
-                              selected: selected,
-                              onTap: () => _selectContact(c),
-                            );
-                          },
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
-                          itemCount: contacts.length,
-                        ),
+                  return const Center(child: CircularProgressIndicator());
+                },
+                error: (e, _) {
+                  if (contacts.isNotEmpty) {
+                    return isWide
+                        ? _buildContactsAndPane(
+                            contacts,
+                            conversationAsync,
+                            myUserId,
+                            cs,
+                          )
+                        : _buildMobileContactsList(contacts, myUserId, cs);
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: KCard(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, size: 42),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Could not load contacts',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$e',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: cs.onSurface.withOpacity(0.65),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: () => ref
+                                  .read(messageContactsProvider.notifier)
+                                  .load(),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Retry'),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: _ConversationPane(
-                          selectedContact: activeContact,
-                          conversationAsync: conversationAsync,
-                          myUserId: myUserId,
-                          onRetry: () => ref
-                              .read(messageConversationProvider.notifier)
-                              .refresh(),
-                        ),
-                      ),
-                      _ComposerBar(
-                        controller: _composerController,
-                        enabled: activeContact != null && !_sending,
-                        onSend: activeContact == null ? null : _send,
-                      ),
-                    ],
+                    ),
                   );
                 },
+                data: (contacts) => isWide
+                    ? _buildContactsAndPane(
+                        contacts,
+                        conversationAsync,
+                        myUserId,
+                        cs,
+                      )
+                    : _buildMobileContactsList(contacts, myUserId, cs),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMobileContactsList(
+    List<ChatContact> contacts,
+    String myUserId,
+    ColorScheme cs,
+  ) {
+    if (contacts.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: KCard(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 46,
+                color: cs.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No contacts available',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Residents can message admins and admins can message residents.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: KCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chats',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${contacts.length} contacts',
+                    style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: cs.outlineVariant.withOpacity(0.45)),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemBuilder: (_, i) {
+                  final c = contacts[i];
+                  final selected = _selectedContactId == c.id;
+                  return _ContactTile(
+                    contact: c,
+                    selected: selected,
+                    onTap: () => _openMobileConversation(c, myUserId),
+                  );
+                },
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemCount: contacts.length,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMobileConversation(
+    ChatContact contact,
+    String myUserId,
+  ) async {
+    await _selectContact(contact);
+    if (!mounted || _selectedContactId != contact.id) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _MobileConversationScreen(
+          contact: contact,
+          myUserId: myUserId,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactsAndPane(
+    List<ChatContact> contacts,
+    AsyncValue<List<ChatMessage>> conversationAsync,
+    String myUserId,
+    ColorScheme cs,
+  ) {
+    if (contacts.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: KCard(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 46,
+                color: cs.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No contacts available',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Residents can message admins and admins can message residents.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final activeContact = _findSelectedContact(contacts);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 84,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (_, i) {
+              final c = contacts[i];
+              final selected = c.id == activeContact?.id;
+              return _ContactChip(
+                contact: c,
+                selected: selected,
+                onTap: () => _selectContact(c),
+              );
+            },
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemCount: contacts.length,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _ConversationPane(
+            selectedContact: activeContact,
+            conversationAsync: conversationAsync,
+            myUserId: myUserId,
+            onRetry: () => ref.read(messageConversationProvider.notifier).refresh(),
+          ),
+        ),
+        _ComposerBar(
+          controller: _composerController,
+          enabled: activeContact != null && !_sending,
+          onSend: activeContact == null ? null : _send,
+          compact: false,
+        ),
+      ],
     );
   }
 
@@ -512,6 +669,214 @@ class _ConversationPane extends ConsumerWidget {
   }
 }
 
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({
+    required this.contact,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ChatContact contact;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final bg = selected ? cs.primary : cs.surface;
+    final fg = selected ? cs.onPrimary : cs.onSurface;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? Colors.transparent
+                  : cs.outlineVariant.withOpacity(0.4),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: cs.primary.withOpacity(0.22),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: selected
+                    ? cs.onPrimary.withOpacity(0.2)
+                    : cs.primary.withOpacity(0.12),
+                child: Text(
+                  contact.name.isEmpty ? 'U' : contact.name[0].toUpperCase(),
+                  style: TextStyle(
+                    color: selected ? cs.onPrimary : cs.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      contact.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: fg,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      contact.subtitle,
+                      style: TextStyle(
+                        color: selected
+                            ? cs.onPrimary.withOpacity(0.85)
+                            : cs.onSurface.withOpacity(0.6),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: selected
+                    ? cs.onPrimary.withOpacity(0.7)
+                    : cs.onSurface.withOpacity(0.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileConversationScreen extends ConsumerStatefulWidget {
+  const _MobileConversationScreen({
+    required this.contact,
+    required this.myUserId,
+  });
+
+  final ChatContact contact;
+  final String myUserId;
+
+  @override
+  ConsumerState<_MobileConversationScreen> createState() =>
+      _MobileConversationScreenState();
+}
+
+class _MobileConversationScreenState
+    extends ConsumerState<_MobileConversationScreen> {
+  final TextEditingController _composerController = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(messageConversationProvider.notifier)
+          .openConversation(widget.contact.id);
+    });
+  }
+
+  @override
+  void dispose() {
+    _composerController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (_sending) return;
+    final text = _composerController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() => _sending = true);
+    _composerController.clear();
+    HapticFeedback.selectionClick();
+
+    try {
+      await ref.read(messageConversationProvider.notifier).sendMessage(text);
+    } catch (e) {
+      if (!mounted) return;
+      _composerController.text = text;
+      AppSnack.show(context, 'Failed to send message: $e');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final conversationAsync = ref.watch(messageConversationProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.contact.name),
+            Text(
+              widget.contact.subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () =>
+                ref.read(messageConversationProvider.notifier).refresh(),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _ConversationPane(
+              selectedContact: widget.contact,
+              conversationAsync: conversationAsync,
+              myUserId: widget.myUserId,
+              onRetry: () =>
+                  ref.read(messageConversationProvider.notifier).refresh(),
+            ),
+          ),
+          _ComposerBar(
+            controller: _composerController,
+            enabled: !_sending,
+            onSend: _send,
+            compact: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
@@ -521,10 +886,22 @@ class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool mine;
 
+  String _formatTime(BuildContext context, DateTime value) {
+    final local = value.toLocal();
+    try {
+      final locale = Localizations.localeOf(context).toLanguageTag();
+      return DateFormat('h:mm a', locale).format(local);
+    } catch (_) {
+      final tod = TimeOfDay.fromDateTime(local);
+      return MaterialLocalizations.of(context)
+          .formatTimeOfDay(tod, alwaysUse24HourFormat: false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final time = DateFormat('h:mm a').format(message.createdAt.toLocal());
+    final time = _formatTime(context, message.createdAt);
 
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -580,11 +957,13 @@ class _ComposerBar extends StatelessWidget {
     required this.controller,
     required this.enabled,
     required this.onSend,
+    this.compact = true,
   });
 
   final TextEditingController controller;
   final bool enabled;
   final VoidCallback? onSend;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -628,14 +1007,26 @@ class _ComposerBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          FilledButton(
-            onPressed: enabled ? onSend : null,
-            style: FilledButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(14),
-            ),
-            child: const Icon(Icons.send_rounded),
-          ),
+          compact
+              ? FilledButton(
+                  onPressed: enabled ? onSend : null,
+                  style: FilledButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(14),
+                  ),
+                  child: const Icon(Icons.send_rounded),
+                )
+              : FilledButton.icon(
+                  onPressed: enabled ? onSend : null,
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Send'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                  ),
+                ),
         ],
       ),
     );

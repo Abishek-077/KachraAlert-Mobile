@@ -140,7 +140,7 @@ class AppTheme {
 
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(54),
+          minimumSize: const Size(0, 54),
           shape: RoundedRectangleBorder(borderRadius: inputRadius),
           textStyle: const TextStyle(
             fontSize: 16,
@@ -151,7 +151,7 @@ class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(54),
+          minimumSize: const Size(0, 54),
           shape: RoundedRectangleBorder(borderRadius: inputRadius),
           side: BorderSide(color: scheme.outlineVariant),
           textStyle: const TextStyle(

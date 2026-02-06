@@ -28,11 +28,12 @@ class MessageContactsNotifier
   }
 
   final MessageRepositoryApi _repo;
+  static const int _pageSize = 50;
 
-  Future<void> load() async {
-    state = const AsyncValue.loading();
+  Future<void> load({bool silent = false}) async {
+    if (!silent) state = const AsyncValue.loading();
     try {
-      final contacts = await _repo.getContacts();
+      final contacts = await _repo.getContacts(limit: _pageSize);
       state = AsyncValue.data(contacts);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -51,6 +52,7 @@ class MessageConversationNotifier
 
   final MessageRepositoryApi _repo;
   String? _activeContactId;
+  static const int _pageSize = 50;
 
   String? get activeContactId => _activeContactId;
 
@@ -59,7 +61,7 @@ class MessageConversationNotifier
     if (normalizedId.isEmpty) return;
     _activeContactId = normalizedId;
     state = const AsyncValue.loading();
-    await _loadConversation(showLoadingOnError: true);
+    await _loadConversation(showLoadingOnError: true, limit: _pageSize);
   }
 
   Future<void> restoreConversation(String? contactId) async {
@@ -70,11 +72,15 @@ class MessageConversationNotifier
       return;
     }
     _activeContactId = normalizedId;
-    await _loadConversation(showLoadingOnError: false);
+    await _loadConversation(showLoadingOnError: false, limit: _pageSize);
   }
 
   Future<void> refresh() async {
-    await _loadConversation(showLoadingOnError: false);
+    await _loadConversation(
+      showLoadingOnError: false,
+      silent: true,
+      limit: _pageSize,
+    );
   }
 
   Future<void> sendMessage(String body) async {
@@ -86,15 +92,26 @@ class MessageConversationNotifier
     await refresh();
   }
 
-  Future<void> _loadConversation({required bool showLoadingOnError}) async {
+  Future<void> _loadConversation({
+    required bool showLoadingOnError,
+    bool silent = false,
+    int? limit,
+    DateTime? before,
+  }) async {
     final contactId = _activeContactId;
     if (contactId == null || contactId.isEmpty) {
       state = const AsyncValue.data([]);
       return;
     }
 
+    if (!silent) state = const AsyncValue.loading();
+
     try {
-      final messages = await _repo.getConversation(contactId);
+      final messages = await _repo.getConversation(
+        contactId,
+        limit: limit,
+        before: before,
+      );
       state = AsyncValue.data(messages);
     } catch (e, st) {
       if (showLoadingOnError && state.valueOrNull == null) {

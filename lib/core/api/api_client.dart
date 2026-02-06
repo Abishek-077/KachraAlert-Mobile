@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -32,6 +33,7 @@ class ApiClient {
 
   // Simple cookie jar for session-based backends.
   final Map<String, String> _cookies = {};
+  static const int _kBackgroundDecodeThreshold = 20 * 1024; // 20 KB
 
   Future<Map<String, dynamic>> postJson(
     String path,
@@ -58,7 +60,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -89,7 +92,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -126,7 +130,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -157,7 +162,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -194,7 +200,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -236,7 +243,8 @@ class ApiClient {
     }
 
     final body = response.body.trim();
-    final json = body.isEmpty ? <String, dynamic>{} : _safeDecode(body);
+    final json =
+        body.isEmpty ? <String, dynamic>{} : await _safeDecode(body);
 
     if (response.statusCode >= 400) {
       throw ApiException(
@@ -302,16 +310,11 @@ class ApiClient {
     }
   }
 
-  Map<String, dynamic> _safeDecode(String body) {
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
-      return {'data': decoded};
-    } catch (_) {
-      return {'raw': body};
+  Future<Map<String, dynamic>> _safeDecode(String body) async {
+    if (body.length >= _kBackgroundDecodeThreshold && !kIsWeb) {
+      return compute(_decodeJson, body);
     }
+    return _decodeJson(body);
   }
 
   String? _extractMessage(Map<String, dynamic> json) {
@@ -325,5 +328,17 @@ class ApiClient {
   String _fallbackMessage(String body) {
     if (body.isEmpty) return 'Unexpected server response.';
     return body.length > 200 ? body.substring(0, 200) : body;
+  }
+}
+
+Map<String, dynamic> _decodeJson(String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    return {'data': decoded};
+  } catch (_) {
+    return {'raw': body};
   }
 }
