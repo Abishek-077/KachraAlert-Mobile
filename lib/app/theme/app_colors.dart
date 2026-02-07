@@ -7,14 +7,14 @@ class AppColors {
   // Brand Core (Premium)
   // =========================
 
-  /// Primary: Eco Green (clean, fresh, trustworthy)
-  static const Color primary = Color(0xFF12B76A); // Emerald Green
-  static const Color primaryDark = Color(0xFF0B8B52); // Deep Green
-  static const Color primaryLight = Color(0xFF6DE2B0); // Soft Mint
+  /// Primary: Neo Eco Green (premium, vibrant, trustworthy)
+  static const Color primary = Color(0xFF0EA87B); // Emerald Core
+  static const Color primaryDark = Color(0xFF0A7A57); // Deep Forest
+  static const Color primaryLight = Color(0xFF7CF5C0); // Mint Glow
 
-  /// Secondary: Teal Mist (fresh accent)
-  static const Color secondary = Color(0xFF2DD4BF);
-  static const Color secondaryLight = Color(0xFF7AE8D9);
+  /// Secondary: Aqua Pulse (fresh accent)
+  static const Color secondary = Color(0xFF22D3EE);
+  static const Color secondaryLight = Color(0xFF7ADCF6);
 
   /// Luxury Accent: Warm Sand (use sparingly for highlights)
   static const Color accentGold = Color(0xFFE3C27A);
@@ -27,26 +27,26 @@ class AppColors {
   // =========================
   // Neutrals (Porcelain / Slate)
   // =========================
-  static const Color background = Color(0xFFF3FBF7); // Soft green wash
+  static const Color background = Color(0xFFF3FBF9); // Soft mint wash
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE9F5EF);
-  static const Color inputFill = Color(0xFFF0F7F3);
+  static const Color surfaceVariant = Color(0xFFE8F5F1);
+  static const Color inputFill = Color(0xFFEEF8F4);
 
   // Premium dark neutrals
-  static const Color textPrimary = Color(0xFF0B1F16); // Deep forest
-  static const Color textSecondary = Color(0xFF3E5B4D); // Muted green
-  static const Color textTertiary = Color(0xFF8AA196); // Soft sage
+  static const Color textPrimary = Color(0xFF0B1E16); // Deep forest
+  static const Color textSecondary = Color(0xFF335447); // Muted green
+  static const Color textTertiary = Color(0xFF86A197); // Soft sage
 
   // Borders & dividers
-  static const Color border = Color(0xFFD7E6DE);
-  static const Color divider = Color(0xFFE5F0EA);
+  static const Color border = Color(0xFFD3E6DE);
+  static const Color divider = Color(0xFFE3F1EB);
 
   // =========================
   // Status (More premium tones)
   // =========================
-  static const Color success = Color(0xFF16A34A); // Emerald 600
+  static const Color success = Color(0xFF16B364); // Emerald 500
   static const Color warning = Color(0xFFF59E0B); // Amber 500
-  static const Color error = Color(0xFFEF4444); // Red 500
+  static const Color error = Color(0xFFF04438); // Red 500
   static const Color info = Color(0xFF0EA5A5); // Teal 500
 
   // Auth Primary (keep aligned with brand)
@@ -69,14 +69,14 @@ class AppColors {
   // Gradients (Premium)
   // =========================
 
-  /// Primary gradient: Midnight Indigo -> Electric Blue
+  /// Primary gradient: Emerald -> Aqua -> Cyan
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0B8B52), // primaryDark
-      Color(0xFF12B76A), // primary
-      Color(0xFF2DD4BF), // secondary
+      Color(0xFF0A7A57), // primaryDark
+      Color(0xFF0EA87B), // primary
+      Color(0xFF22D3EE), // secondary
     ],
     stops: [0.0, 0.55, 1.0],
   );
@@ -86,8 +86,31 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFFF3FBF7),
+      Color(0xFFF3FBF9),
       Color(0xFFFFFFFF),
+    ],
+  );
+
+  /// Hero gradient: Emerald -> Aqua -> Warm Sand
+  static const LinearGradient heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0EA87B),
+      Color(0xFF22D3EE),
+      Color(0xFFF4D7A0),
+    ],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Glass panel gradient
+  static const LinearGradient panelGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0A7A57),
+      Color(0xFF0EA5A5),
+      Color(0xFF0F766E),
     ],
   );
 
@@ -154,10 +177,10 @@ class AppColors {
 
   /// Mesh gradient for animated backgrounds
   static const List<Color> meshGradientColors = [
-    Color(0xFF12B76A),
-    Color(0xFF2DD4BF),
-    Color(0xFF6DE2B0),
-    Color(0xFF0B8B52),
+    Color(0xFF0EA87B),
+    Color(0xFF22D3EE),
+    Color(0xFF7CF5C0),
+    Color(0xFF0A7A57),
   ];
 
   // =========================
@@ -224,8 +247,8 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [
       Color(0xFF0B1020),
-      Color(0xFF0B8B52),
-      Color(0xFF2DD4BF),
+      Color(0xFF0A7A57),
+      Color(0xFF22D3EE),
     ],
     stops: [0.0, 0.6, 1.0],
   );

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 
-/// Bottom navigation dock with glassmorphism and premium effects
-class KBottomNavDock extends StatefulWidget {
+/// Minimal premium dock with centered home action.
+class KBottomNavDock extends StatelessWidget {
   const KBottomNavDock({
     super.key,
     required this.currentIndex,
@@ -16,300 +15,188 @@ class KBottomNavDock extends StatefulWidget {
   final VoidCallback onFabTap;
 
   @override
-  State<KBottomNavDock> createState() => _KBottomNavDockState();
-}
-
-class _KBottomNavDockState extends State<KBottomNavDock>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    const items = <_DockItem>[
-      _DockItem(icon: Icons.home_rounded, label: 'Home', branchIndex: 0),
-      _DockItem(
-        icon: Icons.calendar_month_outlined,
-        label: 'Schedule',
-        branchIndex: 1,
-      ),
-      _DockItem(
-        icon: Icons.chat_bubble_outline_rounded,
-        label: 'Messages',
-        branchIndex: 2,
-      ),
-      _DockItem(
-        icon: Icons.person_outline_rounded,
-        label: 'Profile',
-        branchIndex: 4,
-      ),
-    ];
-
-    Widget navItem(_DockItem item) {
-      return _NavItem(
-        item: item,
-        selected: widget.currentIndex == item.branchIndex,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          widget.onIndexChanged(item.branchIndex);
-        },
-      );
-    }
-
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          // Glassmorphic Dock
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: SizedBox(
+        height: 86,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(
               child: Container(
-                height: 74,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: isDark
-                        ? [
-                            cs.surface.withOpacity(0.8),
-                            cs.surface.withOpacity(0.7),
-                          ]
-                        : [
-                            cs.surface.withOpacity(0.95),
-                            cs.surface.withOpacity(0.85),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: cs.onSurface.withOpacity(isDark ? 0.1 : 0.08),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: const Color(0xFFDCE4EA)),
+                  boxShadow: const [
                     BoxShadow(
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
-                      color: Colors.black.withOpacity(isDark ? 0.4 : 0.12),
+                      color: Color(0x1D0F201A),
+                      blurRadius: 24,
+                      offset: Offset(0, 10),
                     ),
-                    if (!isDark)
-                      BoxShadow(
-                        blurRadius: 20,
-                        offset: const Offset(0, -4),
-                        color: Colors.white.withOpacity(0.5),
-                      ),
+                    BoxShadow(
+                      color: Color(0xE6FFFFFF),
+                      blurRadius: 10,
+                      offset: Offset(-3, -3),
+                    ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    navItem(items[0]),
-                    navItem(items[1]),
-                    // Center FAB gap
-                    const SizedBox(width: 86),
-                    navItem(items[2]),
-                    navItem(items[3]),
+                    Expanded(
+                      child: _DockIcon(
+                        icon: Icons.calendar_month_outlined,
+                        selected: currentIndex == 1,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onIndexChanged(1);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _DockIcon(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        selected: currentIndex == 2,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onIndexChanged(2);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 84),
+                    Expanded(
+                      child: _DockIcon(
+                        icon: Icons.notifications_none_rounded,
+                        selected: currentIndex == 3,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onIndexChanged(3);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _DockIcon(
+                        icon: Icons.person_outline_rounded,
+                        selected: currentIndex == 4,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onIndexChanged(4);
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-          ),
-          // Premium Gradient FAB with pulse
-          Positioned(
-            bottom: 18,
-            child: AnimatedBuilder(
-              animation: _pulseAnimation,
-              builder: (context, child) {
-                return Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            cs.primary.withOpacity(0.4 * _pulseAnimation.value),
-                        blurRadius: 24 * _pulseAnimation.value,
-                        spreadRadius: 4 * (_pulseAnimation.value - 1),
-                      ),
-                    ],
-                  ),
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      widget.onFabTap();
-                    },
-                    elevation: 0,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            cs.primary,
-                            cs.primary.withOpacity(0.8),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        size: 32,
-                        color: cs.onPrimary,
-                      ),
-                    ),
-                  ),
-                );
+            _CenterHomeButton(
+              selected: currentIndex == 0,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onIndexChanged(0);
+              },
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                onFabTap();
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _DockItem {
-  final IconData icon;
-  final String label;
-  final int branchIndex;
-
-  const _DockItem({
+class _DockIcon extends StatelessWidget {
+  const _DockIcon({
     required this.icon,
-    required this.label,
-    required this.branchIndex,
-  });
-}
-
-class _NavItem extends StatefulWidget {
-  const _NavItem({
-    required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final _DockItem item;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
-  State<_NavItem> createState() => _NavItemState();
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: selected
+                  ? const Color(0xFF22A575).withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 27,
+              color:
+                  selected ? const Color(0xFF22A575) : const Color(0xFF7A8089),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _NavItemState extends State<_NavItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
+class _CenterHomeButton extends StatelessWidget {
+  const _CenterHomeButton({
+    required this.selected,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    // Use easeOut instead of elasticOut to avoid overshooting [0,1] range
-    _bounceAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void didUpdateWidget(_NavItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selected && !oldWidget.selected) {
-      _bounceController.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _bounceController.dispose();
-    super.dispose();
-  }
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final color = widget.selected ? cs.primary : cs.onSurface.withOpacity(0.55);
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          child: SizedBox(
-            height: double.infinity,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _bounceAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: widget.selected ? _bounceAnimation.value : 1.0,
-                      child: Icon(widget.item.icon, color: color, size: 26),
-                    );
-                  },
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.item.label,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight:
-                        widget.selected ? FontWeight.w800 : FontWeight.w600,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  height: 3,
-                  width: widget.selected ? 20 : 0,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [cs.primary, cs.primary.withOpacity(0.6)],
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: widget.selected
-                        ? [
-                            BoxShadow(
-                              color: cs.primary.withOpacity(0.4),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                        : [],
-                  ),
-                ),
-              ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF3B52DE), Color(0xFF4A3FC8)],
             ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.92),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B52DE).withValues(
+                  alpha: selected ? 0.36 : 0.22,
+                ),
+                blurRadius: selected ? 18 : 10,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
+          child: const Icon(Icons.home_rounded, color: Colors.white, size: 30),
         ),
       ),
     );

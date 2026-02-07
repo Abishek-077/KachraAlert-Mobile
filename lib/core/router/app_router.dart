@@ -7,12 +7,16 @@ import 'package:smart_waste_app/features/admin/presentation/pages/admin_broadcas
 import 'package:smart_waste_app/features/admin/presentation/pages/admin_schedule_manage_screen.dart';
 import 'package:smart_waste_app/features/admin/presentation/pages/admin_alert_form_screen.dart';
 import 'package:smart_waste_app/features/admin/data/models/admin_alert_hive_model.dart';
+import 'package:smart_waste_app/features/admin/presentation/pages/admin_users_screen.dart';
+import 'package:smart_waste_app/features/admin/presentation/pages/admin_user_form_screen.dart';
+import 'package:smart_waste_app/features/admin/data/models/admin_user_model.dart';
 
 // Alerts
 import 'package:smart_waste_app/features/alerts/presentation/pages/alerts_hub_screen.dart';
 
 // Reports
 import 'package:smart_waste_app/features/reports/presentation/pages/report_form_screen.dart';
+import 'package:smart_waste_app/features/reports/presentation/pages/report_success_screen.dart';
 import 'package:smart_waste_app/features/reports/presentation/pages/reports_screen.dart';
 import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
 
@@ -56,9 +60,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAlertsCreate = loc == '/alerts/create';
       final isReportsCreate = loc == '/reports/create';
       final isReportsList = loc == '/reports';
+      final isReportsSuccess = loc.startsWith('/reports/success/');
 
-      final isShell =
-          loc == '/home' ||
+      final isShell = loc == '/home' ||
           loc == '/schedule' ||
           loc == '/messages' ||
           loc.startsWith('/messages/') ||
@@ -73,8 +77,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // keep the user on splash unless timeout has been reached.
       final timeoutReached =
           startupTimeoutAsync.hasValue || startupTimeoutAsync.hasError;
-      final stillLoading =
-          (authAsync.isLoading ||
+      final stillLoading = (authAsync.isLoading ||
               onboardedAsync.isLoading ||
               splashDelayAsync.isLoading) &&
           !timeoutReached;
@@ -123,6 +126,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           isPayments ||
           isReportsList ||
           isReportsCreate ||
+          isReportsSuccess ||
           (isAdmin && userIsAdmin) ||
           isAlertsCreate;
 
@@ -139,7 +143,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
-
+      GoRoute(
+        path: '/reports/success/:reportId',
+        builder: (_, state) {
+          final reportId = state.pathParameters['reportId'] ?? '';
+          return ReportSuccessScreen(reportId: reportId);
+        },
+      ),
       GoRoute(
         path: '/admin/broadcast',
         builder: (_, __) => const AdminBroadcastScreen(),
@@ -148,7 +158,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/admin/schedule',
         builder: (_, __) => const AdminScheduleManageScreen(),
       ),
-
+      GoRoute(
+        path: '/admin/users',
+        builder: (_, __) => const AdminUsersScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users/form',
+        builder: (context, state) {
+          final extra = state.extra;
+          return AdminUserFormScreen(
+            existing: extra is AdminUser ? extra : null,
+          );
+        },
+      ),
       GoRoute(
         path: '/alerts/create',
         builder: (context, state) {
@@ -158,17 +180,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-
       GoRoute(
         path: '/reports/create',
         builder: (context, state) {
           final extra = state.extra;
+          final isUrgent = state.uri.queryParameters['urgent'] == 'true';
           return ReportFormScreen(
             existing: extra is ReportHiveModel ? extra : null,
+            isUrgent: isUrgent,
           );
         },
       ),
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return DashboardShell(navigationShell: navigationShell);
@@ -228,7 +250,8 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
       notifyListeners();
     });
 
-    _splashDelaySub = ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
+    _splashDelaySub =
+        ref.listen<AsyncValue<void>>(splashDelayProvider, (_, __) {
       notifyListeners();
     });
 

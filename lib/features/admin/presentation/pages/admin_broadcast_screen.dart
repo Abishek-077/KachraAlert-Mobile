@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/admin_alert_providers.dart';
+import '../widgets/admin_side_panel.dart';
 
 class AdminBroadcastScreen extends ConsumerStatefulWidget {
   const AdminBroadcastScreen({super.key});
@@ -28,6 +29,7 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
     final alerts = ref.watch(adminAlertsProvider);
 
     return Scaffold(
+      drawer: const AdminSidePanel(currentRoute: '/admin/broadcast'),
       appBar: AppBar(title: const Text('Admin Broadcast')),
       body: ListView(
         padding: const EdgeInsets.all(16),

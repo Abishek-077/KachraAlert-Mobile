@@ -48,16 +48,16 @@ class AppTheme {
     final inputRadius = BorderRadius.circular(16);
 
     final baseText = ThemeData(brightness: brightness).textTheme;
-    // ✅ Use a single modern font across the app (matches reference UI vibe)
-    final baseFontText = GoogleFonts.manropeTextTheme(baseText);
+    // ✅ Use a single modern font across the app (high-contrast, premium)
+    final baseFontText = GoogleFonts.spaceGroteskTextTheme(baseText);
     final textTheme = baseFontText.copyWith(
       headlineSmall: baseFontText.headlineSmall?.copyWith(
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.2,
+        letterSpacing: -0.4,
       ),
       titleLarge: baseFontText.titleLarge?.copyWith(
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.2,
+        letterSpacing: -0.4,
       ),
       titleMedium: baseFontText.titleMedium?.copyWith(
         fontWeight: FontWeight.w700,
@@ -176,6 +176,15 @@ class AppTheme {
         ),
       ),
 
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        backgroundColor: surface,
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: scheme.onSurface,
+        ),
+      ),
+
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         elevation: 0,
@@ -185,11 +194,28 @@ class AppTheme {
         ),
       ),
 
+      listTileTheme: ListTileThemeData(
+        iconColor: scheme.onSurface.withOpacity(0.7),
+        textColor: scheme.onSurface,
+      ),
+
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: radius.topLeft),
         ),
+      ),
+
+      chipTheme: ChipThemeData(
+        labelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+        side: BorderSide(color: scheme.outlineVariant.withOpacity(0.4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        shape: const CircleBorder(),
       ),
     );
   }

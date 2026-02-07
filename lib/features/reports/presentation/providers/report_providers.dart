@@ -39,22 +39,25 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     }
   }
 
-  Future<void> create({
+  Future<ReportHiveModel> create({
     required String userId,
     required String category,
     required String location,
     required String message,
+    String severity = 'Medium',
     Uint8List? attachmentBytes,
     String? attachmentName,
   }) async {
-    await _repo.create(
+    final created = await _repo.create(
       category: category,
       location: location.trim(),
       message: message.trim(),
+      priority: severity,
       attachmentBytes: attachmentBytes,
       attachmentName: attachmentName,
     );
     await load();
+    return created;
   }
 
   Future<void> adminUpdateStatus(String id, String status) async {
@@ -89,5 +92,7 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<ReportHiveModel>>> {
     return null;
   }
 
-  Future<void> updateReport(ReportHiveModel copyWith) async {}
+  Future<void> updateReport(ReportHiveModel report) async {
+    await update(report);
+  }
 }

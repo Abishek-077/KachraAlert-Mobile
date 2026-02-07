@@ -27,10 +27,21 @@ class KChip extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: bg,
+            gradient: selected
+                ? LinearGradient(
+                    colors: [
+                      cs.primary,
+                      cs.primary.withOpacity(0.8),
+                      cs.secondary.withOpacity(0.7),
+                    ],
+                  )
+                : null,
+            color: selected ? null : bg,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: selected ? Colors.transparent : border),
             boxShadow: selected

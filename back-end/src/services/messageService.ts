@@ -96,11 +96,7 @@ function assertMessagingAllowed(sender: UserDocument, recipient: UserDocument) {
   }
 }
 
-export async function listContactsForUser(
-  userId: string,
-  accountType: string,
-  options: { limit?: number; query?: string } = {}
-) {
+export async function listContactsForUser(userId: string, accountType: string) {
   ensureObjectId(userId, "User id");
   const requesterType = normalizeAccountType(accountType);
 
@@ -111,34 +107,16 @@ export async function listContactsForUser(
       ? { accountType: "resident" as const }
       : { accountType: { $in: ["admin_driver", "admin"] } };
 
-  const requestedLimit = options.limit ?? 200;
-  const limit = Math.min(Math.max(requestedLimit, 1), 200);
-  const query = options.query?.trim();
-
-  const search: Record<string, unknown> = {};
-  if (query) {
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const rx = new RegExp(escaped, "i");
-    search.$or = [{ name: rx }, { email: rx }, { phone: rx }];
-  }
-
   const contacts = await User.find({
     ...filter,
-    ...search,
     isBanned: { $ne: true },
     _id: { $ne: userId }
-  })
-    .sort({ name: 1 })
-    .limit(limit);
+  }).sort({ name: 1 });
 
   return contacts.map(mapContact);
 }
 
-export async function listConversation(
-  requesterId: string,
-  contactId: string,
-  options: { limit?: number; before?: Date | null } = {}
-) {
+export async function listConversation(requesterId: string, contactId: string) {
   const requester = await getUserOrThrow(requesterId, "User");
   const contact = await getUserOrThrow(contactId, "Contact");
   assertMessagingAllowed(requester, contact);
@@ -148,27 +126,16 @@ export async function listConversation(
     { $set: { readAt: new Date() } }
   );
 
-  const requestedLimit = options.limit ?? 500;
-  const limit = Math.min(Math.max(requestedLimit, 1), 500);
-  const before = options.before ?? null;
-
-  const filter: Record<string, unknown> = {
+  const messages = await Message.find({
     $or: [
       { sender: requester._id, recipient: contact._id },
       { sender: contact._id, recipient: requester._id }
     ]
-  };
+  })
+    .sort({ createdAt: 1 })
+    .limit(500);
 
-  if (before instanceof Date && !Number.isNaN(before.getTime())) {
-    filter.createdAt = { $lt: before };
-  }
-
-  // Query newest first for efficient limit, then reverse to keep ascending order.
-  const messages = await Message.find(filter)
-    .sort({ createdAt: -1 })
-    .limit(limit);
-
-  return messages.reverse().map(mapMessage);
+  return messages.map(mapMessage);
 }
 
 export async function sendMessage(input: { senderId: string; recipientId: string; body: string }) {

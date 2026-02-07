@@ -5,6 +5,7 @@ import 'package:smart_waste_app/app/theme/app_colors.dart';
 
 import '../../../schedule/data/models/schedule_hive_model.dart';
 import '../../../schedule/presentation/providers/schedule_providers.dart';
+import '../widgets/admin_side_panel.dart';
 
 class AdminScheduleManageScreen extends ConsumerWidget {
   const AdminScheduleManageScreen({super.key});
@@ -14,6 +15,7 @@ class AdminScheduleManageScreen extends ConsumerWidget {
     final schedulesAsync = ref.watch(schedulesProvider);
 
     return Scaffold(
+      drawer: const AdminSidePanel(currentRoute: '/admin/schedule'),
       appBar: AppBar(title: const Text('Manage Schedule')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, existing: null),

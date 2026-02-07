@@ -18,6 +18,31 @@ import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 const Color _premiumGreen = Color(0xFF1ECA92);
 const Color _premiumDarkGreen = Color(0xFF0E6E66);
 const Color _accentGreen = Color(0xFF16B584);
+const Color _premiumSoftCanvas = Color(0xFFF5F8F7);
+const List<BoxShadow> _premiumWhite3dShadow = [
+  BoxShadow(
+    color: Color(0x1A102218),
+    blurRadius: 24,
+    offset: Offset(0, 12),
+  ),
+  BoxShadow(
+    color: Color(0xEDFFFFFF),
+    blurRadius: 10,
+    offset: Offset(-4, -4),
+  ),
+];
+const List<BoxShadow> _premiumWhiteSoftShadow = [
+  BoxShadow(
+    color: Color(0x14102218),
+    blurRadius: 14,
+    offset: Offset(0, 6),
+  ),
+  BoxShadow(
+    color: Color(0xE0FFFFFF),
+    blurRadius: 8,
+    offset: Offset(-2, -2),
+  ),
+];
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -157,6 +182,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             .clamp(0.0, 1.0);
 
     return Scaffold(
+      backgroundColor: _premiumSoftCanvas,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -203,6 +229,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
             sliver: SliverToBoxAdapter(
               child: KCard(
+                backgroundColor: Colors.white,
+                boxShadow: _premiumWhite3dShadow,
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
@@ -755,25 +783,8 @@ class _PremiumSettingsTile extends StatefulWidget {
   State<_PremiumSettingsTile> createState() => _PremiumSettingsTileState();
 }
 
-class _PremiumSettingsTileState extends State<_PremiumSettingsTile>
-    with SingleTickerProviderStateMixin {
+class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
   bool _isHovered = false;
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -783,37 +794,31 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile>
     return MouseRegion(
       onEnter: (_) {
         setState(() => _isHovered = true);
-        _controller.forward();
       },
       onExit: (_) {
         setState(() => _isHovered = false);
-        _controller.reverse();
       },
       child: InkWell(
         onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          color: _isHovered
-              ? cs.surfaceVariant.withOpacity(0.4)
-              : Colors.transparent,
+          decoration: BoxDecoration(
+            color: _isHovered ? const Color(0xFFF8FBFA) : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _isHovered ? _premiumWhiteSoftShadow : null,
+          ),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: widget.iconBg.withOpacity(0.15),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: _isHovered
-                      ? [
-                          BoxShadow(
-                            color: widget.iconBg.withOpacity(0.2),
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
+                  border: Border.all(color: widget.iconBg.withOpacity(0.24)),
+                  boxShadow: _premiumWhiteSoftShadow,
                 ),
                 child: Icon(
                   widget.icon,
@@ -864,7 +869,7 @@ Widget _divider() {
     height: 1,
     indent: 64,
     endIndent: 16,
-    color: Colors.black.withOpacity(0.06),
+    color: const Color(0x140E2218),
   );
 }
 

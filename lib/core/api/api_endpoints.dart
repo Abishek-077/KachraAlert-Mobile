@@ -10,4 +10,5 @@ class ApiEndpoints {
   static const String invoices = '/invoices';
   static const String profilePhoto = '/users/me/profile-image';
   static const String messages = '/messages';
+  static const String adminUsers = '/admin/users';
 }

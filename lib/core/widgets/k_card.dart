@@ -9,6 +9,7 @@ class KCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.radius = 22,
     this.backgroundColor,
+    this.boxShadow,
     this.onTap,
   });
 
@@ -16,25 +17,48 @@ class KCard extends StatelessWidget {
   final EdgeInsets padding;
   final double radius;
   final Color? backgroundColor;
+  final List<BoxShadow>? boxShadow;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final surface = backgroundColor ?? cs.surface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final card = Container(
       decoration: BoxDecoration(
-        color: surface,
+        gradient: backgroundColor == null && !isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  surface,
+                  cs.surfaceVariant.withOpacity(0.45),
+                ],
+              )
+            : null,
+        color: backgroundColor ?? surface,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            spreadRadius: 0,
-            offset: const Offset(0, 10),
-            color: Colors.black.withOpacity(0.06),
-          ),
-        ],
+        border: Border.all(
+          color: cs.outlineVariant.withOpacity(isDark ? 0.2 : 0.35),
+        ),
+        boxShadow: boxShadow ??
+            [
+              BoxShadow(
+                blurRadius: 26,
+                spreadRadius: 0,
+                offset: const Offset(0, 12),
+                color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+              ),
+              if (!isDark)
+                BoxShadow(
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                  offset: const Offset(-6, -6),
+                  color: Colors.white.withOpacity(0.6),
+                ),
+            ],
       ),
       child: Padding(padding: padding, child: child),
     );

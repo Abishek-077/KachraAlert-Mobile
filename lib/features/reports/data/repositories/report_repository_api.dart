@@ -1,6 +1,5 @@
+import 'dart:convert';
 import 'dart:typed_data';
-
-import 'package:http/http.dart' as http;
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
@@ -27,43 +26,43 @@ class ReportRepositoryApi {
     required String category,
     required String location,
     required String message,
+    String priority = 'Medium',
     Uint8List? attachmentBytes,
     String? attachmentName,
   }) async {
     final token = _requireAccessToken();
+    final safeCategory = category.trim().isEmpty ? 'Other' : category.trim();
+    final safeLocation = location.trim();
+    final safeMessage = message.trim();
+    final safePriority = _mapPriorityToApi(priority);
     final title = _buildTitle(
-      category: category,
-      location: location,
-      message: message,
+      category: safeCategory,
+      location: safeLocation,
+      message: safeMessage,
     );
-    final fields = <String, String>{
+    final fields = <String, dynamic>{
       'title': title,
-      'category': _mapCategoryToApi(category),
-      'priority': 'Medium',
+      'category': _mapCategoryToApi(safeCategory),
+      'priority': safePriority,
     };
-    final response = (attachmentBytes != null && attachmentBytes.isNotEmpty)
-        ? await _client.postMultipart(
-            ApiEndpoints.reports,
-            fields: fields,
-            files: [
-              http.MultipartFile.fromBytes(
-                'attachment',
-                attachmentBytes,
-                filename: attachmentName ?? 'attachment.jpg',
-              ),
-            ],
-            accessToken: token,
-          )
-        : await _client.postJson(
-            ApiEndpoints.reports,
-            fields,
-            accessToken: token,
-          );
+    final attachment = _buildAttachmentPayload(
+      attachmentBytes: attachmentBytes,
+      attachmentName: attachmentName,
+    );
+    if (attachment != null) {
+      fields['attachment'] = attachment;
+    }
+    final response = await _client.postJson(
+      ApiEndpoints.reports,
+      fields,
+      accessToken: token,
+    );
     final payload = _extractItem(response);
     final report = _mapReport(payload, fallbackTitle: title);
     return report.copyWith(
-      location: location,
-      message: message,
+      location: safeLocation.isNotEmpty ? safeLocation : report.location,
+      message: safeMessage.isNotEmpty ? safeMessage : report.message,
+      category: safeCategory,
     );
   }
 
@@ -73,19 +72,13 @@ class ReportRepositoryApi {
     required String location,
     required String message,
   }) async {
-    final token = _requireAccessToken();
-    final title = _buildTitle(category: category, location: location, message: message);
-    final response = await _client.patchJson(
-      '${ApiEndpoints.reports}/$id',
-      {
-        'title': title,
-        'category': _mapCategoryToApi(category),
-      },
-      accessToken: token,
+    if (id.trim().isEmpty) {
+      throw const ApiException('Report id is required.');
+    }
+    _buildTitle(category: category, location: location, message: message);
+    throw const ApiException(
+      'Editing report details is not available yet. Please create a new report instead.',
     );
-    final payload = _extractItem(response);
-    final report = _mapReport(payload, fallbackTitle: title);
-    return report.copyWith(location: location, message: message);
   }
 
   Future<ReportHiveModel> updateStatus({
@@ -121,8 +114,10 @@ class ReportRepositoryApi {
   }
 
   List<Map<String, dynamic>> _extractList(Map<String, dynamic> response) {
-    final data =
-        response['data'] ?? response['reports'] ?? response['items'] ?? response;
+    final data = response['data'] ??
+        response['reports'] ??
+        response['items'] ??
+        response;
     if (data is List) {
       return data
           .whereType<Map>()
@@ -155,39 +150,83 @@ class ReportRepositoryApi {
   }) {
     final mapped = ReportHiveModel.fromJson(json);
     final normalizedStatus = _normalizeStatus(mapped.status);
-    final title = (json['title'] ?? fallbackTitle ?? '').toString();
-    final location = mapped.location.isNotEmpty ? mapped.location : title;
-    final message = mapped.message.isNotEmpty ? mapped.message : title;
+    final title = _safeString(json['title']) ?? fallbackTitle ?? '';
+    final parsed = _parseTitle(title);
+    final mappedCategory = _mapCategoryFromApi(mapped.category);
+    final resolvedCategory = _resolveCategory(
+      mappedCategory: mappedCategory,
+      parsedCategory: parsed.category,
+    );
+    final location = mapped.location.trim().isNotEmpty
+        ? mapped.location.trim()
+        : parsed.location;
+    final message = mapped.message.trim().isNotEmpty
+        ? mapped.message.trim()
+        : parsed.message;
+    final reporterName = mapped.reporterName ??
+        _safeString(json['createdByName']) ??
+        _safeString(json['userName']);
+    final reporterPhotoUrl = mapped.reporterPhotoUrl ??
+        _safeString(json['createdByPhotoUrl']) ??
+        _safeString(json['userPhotoUrl']);
 
     return ReportHiveModel(
-      id: mapped.id,
-      userId: mapped.userId,
+      id: mapped.id.trim().isNotEmpty
+          ? mapped.id
+          : DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: mapped.userId.trim().isNotEmpty
+          ? mapped.userId
+          : (_safeString(json['createdBy']) ?? ''),
       createdAt: mapped.createdAt,
-      category: _mapCategoryFromApi(mapped.category),
-      location: location,
-      message: message,
+      category: resolvedCategory,
+      location: location.isNotEmpty ? location : 'Location shared in details',
+      message: message.isNotEmpty ? message : title,
       status: normalizedStatus,
-      attachmentUrl: mapped.attachmentUrl,
-      reporterName: mapped.reporterName,
-      reporterPhotoUrl: mapped.reporterPhotoUrl,
+      attachmentUrl: _resolveAttachmentUrl(json, mapped.attachmentUrl),
+      reporterName: reporterName,
+      reporterPhotoUrl: reporterPhotoUrl,
     );
   }
 
   String _normalizeStatus(String raw) {
     final value = raw.toLowerCase();
     if (value.contains('progress')) return 'in_progress';
-    if (value.contains('resolved') || value.contains('closed')) return 'resolved';
+    if (value.contains('resolved') || value.contains('closed')) {
+      return 'resolved';
+    }
+    if (value.contains('open') || value.contains('pending')) return 'pending';
     return 'pending';
   }
 
   String _mapCategoryToApi(String category) {
     switch (category) {
+      case 'Missed Pickup':
+        return 'Missed Pickup';
       case 'Overflowing Bin':
         return 'Overflow';
+      case 'Payment':
+        return 'Payment';
+      case 'Garbage Pile':
+      case 'Illegal Dumping':
+      case 'Blocked Drain':
+      case 'Burning Waste':
       case 'Bad Smell':
+      case 'Other':
         return 'Other';
       default:
-        return category;
+        return 'Other';
+    }
+  }
+
+  String _mapPriorityToApi(String priority) {
+    final value = priority.trim().toLowerCase();
+    switch (value) {
+      case 'low':
+        return 'Low';
+      case 'high':
+        return 'High';
+      default:
+        return 'Medium';
     }
   }
 
@@ -195,6 +234,12 @@ class ReportRepositoryApi {
     switch (category) {
       case 'Overflow':
         return 'Overflowing Bin';
+      case 'Missed Pickup':
+        return 'Missed Pickup';
+      case 'Payment':
+        return 'Payment';
+      case 'Other':
+        return 'Other';
       default:
         return category;
     }
@@ -218,14 +263,129 @@ class ReportRepositoryApi {
     required String location,
     required String message,
   }) {
-    final trimmedMessage = message.trim();
-    if (trimmedMessage.length >= 6) return trimmedMessage;
-    final trimmedLocation = location.trim();
-    if (trimmedLocation.isNotEmpty) {
-      return '$category @ $trimmedLocation';
-    }
-    final fallback = category.trim();
-    if (fallback.length >= 6) return fallback;
-    return '$fallback issue';
+    final safeCategory = _sanitizeTitlePart(category, fallback: 'Other');
+    final safeLocation =
+        _sanitizeTitlePart(location, fallback: 'Location not shared');
+    final safeMessage = _sanitizeTitlePart(
+      message,
+      fallback: 'Issue reported from Kachra Alert app.',
+    );
+    return '$safeCategory$_titleDelimiter$safeLocation$_titleDelimiter$safeMessage';
   }
+
+  Map<String, dynamic>? _buildAttachmentPayload({
+    Uint8List? attachmentBytes,
+    String? attachmentName,
+  }) {
+    if (attachmentBytes == null || attachmentBytes.isEmpty) return null;
+    final fileName = _sanitizeTitlePart(
+      attachmentName ?? 'attachment.jpg',
+      fallback: 'attachment.jpg',
+    );
+    return {
+      'name': fileName,
+      'mimeType': _mimeTypeFor(fileName),
+      'dataBase64': base64Encode(attachmentBytes),
+    };
+  }
+
+  String _resolveCategory({
+    required String mappedCategory,
+    required String parsedCategory,
+  }) {
+    if (mappedCategory.isEmpty || mappedCategory == 'Other') {
+      if (parsedCategory.isNotEmpty) return parsedCategory;
+      return 'Other';
+    }
+    return mappedCategory;
+  }
+
+  String? _resolveAttachmentUrl(Map<String, dynamic> json, String? fallback) {
+    final direct = _safeString(json['attachmentUrl'] ?? json['attachment']);
+    if (direct != null) return direct;
+
+    final attachments = json['attachments'];
+    if (attachments is List && attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first is Map) {
+        final map = first.cast<String, dynamic>();
+        final url = _safeString(map['url'] ?? map['attachmentUrl']);
+        if (url != null) return url;
+      }
+    }
+    return fallback;
+  }
+
+  _ParsedTitle _parseTitle(String raw) {
+    final title = raw.trim();
+    if (title.isEmpty) {
+      return const _ParsedTitle(
+        category: 'Other',
+        location: '',
+        message: '',
+      );
+    }
+
+    final chunks = title.split(_titleDelimiter);
+    if (chunks.length >= 3) {
+      return _ParsedTitle(
+        category: chunks.first.trim(),
+        location: chunks[1].trim(),
+        message: chunks.sublist(2).join(_titleDelimiter).trim(),
+      );
+    }
+
+    final oldSplit = title.split(' @ ');
+    if (oldSplit.length == 2) {
+      return _ParsedTitle(
+        category: oldSplit.first.trim(),
+        location: oldSplit.last.trim(),
+        message: title,
+      );
+    }
+
+    return _ParsedTitle(
+      category: 'Other',
+      location: '',
+      message: title,
+    );
+  }
+
+  String _sanitizeTitlePart(
+    String value, {
+    required String fallback,
+  }) {
+    final trimmed = value.trim().replaceAll(_titleDelimiter, ' ');
+    if (trimmed.isEmpty) return fallback;
+    return trimmed;
+  }
+
+  String _mimeTypeFor(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.heic')) return 'image/heic';
+    if (lower.endsWith('.heif')) return 'image/heif';
+    return 'image/jpeg';
+  }
+
+  String? _safeString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+}
+
+const _titleDelimiter = '|||';
+
+class _ParsedTitle {
+  const _ParsedTitle({
+    required this.category,
+    required this.location,
+    required this.message,
+  });
+
+  final String category;
+  final String location;
+  final String message;
 }
