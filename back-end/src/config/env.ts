@@ -17,7 +17,7 @@ const accessTokenTtl = (process.env.ACCESS_TOKEN_TTL ?? "15m") as TokenExpiresIn
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
-  port: Number(process.env.PORT ?? 4000),
+  port: Number(process.env.PORT ?? 4001),
   mongoUri: requireEnv("MONGODB_URI"),
   jwtAccessSecret: requireEnv("JWT_ACCESS_SECRET"),
   jwtRefreshSecret: requireEnv("JWT_REFRESH_SECRET"),

@@ -31,7 +31,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final auth = ref.watch(authStateProvider).valueOrNull;
     final token = auth?.session?.accessToken;
     final currentUserId = auth?.session?.userId;
-    final currentDisplayName = _displayName(auth?.session?.email ?? '');
+    final currentDisplayName = _displayName(
+      auth?.session?.email ?? '',
+      fallback: l10n.guestUser,
+    );
     final currentProfilePhotoUrl =
         resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
     final stats = _ReportStats.from(reportsAsync.valueOrNull ?? const []);
@@ -66,6 +69,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     open: stats.open,
                     inProgress: stats.inProgress,
                     resolved: stats.resolved,
+                    l10n: l10n,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -107,6 +111,42 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.choice('Recent Reports', 'हालका रिपोर्टहरू'),
+                        style: TextStyle(
+                          color: cs.onSurface,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '${stats.total}',
+                          style: TextStyle(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
                 reportsAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.only(top: 40),
@@ -315,16 +355,19 @@ class _ReportsHeroCard extends StatelessWidget {
     required this.open,
     required this.inProgress,
     required this.resolved,
+    required this.l10n,
   });
 
   final int total;
   final int open;
   final int inProgress;
   final int resolved;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       decoration: BoxDecoration(
@@ -333,14 +376,21 @@ class _ReportsHeroCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            cs.primary.withValues(alpha: 0.96),
-            const Color(0xFF156764),
-            cs.secondary.withValues(alpha: 0.86),
+            isDark
+                ? cs.primary.withValues(alpha: 0.64)
+                : cs.primary.withValues(alpha: 0.96),
+            isDark ? const Color(0xFF113641) : const Color(0xFF156764),
+            isDark
+                ? cs.secondary.withValues(alpha: 0.44)
+                : cs.secondary.withValues(alpha: 0.86),
           ],
+        ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.08),
         ),
         boxShadow: [
           BoxShadow(
-            color: cs.primary.withValues(alpha: 0.32),
+            color: cs.primary.withValues(alpha: isDark ? 0.22 : 0.32),
             blurRadius: 26,
             offset: const Offset(0, 14),
           ),
@@ -349,8 +399,8 @@ class _ReportsHeroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'CLEAN CITY TRACKER',
+          Text(
+            l10n.choice('CLEAN CITY TRACKER', 'सफा सहर ट्र्याकर'),
             style: TextStyle(
               color: Colors.white70,
               fontSize: 11,
@@ -359,8 +409,8 @@ class _ReportsHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Report Impact',
+          Text(
+            l10n.choice('Report Impact', 'रिपोर्ट प्रभाव'),
             style: TextStyle(
               color: Colors.white,
               fontSize: 25,
@@ -371,15 +421,33 @@ class _ReportsHeroCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _HeroStatPill(value: '$total', label: 'Total')),
-              const SizedBox(width: 8),
-              Expanded(child: _HeroStatPill(value: '$open', label: 'Open')),
+              Expanded(
+                child: _HeroStatPill(
+                  value: '$total',
+                  label: l10n.choice('Total', 'जम्मा'),
+                ),
+              ),
               const SizedBox(width: 8),
               Expanded(
-                  child: _HeroStatPill(value: '$inProgress', label: 'Active')),
+                child: _HeroStatPill(
+                  value: '$open',
+                  label: l10n.choice('Open', 'खुला'),
+                ),
+              ),
               const SizedBox(width: 8),
               Expanded(
-                  child: _HeroStatPill(value: '$resolved', label: 'Resolved')),
+                child: _HeroStatPill(
+                  value: '$inProgress',
+                  label: l10n.choice('Active', 'प्रगतिमा'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _HeroStatPill(
+                  value: '$resolved',
+                  label: l10n.resolved,
+                ),
+              ),
             ],
           ),
         ],
@@ -539,19 +607,32 @@ class _ReportDetailsSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    reporterLabel,
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.74),
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _usernameHandle(reporterName),
+                        style: TextStyle(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        reporterLabel,
+                        style: TextStyle(
+                          color: cs.onSurface.withValues(alpha: 0.74),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              'Details',
+              l10n.details,
               style: TextStyle(
                 color: cs.onSurface.withValues(alpha: 0.68),
                 fontWeight: FontWeight.w800,
@@ -567,7 +648,7 @@ class _ReportDetailsSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                _previewMessage(report.message),
+                _previewMessage(report.message, l10n),
                 style: TextStyle(
                   color: cs.onSurface.withValues(alpha: 0.82),
                   fontWeight: FontWeight.w600,
@@ -646,24 +727,37 @@ class _ReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final ui = _statusUi(report.status, cs, l10n);
     final publicId = _publicId(report);
+    final secondaryColor = cs.onSurface.withValues(alpha: isDark ? 0.76 : 0.62);
+    final bodyColor = cs.onSurface.withValues(alpha: isDark ? 0.84 : 0.72);
+    final metaColor = cs.onSurface.withValues(alpha: isDark ? 0.76 : 0.66);
+    final iconColor = cs.onSurface.withValues(alpha: isDark ? 0.68 : 0.5);
 
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x1A0B1E16),
-          blurRadius: 22,
-          offset: Offset(0, 12),
-        ),
-        BoxShadow(
-          color: Color(0xE6FFFFFF),
-          blurRadius: 10,
-          offset: Offset(-3, -3),
-        ),
-      ],
+      backgroundColor: isDark ? cs.surfaceContainerHigh : Colors.white,
+      boxShadow: isDark
+          ? [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.34),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ]
+          : const [
+              BoxShadow(
+                color: Color(0x1A0B1E16),
+                blurRadius: 22,
+                offset: Offset(0, 12),
+              ),
+              BoxShadow(
+                color: Color(0xE6FFFFFF),
+                blurRadius: 10,
+                offset: Offset(-3, -3),
+              ),
+            ],
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: Column(
@@ -710,6 +804,45 @@ class _ReportCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
+                          _ReporterAvatar(
+                            name: reporterName,
+                            photoUrl: reporterPhotoUrl,
+                            photoHeaders: reporterPhotoHeaders,
+                            radius: 12,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _usernameHandle(reporterName),
+                                  style: TextStyle(
+                                    color: cs.onSurface,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  reporterName,
+                                  style: TextStyle(
+                                    color: secondaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
                           Expanded(
                             child: Text(
                               _localizedCategory(report.category, l10n),
@@ -741,9 +874,9 @@ class _ReportCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _previewMessage(report.message),
+                        _previewMessage(report.message, l10n),
                         style: TextStyle(
-                          color: cs.onSurface.withValues(alpha: 0.72),
+                          color: bodyColor,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -770,8 +903,7 @@ class _ReportCard extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          Icon(Icons.chevron_right_rounded,
-                              color: cs.onSurface.withValues(alpha: 0.5)),
+                          Icon(Icons.chevron_right_rounded, color: iconColor),
                         ],
                       ),
                     ],
@@ -782,7 +914,7 @@ class _ReportCard extends StatelessWidget {
           ),
           Divider(
             height: 1,
-            color: cs.outlineVariant.withValues(alpha: 0.22),
+            color: cs.outlineVariant.withValues(alpha: isDark ? 0.42 : 0.22),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -793,13 +925,15 @@ class _ReportCard extends StatelessWidget {
                     children: [
                       Icon(Icons.place_rounded,
                           size: 16,
-                          color: cs.onSurface.withValues(alpha: 0.55)),
+                          color: cs.onSurface.withValues(
+                            alpha: isDark ? 0.68 : 0.55,
+                          )),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           report.location,
                           style: TextStyle(
-                            color: cs.onSurface.withValues(alpha: 0.66),
+                            color: metaColor,
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                           ),
@@ -812,16 +946,15 @@ class _ReportCard extends StatelessWidget {
                 Text(
                   timeAgo(report.createdAt),
                   style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.66),
+                    color: metaColor,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
                 ),
                 const SizedBox(width: 10),
-                _ReporterAvatar(
-                  name: reporterName,
-                  photoUrl: reporterPhotoUrl,
-                  photoHeaders: reporterPhotoHeaders,
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: iconColor,
                 ),
               ],
             ),
@@ -886,11 +1019,11 @@ enum ReportFilter {
   cleaned,
 }
 
-String _displayName(String email) {
+String _displayName(String email, {String fallback = 'User'}) {
   final cleaned = email.trim();
-  if (cleaned.isEmpty) return 'User';
+  if (cleaned.isEmpty) return fallback;
   final name = cleaned.split('@').first;
-  if (name.isEmpty) return 'User';
+  if (name.isEmpty) return fallback;
   return name
       .replaceAll(RegExp(r'[^a-zA-Z0-9 ]'), ' ')
       .trim()
@@ -898,6 +1031,14 @@ String _displayName(String email) {
       .map((part) =>
           part.isEmpty ? '' : '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
+}
+
+String _usernameHandle(String name) {
+  final cleaned = name.trim().toLowerCase();
+  if (cleaned.isEmpty) return '@user';
+  final compact = cleaned.replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  if (compact.isEmpty) return '@user';
+  return '@$compact';
 }
 
 String _resolveReporterName({
@@ -1025,10 +1166,13 @@ class _ReportStats {
   }
 }
 
-String _previewMessage(String message) {
+String _previewMessage(String message, AppLocalizations l10n) {
   final trimmed = message.trim();
   if (trimmed.isEmpty) {
-    return 'Issue reported from Kachra Alert app.';
+    return l10n.choice(
+      'Issue reported from Kachra Alert app.',
+      'कचरा अलर्ट एपबाट समस्या रिपोर्ट गरिएको छ।',
+    );
   }
   return trimmed;
 }

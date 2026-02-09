@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/extensions/async_value_extensions.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/ui/snackbar.dart';
 import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/widgets/k_widgets.dart';
@@ -53,6 +54,9 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   bool get _isEdit => widget.existing != null;
   bool get _hasPhoto =>
       _attachmentBytes != null && _attachmentBytes!.isNotEmpty;
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+  ColorScheme get _cs => Theme.of(context).colorScheme;
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
@@ -99,23 +103,40 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = _l10n;
     if (_saving) return;
     final auth = ref.read(authStateProvider).valueOrNull;
     final userId = auth?.session?.userId;
     if (userId == null) {
-      AppSnack.show(context, 'Please log in to submit a report.', error: true);
+      AppSnack.show(
+        context,
+        l10n.choice(
+          'Please log in to submit a report.',
+          'रिपोर्ट पठाउन कृपया लगइन गर्नुहोस्।',
+        ),
+        error: true,
+      );
       return;
     }
     if (!_hasPhoto) {
       setState(() => _step = 0);
-      AppSnack.show(context, 'Please add a photo before continuing.',
-          error: true);
+      AppSnack.show(
+        context,
+        l10n.choice(
+          'Please add a photo before continuing.',
+          'अगाडि बढ्न अघि फोटो थप्नुहोस्।',
+        ),
+        error: true,
+      );
       return;
     }
     if (_isEdit) {
       AppSnack.show(
         context,
-        'Editing existing reports is temporarily unavailable. Please submit a new report instead.',
+        l10n.choice(
+          'Editing existing reports is temporarily unavailable. Please submit a new report instead.',
+          'हाल रिपोर्ट सम्पादन बन्द छ। कृपया नयाँ रिपोर्ट पठाउनुहोस्।',
+        ),
         error: true,
       );
       return;
@@ -125,8 +146,12 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     final landmark = _landmark.text.trim();
     final location =
         landmark.isEmpty ? _baseLocation : '$_baseLocation, $landmark';
-    final message =
-        notes.isEmpty ? 'Issue reported from Kachra Alert app.' : notes;
+    final message = notes.isEmpty
+        ? l10n.choice(
+            'Issue reported from Kachra Alert app.',
+            'कचरा अलर्ट एपबाट समस्या रिपोर्ट गरिएको छ।',
+          )
+        : notes;
 
     try {
       setState(() => _saving = true);
@@ -143,7 +168,14 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       context.go('/reports/success/${_publicId(created)}');
     } catch (e) {
       if (mounted) {
-        AppSnack.show(context, 'Failed to submit report: $e', error: true);
+        AppSnack.show(
+          context,
+          l10n.choice(
+            'Failed to submit report: $e',
+            'रिपोर्ट पठाउन सकिएन: $e',
+          ),
+          error: true,
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -152,21 +184,27 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10n;
+    final cs = _cs;
+    final isDark = _isDark;
     final stepTitle = switch (_step) {
-      0 => 'Step 1: Photo & Category',
-      1 => 'Step 2: Severity & Details',
-      _ => 'Step 3: Location',
+      0 => l10n.choice('Step 1: Photo & Category', 'चरण १: फोटो र श्रेणी'),
+      1 =>
+        l10n.choice('Step 2: Severity & Details', 'चरण २: प्राथमिकता र विवरण'),
+      _ => l10n.choice('Step 3: Location', 'चरण ३: स्थान'),
     };
     final mainLabel = _step == _totalSteps - 1
-        ? (_saving ? 'Submitting...' : 'Submit Report')
-        : 'Continue';
+        ? (_saving
+            ? l10n.choice('Submitting...', 'पठाउँदै...')
+            : l10n.submitReport)
+        : l10n.choice('Continue', 'जारी राख्नुहोस्');
     final mainIcon = _step == _totalSteps - 1
         ? Icons.auto_awesome_rounded
         : Icons.chevron_right_rounded;
     final canPress = _canGoNext && !_saving;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F7),
+      backgroundColor: isDark ? cs.surface : const Color(0xFFF6F8F7),
       body: Stack(
         children: [
           const AmbientBackground(),
@@ -181,22 +219,27 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                       _iconBtn(Icons.close_rounded,
                           _saving ? null : () => context.pop()),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Report Issue',
+                              l10n.choice(
+                                  'Report Issue', 'समस्या रिपोर्ट गर्नुहोस्'),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
+                                color: cs.onSurface,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Clear details help teams clean faster',
+                              l10n.choice(
+                                'Clear details help teams clean faster',
+                                'स्पष्ट विवरणले टोलीलाई छिटो सफा गर्न मद्दत गर्छ',
+                              ),
                               style: TextStyle(
-                                color: Color(0xFF5D697C),
+                                color: cs.onSurface.withValues(alpha: 0.72),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -217,10 +260,16 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                           child: Container(
                             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.84),
+                              color: isDark
+                                  ? cs.surfaceContainerHigh.withValues(
+                                      alpha: 0.86,
+                                    )
+                                  : Colors.white.withValues(alpha: 0.84),
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(
-                                color: const Color(0xFFE5EBEF),
+                                color: cs.outlineVariant.withValues(
+                                  alpha: isDark ? 0.45 : 0.8,
+                                ),
                               ),
                             ),
                             child: Column(
@@ -236,8 +285,10 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                                         height: 7,
                                         decoration: BoxDecoration(
                                           color: i <= _step
-                                              ? const Color(0xFF12B886)
-                                              : const Color(0xFFE3E8EB),
+                                              ? cs.primary
+                                              : cs.outlineVariant.withValues(
+                                                  alpha: 0.45,
+                                                ),
                                           borderRadius:
                                               BorderRadius.circular(999),
                                         ),
@@ -250,15 +301,19 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                                   children: [
                                     Text(
                                       stepTitle,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: cs.onSurface,
+                                      ),
                                     ),
                                     const Spacer(),
                                     Text(
                                       '${_step + 1}/$_totalSteps',
-                                      style: const TextStyle(
-                                        color: Color(0xFF596175),
+                                      style: TextStyle(
+                                        color: cs.onSurface.withValues(
+                                          alpha: 0.72,
+                                        ),
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -274,14 +329,22 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                           child: Container(
                             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: isDark
+                                  ? cs.surfaceContainerHigh.withValues(
+                                      alpha: 0.92,
+                                    )
+                                  : Colors.white.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: const Color(0xFFE5EBEF),
+                                color: cs.outlineVariant.withValues(
+                                  alpha: isDark ? 0.5 : 0.8,
+                                ),
                               ),
-                              boxShadow: const [
+                              boxShadow: [
                                 BoxShadow(
-                                  color: Color(0x14000000),
+                                  color: isDark
+                                      ? Colors.black.withValues(alpha: 0.36)
+                                      : const Color(0x14000000),
                                   blurRadius: 20,
                                   offset: Offset(0, 10),
                                 ),
@@ -295,16 +358,27 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF4E5),
+                                      color: isDark
+                                          ? cs.errorContainer.withValues(
+                                              alpha: 0.36,
+                                            )
+                                          : const Color(0xFFFFF4E5),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: const Color(0xFFFFE0B2),
+                                        color: isDark
+                                            ? cs.error.withValues(alpha: 0.5)
+                                            : const Color(0xFFFFE0B2),
                                       ),
                                     ),
-                                    child: const Text(
-                                      'Editing reports is currently disabled by the server. Submit a new report below.',
+                                    child: Text(
+                                      l10n.choice(
+                                        'Editing reports is currently disabled by the server. Submit a new report below.',
+                                        'रिपोर्ट सम्पादन अहिले सर्भरबाट बन्द छ। तल नयाँ रिपोर्ट पठाउनुहोस्।',
+                                      ),
                                       style: TextStyle(
-                                        color: Color(0xFF8A4B07),
+                                        color: isDark
+                                            ? cs.onErrorContainer
+                                            : const Color(0xFF8A4B07),
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -334,12 +408,12 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                             onPressed: _saving
                                 ? null
                                 : () => setState(() => _step -= 1),
-                            child: const Text(
-                              'Back',
+                            child: Text(
+                              l10n.choice('Back', 'फिर्ता'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF141B2C),
+                                color: cs.onSurface,
                               ),
                             ),
                           ),
@@ -368,227 +442,560 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Widget _stepOne() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _section('Add Photo', Icons.photo_camera_outlined),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(
-          child: _photoCard(
-            'Camera',
-            Icons.photo_camera_outlined,
-            _attachmentSource == ImageSource.camera && _hasPhoto,
-            _saving ? null : () => _pickPhoto(ImageSource.camera),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _photoCard(
-            'Gallery',
-            Icons.ios_share_outlined,
-            _attachmentSource == ImageSource.gallery && _hasPhoto,
-            _saving ? null : () => _pickPhoto(ImageSource.gallery),
-          ),
-        ),
-      ]),
-      if (_hasPhoto) ...[
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF7F2),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCFE9DF)),
-          ),
-          child: Row(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(
-                _attachmentBytes!,
-                width: 52,
-                height: 52,
-                fit: BoxFit.cover,
+    final l10n = _l10n;
+    final cs = _cs;
+    final isDark = _isDark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _panelCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _section(
+                l10n.choice('Add Photo', 'Add Photo'),
+                Icons.photo_camera_outlined,
               ),
-            ),
-            const SizedBox(width: 10),
-            const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _attachmentName ?? 'Photo selected',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, color: Color(0xFF294554)),
-              ),
-            ),
-            IconButton(
-              onPressed: _saving
-                  ? null
-                  : () => setState(() {
-                        _attachmentBytes = null;
-                        _attachmentName = null;
-                        _attachmentSource = null;
-                      }),
-              icon: const Icon(Icons.close_rounded),
-            ),
-          ]),
-        ),
-      ],
-      const SizedBox(height: 18),
-      const Text('Category',
-          style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 12),
-      Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: _categories.map((c) {
-          final selected = _category == c.$1;
-          return Material(
-            color: selected ? const Color(0xFFE8F6F1) : const Color(0xFFF0F3F6),
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: _saving ? null : () => setState(() => _category = c.$1),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: selected
-                          ? const Color(0xFF9CD9C4)
-                          : const Color(0xFFF0F3F6)),
+              const SizedBox(height: 6),
+              Text(
+                l10n.choice(
+                  'Capture a clear photo so cleanup teams can identify the issue quickly.',
+                  'Capture a clear photo so cleanup teams can identify the issue quickly.',
                 ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(c.$2, color: c.$3, size: 21),
-                  const SizedBox(width: 10),
-                  Text(c.$1,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
-                ]),
+                style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.68),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-    ]);
-  }
-
-  Widget _stepTwo() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _section('Severity Level', Icons.info_outline_rounded),
-      const SizedBox(height: 14),
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final columns = width < 380
-              ? 1
-              : width < 560
-                  ? 2
-                  : 3;
-          final spacing = 12.0;
-          final cardWidth = (width - ((columns - 1) * spacing)) / columns;
-
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: _severities.map((s) {
-              final selected = _severity == s.$1;
-              return SizedBox(
-                width: cardWidth,
-                child: Material(
-                  color: selected ? s.$3 : const Color(0xFFF1F4F7),
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap:
-                        _saving ? null : () => setState(() => _severity = s.$1),
-                    child: Container(
-                      height: 112,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: selected
-                              ? s.$3.withValues(alpha: 0.1)
-                              : const Color(0xFFE4E9EE),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _photoCard(
+                      l10n.choice('Camera', 'Camera'),
+                      Icons.photo_camera_outlined,
+                      _attachmentSource == ImageSource.camera && _hasPhoto,
+                      _saving ? null : () => _pickPhoto(ImageSource.camera),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _photoCard(
+                      l10n.choice('Gallery', 'Gallery'),
+                      Icons.ios_share_outlined,
+                      _attachmentSource == ImageSource.gallery && _hasPhoto,
+                      _saving ? null : () => _pickPhoto(ImageSource.gallery),
+                    ),
+                  ),
+                ],
+              ),
+              if (_hasPhoto) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        cs.primary.withValues(alpha: isDark ? 0.24 : 0.12),
+                        cs.secondary.withValues(alpha: isDark ? 0.14 : 0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: cs.primary.withValues(alpha: isDark ? 0.42 : 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          _attachmentBytes!,
+                          width: 54,
+                          height: 54,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _severityIcon(s.$1),
-                            color: selected
-                                ? Colors.white
-                                : const Color(0xFF2C3547),
-                            size: 20,
+                      const SizedBox(width: 10),
+                      Icon(Icons.check_circle_rounded, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _attachmentName ??
+                              l10n.choice('Photo selected', 'Photo selected'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            s.$1,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: selected
-                                  ? Colors.white
-                                  : const Color(0xFF141B2C),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            s.$2,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: selected
-                                  ? Colors.white.withValues(alpha: 0.92)
-                                  : const Color(0xFF5F6778),
-                            ),
-                          ),
-                        ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _saving
+                            ? null
+                            : () => setState(() {
+                                  _attachmentBytes = null;
+                                  _attachmentName = null;
+                                  _attachmentSource = null;
+                                }),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _panelCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    l10n.category,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 190),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: isDark ? 0.28 : 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _categoryLabel(_category, l10n),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
                       ),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 420 ? 2 : 1;
+                  const spacing = 10.0;
+                  final width =
+                      (constraints.maxWidth - ((columns - 1) * spacing)) /
+                          columns;
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (final c in _categories)
+                        SizedBox(
+                          width: width,
+                          child: _categoryTile(
+                            label: _categoryLabel(c.$1, l10n),
+                            icon: c.$2,
+                            accent: c.$3,
+                            selected: _category == c.$1,
+                            onTap: _saving
+                                ? null
+                                : () => setState(() => _category = c.$1),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stepTwo() {
+    final l10n = _l10n;
+    final cs = _cs;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _panelCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _section(
+                l10n.choice('Severity Level', 'Severity Level'),
+                Icons.info_outline_rounded,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.choice(
+                  'Set urgency so crews can prioritize correctly.',
+                  'Set urgency so crews can prioritize correctly.',
                 ),
-              );
-            }).toList(),
-          );
-        },
+                style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.68),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final columns = width > 700
+                      ? 3
+                      : width > 440
+                          ? 2
+                          : 1;
+                  const spacing = 10.0;
+                  final cardWidth =
+                      (width - ((columns - 1) * spacing)) / columns;
+
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (final s in _severities)
+                        SizedBox(
+                          width: cardWidth,
+                          child: _severityTile(
+                            level: s.$1,
+                            accent: s.$3,
+                            selected: _severity == s.$1,
+                            onTap: _saving
+                                ? null
+                                : () => setState(() => _severity = s.$1),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _panelCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    l10n.choice('Additional Notes', 'Additional Notes'),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_notes.text.length}/$_maxChars',
+                    style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notes,
+                enabled: !_saving,
+                minLines: 4,
+                maxLines: 5,
+                maxLength: _maxChars,
+                onChanged: (_) => setState(() {}),
+                decoration: _input(
+                  l10n.choice(
+                    'Describe the issue in detail (optional)',
+                    'Describe the issue in detail (optional)',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.choice(
+                  '${_notes.text.length}/$_maxChars characters',
+                  '${_notes.text.length}/$_maxChars characters',
+                ),
+                style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.62),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _panelCard({
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(14, 14, 14, 14),
+  }) {
+    final cs = _cs;
+    final isDark = _isDark;
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            (isDark ? cs.surfaceContainerHigh : Colors.white)
+                .withValues(alpha: 0.94),
+            (isDark ? cs.surfaceContainerHighest : const Color(0xFFF5F9FC))
+                .withValues(alpha: isDark ? 0.86 : 0.96),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: isDark ? 0.5 : 0.62),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.28)
+                : const Color(0x140B1E16),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.55),
+              blurRadius: 10,
+              offset: const Offset(-3, -3),
+            ),
+        ],
       ),
-      const SizedBox(height: 22),
-      const Text('Additional Notes',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _notes,
-        enabled: !_saving,
-        minLines: 4,
-        maxLines: 5,
-        maxLength: _maxChars,
-        onChanged: (_) => setState(() {}),
-        decoration: _input('Describe the issue in detail (optional)'),
+      child: child,
+    );
+  }
+
+  Widget _categoryTile({
+    required String label,
+    required IconData icon,
+    required Color accent,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    final cs = _cs;
+    final isDark = _isDark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: isDark ? 0.34 : 0.18),
+                      cs.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+                    ],
+                  )
+                : null,
+            color: selected
+                ? null
+                : (isDark
+                    ? cs.surfaceContainerHighest.withValues(alpha: 0.68)
+                    : const Color(0xFFF2F5F7)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(alpha: isDark ? 0.78 : 0.45)
+                  : cs.outlineVariant.withValues(alpha: isDark ? 0.36 : 0.6),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: isDark ? 0.2 : 0.14),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: accent, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                opacity: selected ? 1 : 0,
+                child:
+                    Icon(Icons.check_circle_rounded, color: accent, size: 18),
+              ),
+            ],
+          ),
+        ),
       ),
-      const SizedBox(height: 4),
-      Text('${_notes.text.length}/$_maxChars characters',
-          style: const TextStyle(
-              color: Color(0xFF6E7688), fontWeight: FontWeight.w500)),
-    ]);
+    );
+  }
+
+  Widget _severityTile({
+    required String level,
+    required Color accent,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    final l10n = _l10n;
+    final cs = _cs;
+    final isDark = _isDark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accent,
+                      accent.withValues(alpha: isDark ? 0.82 : 0.9),
+                    ],
+                  )
+                : null,
+            color: selected
+                ? null
+                : (isDark
+                    ? cs.surfaceContainerHighest.withValues(alpha: 0.74)
+                    : const Color(0xFFF2F5F7)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(alpha: isDark ? 0.95 : 0.55)
+                  : cs.outlineVariant.withValues(alpha: isDark ? 0.42 : 0.6),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: isDark ? 0.28 : 0.2),
+                      blurRadius: 14,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _severityIcon(level),
+                  color: selected ? Colors.white : accent,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _severityLabel(level, l10n),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: selected ? Colors.white : cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _severityDescription(level, l10n),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: selected
+                            ? Colors.white.withValues(alpha: 0.92)
+                            : cs.onSurface.withValues(alpha: 0.72),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: selected
+                    ? Colors.white
+                    : cs.onSurface.withValues(alpha: isDark ? 0.4 : 0.28),
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _stepThree() {
+    final l10n = _l10n;
+    final cs = _cs;
+    final isDark = _isDark;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _section('Location', Icons.location_on_outlined),
+      _section(l10n.location, Icons.location_on_outlined),
       const SizedBox(height: 12),
       Container(
         height: 260,
         width: double.infinity,
         decoration: BoxDecoration(
-            color: const Color(0xFFDDE7E2),
+            color: isDark
+                ? cs.surfaceContainerHighest.withValues(alpha: 0.8)
+                : const Color(0xFFDDE7E2),
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.2),
+            ),
             borderRadius: BorderRadius.circular(22)),
         child: Center(
           child: Stack(alignment: Alignment.center, children: [
@@ -607,8 +1014,10 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
             Container(
               width: 48,
               height: 48,
-              decoration: const BoxDecoration(
-                  shape: BoxShape.circle, color: Color(0xFF0F766E)),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.primary,
+              ),
               child:
                   const Icon(Icons.location_on_outlined, color: Colors.white),
             ),
@@ -619,11 +1028,21 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark
+              ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
+              : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: isDark ? 0.45 : 0.2),
+          ),
+          boxShadow: [
             BoxShadow(
-                color: Color(0x14000000), blurRadius: 20, offset: Offset(0, 6))
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : const Color(0x14000000),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            )
           ],
         ),
         child: Row(children: [
@@ -637,104 +1056,217 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                 color: Color(0xFF12B886), size: 30),
           ),
           const SizedBox(width: 14),
-          const Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Using Current Location',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.choice(
+                      'Using Current Location', 'हालको स्थान प्रयोग गर्दै'),
                   style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF131A2A))),
-              SizedBox(height: 4),
-              Text(_baseLocation,
-                  style: TextStyle(fontSize: 16, color: Color(0xFF5E6676))),
-            ]),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _baseLocation,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: cs.onSurface.withValues(alpha: 0.74),
+                  ),
+                ),
+              ],
+            ),
           ),
           const Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 30),
         ]),
       ),
       const SizedBox(height: 26),
-      const Text('Nearby Landmark',
-          style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+      Text(
+        l10n.choice('Nearby Landmark', 'नजिकको चिन्ह'),
+        style: TextStyle(
+          fontSize: 21,
+          fontWeight: FontWeight.w800,
+          color: cs.onSurface,
+        ),
+      ),
       const SizedBox(height: 12),
       TextField(
           controller: _landmark,
           enabled: !_saving,
-          decoration: _input('e.g., Near Pulchowk Campus gate')),
+          decoration: _input(
+            l10n.choice(
+              'e.g., Near Pulchowk Campus gate',
+              'जस्तै: पुल्चोक क्याम्पस गेट नजिक',
+            ),
+          )),
       const SizedBox(height: 10),
-      const Text('Adding a landmark helps workers find the location faster',
-          style:
-              TextStyle(color: Color(0xFF6E7688), fontWeight: FontWeight.w500)),
+      Text(
+        l10n.choice(
+          'Adding a landmark helps workers find the location faster',
+          'चिन्ह थप्दा कामदारले स्थान छिटो भेट्टाउँछन्',
+        ),
+        style: TextStyle(
+          color: cs.onSurface.withValues(alpha: 0.62),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     ]);
   }
 
   Widget _iconBtn(IconData icon, VoidCallback? onTap) {
+    final cs = _cs;
+    final isDark = _isDark;
     return SizedBox(
       width: 48,
       height: 48,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(14),
+        color: isDark
+            ? cs.surfaceContainerHighest.withValues(alpha: 0.9)
+            : Colors.white.withValues(alpha: 0.88),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: isDark ? 0.5 : 0.2),
+          ),
+        ),
         child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: onTap,
-            child: Icon(icon, color: const Color(0xFF1A2233), size: 28)),
+            child: Icon(icon, color: cs.onSurface, size: 28)),
       ),
     );
   }
 
   Widget _section(String title, IconData icon) {
+    final cs = _cs;
     return Row(children: [
-      Icon(icon, color: const Color(0xFF12B886), size: 22),
+      Icon(icon, color: cs.primary, size: 22),
       const SizedBox(width: 10),
       Text(title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          )),
     ]);
   }
 
   Widget _photoCard(
       String label, IconData icon, bool selected, VoidCallback? onTap) {
+    final cs = _cs;
+    final isDark = _isDark;
     return Material(
-      color: selected ? const Color(0xFFE7F6F0) : const Color(0xFFF3F5F7),
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
           height: 188,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
           decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      cs.primary.withValues(alpha: isDark ? 0.3 : 0.15),
+                      cs.secondary.withValues(alpha: isDark ? 0.18 : 0.1),
+                    ],
+                  )
+                : null,
+            color: selected
+                ? null
+                : (isDark
+                    ? cs.surfaceContainerHighest.withValues(alpha: 0.72)
+                    : const Color(0xFFF3F5F7)),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-                color: selected
-                    ? const Color(0xFF89DCC2)
-                    : const Color(0xFFDCE1E8),
-                width: 1.3),
+              color: selected
+                  ? cs.primary.withValues(alpha: isDark ? 0.58 : 0.35)
+                  : cs.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.6),
+              width: 1.3,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: cs.primary.withValues(alpha: isDark ? 0.2 : 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 7),
+                    ),
+                  ]
+                : null,
           ),
-          child: Center(
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 180),
+                  opacity: selected ? 1 : 0,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Selected',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Spacer(),
               Container(
                 width: 66,
                 height: 66,
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFFD8F0E7)
-                      : const Color(0xFFE8ECF1),
+                      ? cs.primary.withValues(alpha: isDark ? 0.25 : 0.15)
+                      : (isDark
+                          ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
+                          : const Color(0xFFE8ECF1)),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(icon,
-                    color: selected
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF667185),
-                    size: 34),
+                child: Icon(
+                  icon,
+                  color: selected
+                      ? cs.primary
+                      : cs.onSurface.withValues(alpha: 0.7),
+                  size: 34,
+                ),
               ),
-              const SizedBox(height: 14),
-              Text(label,
-                  style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF5C6678))),
-            ]),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface.withValues(alpha: 0.86),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                selected ? 'Ready' : 'Tap to select',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withValues(alpha: 0.58),
+                ),
+              ),
+              const Spacer(),
+            ],
           ),
         ),
       ),
@@ -747,20 +1279,31 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     required bool enabled,
     required VoidCallback onTap,
   }) {
+    final cs = _cs;
+    final isDark = _isDark;
+    final disabledText = cs.onSurface.withValues(alpha: isDark ? 0.56 : 0.72);
     return SizedBox(
       height: 58,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: enabled
-              ? const LinearGradient(
-                  colors: [Color(0xFF17A87C), Color(0xFF155A66)])
-              : const LinearGradient(
-                  colors: [Color(0xFF87BDB8), Color(0xFF7DABB0)]),
+              ? LinearGradient(
+                  colors: [cs.primary, cs.secondary.withValues(alpha: 0.8)],
+                )
+              : LinearGradient(
+                  colors: [
+                    cs.surfaceContainerHighest,
+                    cs.surfaceContainerHighest.withValues(alpha: 0.9),
+                  ],
+                ),
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: enabled ? 0 : 0.35),
+          ),
           boxShadow: enabled
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x3310A57A),
+                    color: cs.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: Offset(0, 8),
                   ),
@@ -787,12 +1330,14 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                   const SizedBox(width: 10),
                 ],
                 Text(label,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                      color: enabled ? Colors.white : disabledText,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    )),
                 const SizedBox(width: 8),
-                Icon(icon, color: Colors.white, size: 21),
+                Icon(icon,
+                    color: enabled ? Colors.white : disabledText, size: 21),
               ]),
             ),
           ),
@@ -805,17 +1350,25 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         hintText: hint,
         counterText: '',
         filled: true,
-        fillColor: const Color(0xFFF0F4F7),
+        fillColor: _isDark
+            ? _cs.surfaceContainerHighest.withValues(alpha: 0.72)
+            : const Color(0xFFF0F4F7),
+        hintStyle: TextStyle(
+          color: _cs.onSurface.withValues(alpha: 0.55),
+          fontWeight: FontWeight.w600,
+        ),
         contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none),
+            borderSide: BorderSide(
+              color: _cs.outlineVariant.withValues(alpha: _isDark ? 0.5 : 0.2),
+            )),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Color(0xFF17A77B), width: 1.3),
+          borderSide: BorderSide(color: _cs.primary, width: 1.3),
         ),
       );
 
@@ -829,6 +1382,49 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       default:
         return Icons.schedule_rounded;
     }
+  }
+}
+
+String _categoryLabel(String value, AppLocalizations l10n) {
+  switch (value) {
+    case 'Garbage Pile':
+      return l10n.choice('Garbage Pile', 'फोहोरको थुप्रो');
+    case 'Overflowing Bin':
+      return l10n.overflowingBin;
+    case 'Illegal Dumping':
+      return l10n.choice('Illegal Dumping', 'अवैध फोहोर फाल्ने');
+    case 'Blocked Drain':
+      return l10n.choice('Blocked Drain', 'अवरोधित नाला');
+    case 'Burning Waste':
+      return l10n.choice('Burning Waste', 'फोहोर बाल्ने');
+    default:
+      return value;
+  }
+}
+
+String _severityLabel(String value, AppLocalizations l10n) {
+  switch (value) {
+    case 'Low':
+      return l10n.choice('Low', 'कम');
+    case 'Medium':
+      return l10n.choice('Medium', 'मध्यम');
+    case 'High':
+      return l10n.choice('High', 'उच्च');
+    default:
+      return value;
+  }
+}
+
+String _severityDescription(String value, AppLocalizations l10n) {
+  switch (value) {
+    case 'Low':
+      return l10n.choice('Minor issue', 'सानो समस्या');
+    case 'Medium':
+      return l10n.choice('Needs attention', 'ध्यान आवश्यक');
+    case 'High':
+      return l10n.choice('Urgent action', 'तत्काल कार्य');
+    default:
+      return value;
   }
 }
 

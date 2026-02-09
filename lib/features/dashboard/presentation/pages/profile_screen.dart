@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:smart_waste_app/core/localization/app_localizations.dart';
 
 import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/ui/snackbar.dart';
@@ -10,7 +11,6 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/utils/media_url.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../profile/data/services/user_profile_api_service.dart';
-import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
@@ -87,12 +87,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 
   Future<void> _changePhoto() async {
+    final l10n = AppLocalizations.of(context);
     final auth = ref.read(authStateProvider).valueOrNull;
     final token = auth?.session?.accessToken;
     if (token == null || token.isEmpty) {
       if (mounted) {
-        AppSnack.show(context, 'Please sign in to update your photo.',
-            error: true);
+        AppSnack.show(context, l10n.signInToUpdatePhoto, error: true);
       }
       return;
     }
@@ -110,12 +110,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(l10n.chooseFromGallery),
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              title: Text(l10n.takePhoto),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
           ],
@@ -145,11 +145,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       );
       await ref.read(authStateProvider.notifier).updateProfilePhoto(photoUrl);
       if (mounted) {
-        AppSnack.show(context, 'Profile photo updated.', error: false);
+        AppSnack.show(context, l10n.profilePhotoUpdated, error: false);
       }
     } catch (e) {
       if (mounted) {
-        AppSnack.show(context, 'Failed to update profile photo: $e',
+        AppSnack.show(context, l10n.profilePhotoUpdateFailed('$e'),
             error: true);
       }
     } finally {
@@ -159,22 +159,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final email = (auth?.session?.email ?? '').trim();
     final isAdmin = auth?.session?.role == 'admin_driver';
-    final displayName = email.isEmpty ? 'Guest User' : email.split('@').first;
+    final displayName = email.isEmpty ? l10n.guestUser : email.split('@').first;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final apiBase = ref.watch(apiBaseUrlProvider);
     final token = auth?.session?.accessToken;
     final profilePhotoUrl =
         resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
-
-    final reports = ref.watch(reportsProvider).valueOrNull ?? const [];
-    final myReports = (auth?.session?.userId == null)
-        ? const []
-        : reports.where((r) => r.userId == auth!.session!.userId).toList();
-    final resolved = myReports.where((r) => r.status == 'resolved').length;
 
     // Calculate header scroll progress
     final scrollProgress =
@@ -182,7 +178,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             .clamp(0.0, 1.0);
 
     return Scaffold(
-      backgroundColor: _premiumSoftCanvas,
+      backgroundColor: isDark ? cs.surface : _premiumSoftCanvas,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -214,7 +210,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             sliver: SliverToBoxAdapter(
               child: Text(
-                'SETTINGS & PREFERENCES',
+                l10n.choice(
+                  'SETTINGS & PREFERENCES',
+                  'सेटिङ र प्राथमिकताहरू',
+                ),
                 style: TextStyle(
                   color: cs.onSurface.withOpacity(0.5),
                   fontWeight: FontWeight.w800,
@@ -229,84 +228,100 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
             sliver: SliverToBoxAdapter(
               child: KCard(
-                backgroundColor: Colors.white,
-                boxShadow: _premiumWhite3dShadow,
+                backgroundColor:
+                    isDark ? cs.surfaceContainerHigh : Colors.white,
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ]
+                    : _premiumWhite3dShadow,
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
                     _PremiumSettingsTile(
                       icon: Icons.notifications_none_rounded,
                       iconBg: const Color(0xFF6B9EFF),
-                      title: 'Notifications',
-                      subtitle: 'Manage alert preferences',
+                      title: l10n.notifications,
+                      subtitle: l10n.manageAlertPrefs,
                       onTap: () => context.go('/alerts'),
                     ),
-                    _divider(),
+                    _divider(context),
                     _PremiumSettingsTile(
                       icon: Icons.receipt_long_outlined,
                       iconBg: const Color(0xFFFFA500),
-                      title: 'Payments',
-                      subtitle: 'View invoices and pay dues',
+                      title: l10n.payments,
+                      subtitle: l10n.viewInvoices,
                       onTap: () => context.push('/payments'),
                     ),
-                    _divider(),
+                    _divider(context),
                     _PremiumSettingsTile(
                       icon: Icons.language_rounded,
                       iconBg: _premiumGreen,
-                      title: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
+                      title: l10n.language,
+                      subtitle: ref
+                                  .watch(settingsProvider)
+                                  .valueOrNull
+                                  ?.languageCode ==
+                              'ne'
+                          ? l10n.nepali
+                          : l10n.english,
+                      onTap: () => context.push('/settings'),
                     ),
-                    _divider(),
+                    _divider(context),
                     _PremiumSettingsTile(
                       icon: Icons.shield_outlined,
                       iconBg: _premiumDarkGreen,
-                      title: 'Privacy & Security',
-                      subtitle: 'Data and permissions',
+                      title: l10n.choice(
+                          'Privacy & Security', 'गोपनीयता र सुरक्षा'),
+                      subtitle: l10n.dataPermissions,
                       onTap: () {},
                     ),
-                    _divider(),
+                    _divider(context),
                     Consumer(
                       builder: (context, ref, _) {
                         final settings =
                             ref.watch(settingsProvider).valueOrNull;
                         final mode = (settings?.isDarkMode ?? false)
-                            ? 'Dark mode'
-                            : 'Light mode';
+                            ? l10n.darkMode
+                            : l10n.lightMode;
                         return _PremiumSettingsTile(
                           icon: Icons.nightlight_round,
                           iconBg: const Color(0xFFD4A574),
-                          title: 'Appearance',
+                          title: l10n.appearance,
                           subtitle: mode,
                           onTap: () =>
                               ref.read(settingsProvider.notifier).toggleTheme(),
                         );
                       },
                     ),
-                    _divider(),
+                    _divider(context),
                     _PremiumSettingsTile(
                       icon: Icons.help_outline_rounded,
                       iconBg: const Color(0xFF9B59B6),
-                      title: 'Help & Support',
-                      subtitle: 'FAQs and contact',
+                      title: l10n.helpSupport,
+                      subtitle: l10n.faqContact,
                       onTap: () {},
                     ),
                     if (isAdmin) ...[
-                      _divider(),
+                      _divider(context),
                       _PremiumSettingsTile(
                         icon: Icons.admin_panel_settings_outlined,
                         iconBg: _premiumGreen,
-                        title: 'Admin Panel',
-                        subtitle: 'Broadcast announcements',
+                        title: l10n.adminPanel,
+                        subtitle: l10n.broadcastAnnouncements,
                         onTap: () => context.push('/admin/broadcast'),
                       ),
                     ],
-                    _divider(),
+                    _divider(context),
                     _PremiumSettingsTile(
                       icon: Icons.logout_rounded,
                       iconBg: const Color(0xFFFF6B6B),
-                      title: 'Logout',
-                      subtitle: 'Sign out of this device',
+                      title: l10n.logout,
+                      subtitle: l10n.signOutDevice,
                       onTap: () =>
                           ref.read(authStateProvider.notifier).logout(),
                       danger: true,
@@ -333,6 +348,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     double scrollProgress,
     AnimationController fadeController,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Stack(
       children: [
         // Premium animated background gradient
@@ -375,7 +391,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         ),
         // Main content with smooth animation
         FadeTransition(
-          opacity: Tween<double>(begin: 1.0, end: 0.3).animate(
+          opacity: Tween<double>(begin: 1.0, end: 1.0).animate(
               CurvedAnimation(parent: fadeController, curve: Curves.easeOut)),
           child: Transform.translate(
             offset: Offset(0, scrollProgress * 80),
@@ -546,7 +562,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   const SizedBox(height: 10),
                   // Email
                   Text(
-                    email.isEmpty ? 'Not signed in' : email,
+                    email.isEmpty ? l10n.notSignedIn : email,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -594,8 +610,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          'Top Contributor',
+                        Text(
+                          l10n.topContributor,
                           style: TextStyle(
                             color: _premiumGreen,
                             fontWeight: FontWeight.w800,
@@ -789,6 +805,7 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = widget.danger ? cs.error : cs.onSurface;
 
     return MouseRegion(
@@ -805,9 +822,23 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            color: _isHovered ? const Color(0xFFF8FBFA) : Colors.transparent,
+            color: _isHovered
+                ? (isDark
+                    ? cs.surfaceContainerHighest
+                    : const Color(0xFFF8FBFA))
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: _isHovered ? _premiumWhiteSoftShadow : null,
+            boxShadow: _isHovered
+                ? (isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : _premiumWhiteSoftShadow)
+                : null,
           ),
           child: Row(
             children: [
@@ -815,10 +846,21 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? cs.surface : Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.iconBg.withOpacity(0.24)),
-                  boxShadow: _premiumWhiteSoftShadow,
+                  border: Border.all(
+                    color:
+                        widget.iconBg.withValues(alpha: isDark ? 0.32 : 0.24),
+                  ),
+                  boxShadow: isDark
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : _premiumWhiteSoftShadow,
                 ),
                 child: Icon(
                   widget.icon,
@@ -853,7 +895,7 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: cs.onSurface.withOpacity(0.3),
+                color: cs.onSurface.withValues(alpha: isDark ? 0.58 : 0.3),
                 size: 24,
               ),
             ],
@@ -864,17 +906,18 @@ class _PremiumSettingsTileState extends State<_PremiumSettingsTile> {
   }
 }
 
-Widget _divider() {
+Widget _divider(BuildContext context) {
+  final cs = Theme.of(context).colorScheme;
   return Divider(
     height: 1,
     indent: 64,
     endIndent: 16,
-    color: const Color(0x140E2218),
+    color: cs.outlineVariant.withValues(alpha: 0.28),
   );
 }
 
 String _titleCase(String value) {
-  final cleaned = value.replaceAll(RegExp(r'[^a-zA-Z0-9 ]'), ' ').trim();
+  final cleaned = value.trim();
   if (cleaned.isEmpty) return 'User';
   final parts = cleaned.split(RegExp(r'\s+'));
   return parts

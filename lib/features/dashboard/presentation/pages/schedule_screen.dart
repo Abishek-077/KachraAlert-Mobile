@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_waste_app/core/localization/app_localizations.dart';
 
 import '../../../../core/widgets/k_widgets.dart';
 
@@ -13,6 +14,7 @@ class ScheduleScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final isAdmin = auth?.isAdmin ?? false;
@@ -29,21 +31,23 @@ class ScheduleScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Text(
-                    'Schedule',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                  Text(
+                    l10n.choice(
+                        'Schedule', '\u0924\u093e\u0932\u093f\u0915\u093e'),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.w900),
                   ),
                   const Spacer(),
                   if (isAdmin)
                     IconButton(
-                      tooltip: 'Manage Schedule',
+                      tooltip: l10n.choice('Manage Schedule',
+                          '\u0924\u093e\u0932\u093f\u0915\u093e \u0935\u094d\u092f\u0935\u0938\u094d\u0925\u093e\u092a\u0928'),
                       onPressed: () => context.push('/admin/schedule'),
                       icon: const Icon(Icons.edit_calendar_rounded),
                     ),
                 ],
               ),
               const SizedBox(height: 12),
-
               schedulesAsync.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.only(top: 40),
@@ -55,7 +59,10 @@ class ScheduleScreen extends ConsumerWidget {
                       const Icon(Icons.error_outline_rounded, size: 46),
                       const SizedBox(height: 10),
                       Text(
-                        'Failed to load schedule',
+                        l10n.choice(
+                          'Failed to load schedule',
+                          '\u0924\u093e\u0932\u093f\u0915\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u093f\u090f\u0928',
+                        ),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -75,7 +82,7 @@ class ScheduleScreen extends ConsumerWidget {
                           onPressed: () =>
                               ref.read(schedulesProvider.notifier).load(),
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Retry'),
+                          label: Text(l10n.retry),
                         ),
                       ),
                     ],
@@ -88,24 +95,39 @@ class ScheduleScreen extends ConsumerWidget {
                         children: [
                           const Icon(Icons.calendar_month_rounded, size: 52),
                           const SizedBox(height: 10),
-                          const Text(
-                            'No schedule published yet',
-                            style:
-                                TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                          Text(
+                            l10n.choice(
+                              'No schedule published yet',
+                              '\u0905\u0939\u093f\u0932\u0947\u0938\u092e\u094d\u092e \u0924\u093e\u0932\u093f\u0915\u093e \u092a\u094d\u0930\u0915\u093e\u0936\u093f\u0924 \u0917\u0930\u093f\u090f\u0915\u094b \u091b\u0948\u0928',
+                            ),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Admin will publish collection dates soon.',
+                            l10n.choice(
+                              'Admin will publish collection dates soon.',
+                              '\u090f\u0921\u092e\u093f\u0928\u0932\u0947 \u091b\u093f\u091f\u094d\u091f\u0948 \u0938\u0902\u0915\u0932\u0928 \u092e\u093f\u0924\u093f\u0939\u0930\u0942 \u092a\u094d\u0930\u0915\u093e\u0936\u093f\u0924 \u0917\u0930\u094d\u0928\u0947\u091b\u0928\u094d\u0964',
+                            ),
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                            style: TextStyle(
+                                color: cs.onSurface.withOpacity(0.65)),
                           ),
                           if (isAdmin) ...[
                             const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton(
-                                onPressed: () => context.push('/admin/schedule'),
-                                child: const Text('Create Schedule'),
+                                onPressed: () =>
+                                    context.push('/admin/schedule'),
+                                child: Text(
+                                  l10n.choice(
+                                    'Create Schedule',
+                                    '\u0924\u093e\u0932\u093f\u0915\u093e \u092c\u0928\u093e\u0909\u0928\u0941\u0939\u094b\u0938\u094d',
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -118,7 +140,7 @@ class ScheduleScreen extends ConsumerWidget {
                     children: [
                       for (final s in list) ...[
                         _ScheduleCard(
-                          title: '${s.waste} • ${s.timeLabel}',
+                          title: '${s.waste} | ${s.timeLabel}',
                           dateISO: s.dateISO,
                           status: s.status,
                         ),
@@ -149,12 +171,16 @@ class _ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final parsedDate = DateTime.tryParse(dateISO);
     final dateStr = parsedDate == null
         ? dateISO
         : '${parsedDate.day.toString().padLeft(2, '0')}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.year}';
     final isUpcoming = status.toLowerCase() == 'upcoming';
+    final localizedStatus = isUpcoming
+        ? l10n.choice('upcoming', '\u0906\u0909\u0901\u0926\u0948\u091b')
+        : l10n.choice('completed', '\u0938\u092e\u093e\u092a\u094d\u0924');
 
     return KCard(
       padding: const EdgeInsets.all(16),
@@ -172,11 +198,12 @@ class _ScheduleCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 15),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '$dateStr  •  $status',
+                  '$dateStr | $localizedStatus',
                   style: TextStyle(
                     color: cs.onSurface.withOpacity(0.65),
                     fontWeight: FontWeight.w700,
@@ -189,12 +216,8 @@ class _ScheduleCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Icon(
-            isUpcoming
-                ? Icons.access_time_rounded
-                : Icons.check_circle_rounded,
-            color: isUpcoming
-                ? cs.secondary
-                : const Color(0xFF1ECA92),
+            isUpcoming ? Icons.access_time_rounded : Icons.check_circle_rounded,
+            color: isUpcoming ? cs.secondary : const Color(0xFF1ECA92),
           ),
         ],
       ),

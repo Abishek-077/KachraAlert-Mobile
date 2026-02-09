@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_client.dart';
+import '../../../../core/extensions/async_value_extensions.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/utils/media_url.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../admin/presentation/providers/admin_alert_providers.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 class AlertsHubScreen extends ConsumerStatefulWidget {
   const AlertsHubScreen({super.key});
@@ -18,7 +23,13 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
+    final apiBase = ref.watch(apiBaseUrlProvider);
+    final auth = ref.watch(authStateProvider).valueOrNull;
+    final token = auth?.session?.accessToken;
+    final adminPhotoHeaders =
+        token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
     final alertsAsync = ref.watch(adminAlertsProvider);
 
     return Scaffold(
@@ -30,9 +41,12 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
                 children: [
-                  const Text('Alerts',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                  Text(
+                    l10n.choice('Alerts',
+                        '\u0938\u0942\u091a\u0928\u093e\u0939\u0930\u0942'),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.w900),
+                  ),
                   const Spacer(),
                   _CircleIcon(icon: Icons.search_rounded, onTap: () {}),
                   const SizedBox(width: 12),
@@ -50,7 +64,7 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, i) {
                   return KChip(
-                    label: _filters[i],
+                    label: _localizedFilter(_filters[i], l10n),
                     selected: i == _filterIndex,
                     showDot: _filters[i] == 'Urgent',
                     onTap: () => setState(() => _filterIndex = i),
@@ -66,17 +80,32 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
             Expanded(
               child: alertsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text('Failed to load alerts: $e')),
+                error: (e, _) => Center(
+                  child: Text(
+                    l10n.choice(
+                      'Failed to load alerts: $e',
+                      '\u0938\u0942\u091a\u0928\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u093f\u090f\u0928: $e',
+                    ),
+                  ),
+                ),
                 data: (alerts) {
                   final dynamicAlerts = alerts.map((a) {
                     final type = _inferType(a.title, a.message);
+                    final adminName = a.adminName?.trim().isNotEmpty == true
+                        ? a.adminName!.trim()
+                        : l10n.choice(
+                            'Municipal Office',
+                            '\u0928\u0917\u0930\u092a\u093e\u0932\u093f\u0915\u093e \u0915\u093e\u0930\u094d\u092f\u093e\u0932\u092f',
+                          );
                     return _AlertItem(
                       type: type,
                       title: a.title,
                       message: a.message,
-                      meta: 'Municipal Office',
-                      timeAgo: _timeAgo(a.createdAt),
+                      meta: adminName,
+                      timeAgo: _timeAgo(context, a.createdAt),
+                      adminName: adminName,
+                      adminPhotoUrl: resolveMediaUrl(apiBase, a.adminPhotoUrl),
+                      adminPhotoHeaders: adminPhotoHeaders,
                     );
                   }).toList();
 
@@ -93,17 +122,32 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.notifications_off_outlined,
-                                size: 46,
-                                color: cs.onSurface.withOpacity(0.55)),
+                            Icon(
+                              Icons.notifications_off_outlined,
+                              size: 46,
+                              color: cs.onSurface.withOpacity(0.55),
+                            ),
                             const SizedBox(height: 12),
-                            const Text('No alerts',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w900, fontSize: 16)),
+                            Text(
+                              l10n.choice(
+                                'No alerts',
+                                '\u0915\u0941\u0928\u0948 \u0938\u0942\u091a\u0928\u093e \u091b\u0948\u0928',
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
                             const SizedBox(height: 6),
-                            Text('You’re all caught up.',
-                                style: TextStyle(
-                                    color: cs.onSurface.withOpacity(0.62))),
+                            Text(
+                              l10n.choice(
+                                'You are all caught up.',
+                                '\u0924\u092a\u093e\u0908\u0901 \u0938\u092c\u0948 \u0905\u092a\u0921\u0947\u091f\u092e\u093e \u0939\u0941\u0928\u0941\u0939\u0941\u0928\u094d\u091b\u0964',
+                              ),
+                              style: TextStyle(
+                                color: cs.onSurface.withOpacity(0.62),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -166,6 +210,9 @@ class _AlertItem {
   final String message;
   final String timeAgo;
   final String meta;
+  final String adminName;
+  final String? adminPhotoUrl;
+  final Map<String, String>? adminPhotoHeaders;
   late final Color accent;
   late final IconData icon;
   late final LinearGradient lineGradient;
@@ -176,6 +223,9 @@ class _AlertItem {
     required this.message,
     required this.timeAgo,
     required this.meta,
+    required this.adminName,
+    required this.adminPhotoUrl,
+    required this.adminPhotoHeaders,
   }) {
     final ui = _typeUi(type);
     accent = ui.accent;
@@ -214,23 +264,36 @@ class _AlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cs.surfaceContainerHigh : Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5EBEF)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x1A0B1E16),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: const Color(0xE6FFFFFF),
-            blurRadius: 10,
-            offset: const Offset(-3, -3),
-          ),
-        ],
+        border: Border.all(
+          color: isDark
+              ? cs.outlineVariant.withValues(alpha: 0.45)
+              : const Color(0xFFE5EBEF),
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Color(0x1A0B1E16),
+                  blurRadius: 22,
+                  offset: Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: Color(0xE6FFFFFF),
+                  blurRadius: 10,
+                  offset: Offset(-3, -3),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -251,15 +314,7 @@ class _AlertCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: item.accent.withOpacity(0.10),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(item.icon, color: item.accent),
-                  ),
+                  _AdminAlertAvatar(item: item),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -298,7 +353,7 @@ class _AlertCard extends StatelessWidget {
                                   fontSize: 12),
                             ),
                             const SizedBox(width: 10),
-                            Text('•',
+                            Text('|',
                                 style: TextStyle(
                                     color: cs.onSurface.withOpacity(0.35))),
                             const SizedBox(width: 10),
@@ -324,6 +379,32 @@ class _AlertCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AdminAlertAvatar extends StatelessWidget {
+  const _AdminAlertAvatar({required this.item});
+  final _AlertItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: item.accent.withOpacity(0.10),
+        shape: BoxShape.circle,
+      ),
+      child: item.adminPhotoUrl == null
+          ? Icon(item.icon, color: item.accent)
+          : Image.network(
+              item.adminPhotoUrl!,
+              fit: BoxFit.cover,
+              headers: item.adminPhotoHeaders,
+              errorBuilder: (_, __, ___) => Icon(item.icon, color: item.accent),
+            ),
     );
   }
 }
@@ -371,10 +452,40 @@ String _inferType(String title, String message) {
   return 'Community';
 }
 
-String _timeAgo(int millis) {
+String _timeAgo(BuildContext context, int millis) {
+  final l10n = AppLocalizations.of(context);
   final dt = DateTime.fromMillisecondsSinceEpoch(millis);
   final diff = DateTime.now().difference(dt);
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  return '${diff.inDays}d ago';
+  if (diff.inMinutes < 60) {
+    return l10n.choice(
+      '${diff.inMinutes} min ago',
+      '${diff.inMinutes} \u092e\u093f\u0928\u0947\u091f \u0905\u0918\u093f',
+    );
+  }
+  if (diff.inHours < 24) {
+    return l10n.choice(
+      '${diff.inHours}h ago',
+      '${diff.inHours} \u0918\u0923\u094d\u091f\u093e \u0905\u0918\u093f',
+    );
+  }
+  return l10n.choice(
+    '${diff.inDays}d ago',
+    '${diff.inDays} \u0926\u093f\u0928 \u0905\u0918\u093f',
+  );
+}
+
+String _localizedFilter(String filter, AppLocalizations l10n) {
+  switch (filter) {
+    case 'Urgent':
+      return l10n.choice('Urgent', '\u0924\u0924\u094d\u0915\u093e\u0932');
+    case 'Pickup':
+      return l10n.choice('Pickup', '\u0938\u0902\u0915\u0932\u0928');
+    case 'Weather':
+      return l10n.choice('Weather', '\u092e\u094c\u0938\u092e');
+    case 'Community':
+      return l10n.choice('Community', '\u0938\u092e\u0941\u0926\u093e\u092f');
+    case 'All':
+    default:
+      return l10n.reportFiltersAll;
+  }
 }

@@ -9,6 +9,7 @@ let io: Server | null = null;
 type SendMessagePayload = {
   recipientId?: string;
   body?: string;
+  replyToMessageId?: string;
 };
 
 type SendMessageAck = {
@@ -25,6 +26,12 @@ export function emitChatMessage(message: ChatMessage) {
   if (!io) return;
   io.to(getUserRoom(message.senderId)).emit("messages:new", message);
   io.to(getUserRoom(message.recipientId)).emit("messages:new", message);
+}
+
+export function emitChatMessageUpdate(message: ChatMessage) {
+  if (!io) return;
+  io.to(getUserRoom(message.senderId)).emit("messages:updated", message);
+  io.to(getUserRoom(message.recipientId)).emit("messages:updated", message);
 }
 
 export function initSocket(server: HttpServer) {
@@ -60,7 +67,8 @@ export function initSocket(server: HttpServer) {
           const message = await sendMessage({
             senderId: socketUser.sub,
             recipientId: payload?.recipientId ?? "",
-            body: payload?.body ?? ""
+            body: payload?.body ?? "",
+            replyToMessageId: payload?.replyToMessageId
           });
           emitChatMessage(message);
           if (callback) {

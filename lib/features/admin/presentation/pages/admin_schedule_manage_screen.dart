@@ -19,6 +19,7 @@ class AdminScheduleManageScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Manage Schedule')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, existing: null),
+        shape: const StadiumBorder(),
         icon: const Icon(Icons.add),
         label: const Text('Add'),
       ),
@@ -117,8 +118,7 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _date =
-        DateTime.tryParse(e?.dateISO ?? '') ??
+    _date = DateTime.tryParse(e?.dateISO ?? '') ??
         DateTime.now().add(const Duration(days: 1));
     _timeLabel = TextEditingController(text: e?.timeLabel ?? 'Morning');
     _waste = e?.waste ?? 'Biodegradable';
@@ -202,8 +202,7 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
               DropdownMenuItem(value: 'Glass', child: Text('Glass')),
               DropdownMenuItem(value: 'Metal', child: Text('Metal')),
             ],
-            onChanged: (v) =>
-                setState(() => _waste = v ?? 'Biodegradable'),
+            onChanged: (v) => setState(() => _waste = v ?? 'Biodegradable'),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -236,18 +235,14 @@ class _ScheduleFormSheetState extends ConsumerState<_ScheduleFormSheet> {
                 }
 
                 if (!isEdit) {
-                  await ref
-                      .read(schedulesProvider.notifier)
-                      .create(
+                  await ref.read(schedulesProvider.notifier).create(
                         date: _date,
                         timeLabel: timeLabel,
                         waste: _waste,
                         status: _status,
                       );
                 } else {
-                  await ref
-                      .read(schedulesProvider.notifier)
-                      .updateSchedule(
+                  await ref.read(schedulesProvider.notifier).updateSchedule(
                         e.copyWith(
                           dateISO: DateTime(
                             _date.year,

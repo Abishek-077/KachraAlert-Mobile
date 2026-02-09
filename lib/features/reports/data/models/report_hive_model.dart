@@ -48,23 +48,23 @@ class ReportHiveModel extends HiveObject {
   });
 
   factory ReportHiveModel.fromJson(Map<String, dynamic> json) {
-    final reporter = json['user'] ??
-        json['createdBy'] ??
-        json['reporter'] ??
-        json['author'];
-    final reporterMap = reporter is Map ? reporter.cast<String, dynamic>() : null;
+    final reporter =
+        json['user'] ?? json['createdBy'] ?? json['reporter'] ?? json['author'];
+    final reporterMap = _asStringMap(reporter);
     final reporterName = _nullableString(
       json['userName'] ??
           json['createdByName'] ??
           json['reporterName'] ??
           reporterMap?['fullName'] ??
           reporterMap?['name'] ??
+          reporterMap?['username'] ??
           reporterMap?['email'],
     );
     final reporterPhotoUrl = _nullableString(
       json['userPhotoUrl'] ??
           json['createdByPhotoUrl'] ??
           json['reporterPhotoUrl'] ??
+          reporterMap?['profileImageUrl'] ??
           reporterMap?['profilePhotoUrl'] ??
           reporterMap?['photoUrl'] ??
           reporterMap?['avatar'] ??
@@ -73,14 +73,15 @@ class ReportHiveModel extends HiveObject {
 
     return ReportHiveModel(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
-      userId: (json['userId'] ?? json['createdBy'] ?? '').toString(),
+      userId: _extractUserId(json, reporterMap),
       createdAt: _parseCreatedAt(json['createdAt']),
       category: (json['category'] ?? '').toString(),
       location: (json['location'] ?? '').toString(),
-      message:
-          (json['message'] ?? json['note'] ?? json['description'] ?? '').toString(),
+      message: (json['message'] ?? json['note'] ?? json['description'] ?? '')
+          .toString(),
       status: (json['status'] ?? '').toString(),
-      attachmentUrl: _nullableString(json['attachmentUrl'] ?? json['attachment']),
+      attachmentUrl:
+          _nullableString(json['attachmentUrl'] ?? json['attachment']),
       reporterName: reporterName,
       reporterPhotoUrl: reporterPhotoUrl,
     );
@@ -140,4 +141,34 @@ String? _nullableString(dynamic value) {
   if (value == null) return null;
   final text = value.toString().trim();
   return text.isEmpty ? null : text;
+}
+
+Map<String, dynamic>? _asStringMap(dynamic value) {
+  if (value is Map) {
+    return value.cast<String, dynamic>();
+  }
+  return null;
+}
+
+String _extractUserId(
+  Map<String, dynamic> json,
+  Map<String, dynamic>? reporterMap,
+) {
+  final direct = _nullableString(
+    json['userId'] ?? json['createdById'] ?? json['reporterId'],
+  );
+  if (direct != null) return direct;
+
+  final nested = _nullableString(
+    reporterMap?['id'] ?? reporterMap?['_id'] ?? reporterMap?['userId'],
+  );
+  if (nested != null) return nested;
+
+  final createdBy = json['createdBy'];
+  if (createdBy is String) {
+    final trimmed = createdBy.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+  }
+
+  return '';
 }

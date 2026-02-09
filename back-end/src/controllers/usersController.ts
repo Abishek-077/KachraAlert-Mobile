@@ -3,7 +3,12 @@ import { User } from "../models/User.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errors.js";
 import type { AuthRequest } from "../middleware/auth.js";
-import { profileUploadsDir, writeProfileImage, writeProfileImageFile } from "../utils/userProfileImage.js";
+import {
+  legacyProfileUploadsDir,
+  profileUploadsDir,
+  writeProfileImage,
+  writeProfileImageFile
+} from "../utils/userProfileImage.js";
 import { mapUser } from "../utils/userMapper.js";
 import fs from "fs";
 import path from "path";
@@ -72,9 +77,6 @@ export async function uploadProfileImage(req: AuthRequest, res: Response, next: 
 export async function getProfileImage(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const targetId = req.params.id;
-    if (req.user!.accountType !== "admin_driver" && req.user!.id !== targetId) {
-      throw new AppError("Not authorized", 403, "FORBIDDEN");
-    }
     const user = await User.findById(targetId);
     if (!user) {
       throw new AppError("User not found", 404, "NOT_FOUND");
@@ -82,12 +84,21 @@ export async function getProfileImage(req: AuthRequest, res: Response, next: Nex
     if (!user.profileImage?.filename) {
       throw new AppError("Profile image not found", 404, "NOT_FOUND");
     }
-    const filePath = path.join(profileUploadsDir, user.profileImage.filename);
+    let filePath = path.join(profileUploadsDir, user.profileImage.filename);
+    if (!fs.existsSync(filePath)) {
+      const legacyPath = path.join(legacyProfileUploadsDir, user.profileImage.filename);
+      if (fs.existsSync(legacyPath)) {
+        filePath = legacyPath;
+      }
+    }
     if (!fs.existsSync(filePath)) {
       throw new AppError("Profile image missing", 404, "NOT_FOUND");
     }
-    res.setHeader("Content-Type", user.profileImage.mimeType);
-    res.setHeader("Content-Disposition", `inline; filename="${user.profileImage.originalName}"`);
+    res.setHeader("Content-Type", user.profileImage.mimeType ?? "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${user.profileImage.originalName ?? "profile-image"}"`
+    );
     return res.sendFile(filePath);
   } catch (err) {
     return next(err);

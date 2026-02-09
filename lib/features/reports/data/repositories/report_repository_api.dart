@@ -149,6 +149,7 @@ class ReportRepositoryApi {
     String? fallbackTitle,
   }) {
     final mapped = ReportHiveModel.fromJson(json);
+    final reporterMap = _extractReporterMap(json);
     final normalizedStatus = _normalizeStatus(mapped.status);
     final title = _safeString(json['title']) ?? fallbackTitle ?? '';
     final parsed = _parseTitle(title);
@@ -163,20 +164,32 @@ class ReportRepositoryApi {
     final message = mapped.message.trim().isNotEmpty
         ? mapped.message.trim()
         : parsed.message;
+    final reporterId = _extractReporterId(json, reporterMap);
     final reporterName = mapped.reporterName ??
         _safeString(json['createdByName']) ??
-        _safeString(json['userName']);
+        _safeString(json['userName']) ??
+        _safeString(
+          reporterMap?['name'] ??
+              reporterMap?['fullName'] ??
+              reporterMap?['email'],
+        );
     final reporterPhotoUrl = mapped.reporterPhotoUrl ??
         _safeString(json['createdByPhotoUrl']) ??
-        _safeString(json['userPhotoUrl']);
+        _safeString(json['userPhotoUrl']) ??
+        _safeString(
+          reporterMap?['profileImageUrl'] ??
+              reporterMap?['profilePhotoUrl'] ??
+              reporterMap?['photoUrl'] ??
+              reporterMap?['avatar'] ??
+              reporterMap?['photo'],
+        );
 
     return ReportHiveModel(
       id: mapped.id.trim().isNotEmpty
           ? mapped.id
           : DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: mapped.userId.trim().isNotEmpty
-          ? mapped.userId
-          : (_safeString(json['createdBy']) ?? ''),
+      userId:
+          mapped.userId.trim().isNotEmpty ? mapped.userId : (reporterId ?? ''),
       createdAt: mapped.createdAt,
       category: resolvedCategory,
       location: location.isNotEmpty ? location : 'Location shared in details',
@@ -314,6 +327,36 @@ class ReportRepositoryApi {
       }
     }
     return fallback;
+  }
+
+  Map<String, dynamic>? _extractReporterMap(Map<String, dynamic> json) {
+    final reporter =
+        json['createdBy'] ?? json['user'] ?? json['reporter'] ?? json['author'];
+    if (reporter is Map) {
+      return reporter.cast<String, dynamic>();
+    }
+    return null;
+  }
+
+  String? _extractReporterId(
+    Map<String, dynamic> json,
+    Map<String, dynamic>? reporterMap,
+  ) {
+    final direct = _safeString(
+      json['userId'] ?? json['createdById'] ?? json['reporterId'],
+    );
+    if (direct != null) return direct;
+
+    final nested = _safeString(
+      reporterMap?['id'] ?? reporterMap?['_id'] ?? reporterMap?['userId'],
+    );
+    if (nested != null) return nested;
+
+    final createdBy = json['createdBy'];
+    if (createdBy is String) {
+      return _safeString(createdBy);
+    }
+    return null;
   }
 
   _ParsedTitle _parseTitle(String raw) {

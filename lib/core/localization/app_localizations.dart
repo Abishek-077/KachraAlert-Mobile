@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 class AppLocalizations {
@@ -173,10 +175,29 @@ class AppLocalizations {
   };
 
   String _value(String key) {
-    return _localizedValues[locale.languageCode]?[key] ??
+    final value = _localizedValues[locale.languageCode]?[key] ??
         _localizedValues['en']![key] ??
         key;
+    if (locale.languageCode == 'ne') {
+      return _repairNepaliMojibake(value);
+    }
+    return value;
   }
+
+  String _repairNepaliMojibake(String value) {
+    // Handles UTF-8 Nepali text that was accidentally read as latin1.
+    if (!value.contains('à')) return value;
+    try {
+      return utf8.decode(latin1.encode(value));
+    } catch (_) {
+      return value;
+    }
+  }
+
+  bool get isNepali => locale.languageCode == 'ne';
+
+  String choice(String english, String nepali) =>
+      isNepali ? _repairNepaliMojibake(nepali) : english;
 
   String get guestUser => _value('guestUser');
   String get notSignedIn => _value('notSignedIn');

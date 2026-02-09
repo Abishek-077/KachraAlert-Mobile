@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:smart_waste_app/core/localization/app_localizations.dart';
 import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/ui/snackbar.dart';
+import '../../../../core/utils/media_url.dart';
 import '../../../../core/widgets/k_widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/chat_contact.dart';
@@ -69,6 +72,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       _lastFailedContactId = null;
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       _lastFailedContactId = contact.id;
       final contacts = ref.read(messageContactsProvider).valueOrNull ?? [];
       final hasPrevious = previousSelectedId != null &&
@@ -76,7 +80,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       final fallbackSelectedId = hasPrevious ? previousSelectedId : null;
       setState(() => _selectedContactId = fallbackSelectedId);
       _autoSelectScheduled = true;
-      AppSnack.show(context, 'Failed to open conversation: $e');
+      AppSnack.show(
+        context,
+        l10n.choice(
+          'Failed to open conversation: $e',
+          'कुराकानी खोल्न सकिएन: $e',
+        ),
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _autoSelectScheduled = false;
@@ -107,8 +117,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       await ref.read(messageConversationProvider.notifier).sendMessage(text);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       _composerController.text = text;
-      AppSnack.show(context, 'Failed to send message: $e');
+      AppSnack.show(
+        context,
+        l10n.choice(
+          'Failed to send message: $e',
+          'सन्देश पठाउन सकिएन: $e',
+        ),
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -155,9 +172,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final auth = ref.watch(authStateProvider).valueOrNull;
     final myUserId = auth?.session?.userId ?? '';
+    final myDisplayName = _displayNameFromEmail(
+      auth?.session?.email,
+      fallback: l10n.choice('You', 'तपाईं'),
+    );
+    final apiBase = ref.watch(apiBaseUrlProvider);
+    final myProfilePhotoUrl =
+        resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
+    final token = auth?.session?.accessToken;
+    final mediaHeaders =
+        token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
     final isWide = MediaQuery.of(context).size.width >= 900;
 
     final contactsAsync = ref.watch(messageContactsProvider);
@@ -177,13 +205,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: Row(
                 children: [
-                  const Text(
-                    'Messages',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                  Text(
+                    l10n.choice('Messages', 'सन्देशहरू'),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.w900),
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: 'Refresh',
+                    tooltip: l10n.retry,
                     onPressed: _refreshAll,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -200,8 +229,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             conversationAsync,
                             myUserId,
                             cs,
+                            apiBase,
+                            mediaHeaders,
+                            myDisplayName,
+                            myProfilePhotoUrl,
                           )
-                        : _buildMobileContactsList(contacts, myUserId, cs);
+                        : _buildMobileContactsList(
+                            contacts,
+                            myUserId,
+                            cs,
+                            apiBase,
+                            mediaHeaders,
+                            myDisplayName,
+                            myProfilePhotoUrl,
+                          );
                   }
                   return const Center(child: CircularProgressIndicator());
                 },
@@ -213,8 +254,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             conversationAsync,
                             myUserId,
                             cs,
+                            apiBase,
+                            mediaHeaders,
+                            myDisplayName,
+                            myProfilePhotoUrl,
                           )
-                        : _buildMobileContactsList(contacts, myUserId, cs);
+                        : _buildMobileContactsList(
+                            contacts,
+                            myUserId,
+                            cs,
+                            apiBase,
+                            mediaHeaders,
+                            myDisplayName,
+                            myProfilePhotoUrl,
+                          );
                   }
                   return Padding(
                     padding: const EdgeInsets.all(16),
@@ -224,8 +277,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         children: [
                           const Icon(Icons.error_outline_rounded, size: 42),
                           const SizedBox(height: 10),
-                          const Text(
-                            'Could not load contacts',
+                          Text(
+                            l10n.choice('Could not load contacts',
+                                'सम्पर्कहरू लोड गर्न सकिएन'),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
@@ -247,7 +301,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                                   .read(messageContactsProvider.notifier)
                                   .load(),
                               icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Retry'),
+                              label: Text(l10n.retry),
                             ),
                           ),
                         ],
@@ -261,8 +315,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         conversationAsync,
                         myUserId,
                         cs,
+                        apiBase,
+                        mediaHeaders,
+                        myDisplayName,
+                        myProfilePhotoUrl,
                       )
-                    : _buildMobileContactsList(contacts, myUserId, cs),
+                    : _buildMobileContactsList(
+                        contacts,
+                        myUserId,
+                        cs,
+                        apiBase,
+                        mediaHeaders,
+                        myDisplayName,
+                        myProfilePhotoUrl,
+                      ),
               ),
             ),
           ],
@@ -275,7 +341,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     List<ChatContact> contacts,
     String myUserId,
     ColorScheme cs,
+    String apiBase,
+    Map<String, String>? mediaHeaders,
+    String myDisplayName,
+    String? myProfilePhotoUrl,
   ) {
+    final l10n = AppLocalizations.of(context);
     if (contacts.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -289,8 +360,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 color: cs.onSurface.withOpacity(0.6),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'No contacts available',
+              Text(
+                l10n.choice('No contacts available', 'कुनै सम्पर्क उपलब्ध छैन'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -298,7 +369,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Residents can message admins and admins can message residents.',
+                l10n.choice(
+                  'Residents can message admins and admins can message residents.',
+                  'बसोबासकर्ताले एडमिनलाई र एडमिनले बसोबासकर्तालाई सन्देश पठाउन सक्छन्।',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
               ),
@@ -319,13 +393,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Chats',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  Text(
+                    l10n.choice('Chats', 'च्याटहरू'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${contacts.length} contacts',
+                    l10n.choice(
+                      '${contacts.length} contacts',
+                      '${contacts.length} सम्पर्क',
+                    ),
                     style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
                   ),
                 ],
@@ -341,7 +419,16 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   return _ContactTile(
                     contact: c,
                     selected: selected,
-                    onTap: () => _openMobileConversation(c, myUserId),
+                    apiBase: apiBase,
+                    mediaHeaders: mediaHeaders,
+                    onTap: () => _openMobileConversation(
+                      c,
+                      myUserId,
+                      apiBase,
+                      mediaHeaders,
+                      myDisplayName,
+                      myProfilePhotoUrl,
+                    ),
                   );
                 },
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -357,6 +444,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Future<void> _openMobileConversation(
     ChatContact contact,
     String myUserId,
+    String apiBase,
+    Map<String, String>? mediaHeaders,
+    String myDisplayName,
+    String? myProfilePhotoUrl,
   ) async {
     await _selectContact(contact);
     if (!mounted || _selectedContactId != contact.id) return;
@@ -365,6 +456,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         builder: (_) => _MobileConversationScreen(
           contact: contact,
           myUserId: myUserId,
+          apiBase: apiBase,
+          mediaHeaders: mediaHeaders,
+          myDisplayName: myDisplayName,
+          myProfilePhotoUrl: myProfilePhotoUrl,
         ),
       ),
     );
@@ -375,7 +470,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     AsyncValue<List<ChatMessage>> conversationAsync,
     String myUserId,
     ColorScheme cs,
+    String apiBase,
+    Map<String, String>? mediaHeaders,
+    String myDisplayName,
+    String? myProfilePhotoUrl,
   ) {
+    final l10n = AppLocalizations.of(context);
     if (contacts.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -389,8 +489,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 color: cs.onSurface.withOpacity(0.6),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'No contacts available',
+              Text(
+                l10n.choice('No contacts available', 'कुनै सम्पर्क उपलब्ध छैन'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -398,7 +498,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Residents can message admins and admins can message residents.',
+                l10n.choice(
+                  'Residents can message admins and admins can message residents.',
+                  'बसोबासकर्ताले एडमिनलाई र एडमिनले बसोबासकर्तालाई सन्देश पठाउन सक्छन्।',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
               ),
@@ -423,6 +526,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               return _ContactChip(
                 contact: c,
                 selected: selected,
+                apiBase: apiBase,
+                mediaHeaders: mediaHeaders,
                 onTap: () => _selectContact(c),
               );
             },
@@ -436,7 +541,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             selectedContact: activeContact,
             conversationAsync: conversationAsync,
             myUserId: myUserId,
-            onRetry: () => ref.read(messageConversationProvider.notifier).refresh(),
+            apiBase: apiBase,
+            mediaHeaders: mediaHeaders,
+            myDisplayName: myDisplayName,
+            myProfilePhotoUrl: myProfilePhotoUrl,
+            onRetry: () =>
+                ref.read(messageConversationProvider.notifier).refresh(),
           ),
         ),
         _ComposerBar(
@@ -463,11 +573,15 @@ class _ContactChip extends StatelessWidget {
   const _ContactChip({
     required this.contact,
     required this.selected,
+    required this.apiBase,
+    required this.mediaHeaders,
     required this.onTap,
   });
 
   final ChatContact contact;
   final bool selected;
+  final String apiBase;
+  final Map<String, String>? mediaHeaders;
   final VoidCallback onTap;
 
   @override
@@ -505,18 +619,16 @@ class _ContactChip extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CircleAvatar(
+              _ContactAvatar(
+                name: contact.name,
+                photoUrl: contact.profileImageUrl,
+                apiBase: apiBase,
+                headers: mediaHeaders,
                 radius: 20,
                 backgroundColor: selected
                     ? cs.onPrimary.withOpacity(0.2)
                     : cs.primary.withOpacity(0.12),
-                child: Text(
-                  contact.name.isEmpty ? 'U' : contact.name[0].toUpperCase(),
-                  style: TextStyle(
-                    color: selected ? cs.onPrimary : cs.primary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                foregroundColor: selected ? cs.onPrimary : cs.primary,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -561,16 +673,25 @@ class _ConversationPane extends ConsumerWidget {
     required this.selectedContact,
     required this.conversationAsync,
     required this.myUserId,
+    required this.apiBase,
+    required this.mediaHeaders,
+    required this.myDisplayName,
+    required this.myProfilePhotoUrl,
     required this.onRetry,
   });
 
   final ChatContact? selectedContact;
   final AsyncValue<List<ChatMessage>> conversationAsync;
   final String myUserId;
+  final String apiBase;
+  final Map<String, String>? mediaHeaders;
+  final String myDisplayName;
+  final String? myProfilePhotoUrl;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final activeContact = selectedContact;
     if (activeContact == null) {
@@ -579,7 +700,10 @@ class _ConversationPane extends ConsumerWidget {
         child: KCard(
           child: Center(
             child: Text(
-              'Select a contact to start chatting.',
+              l10n.choice(
+                'Select a contact to start chatting.',
+                'च्याट सुरु गर्न सम्पर्क छान्नुहोस्।',
+              ),
               style: TextStyle(color: cs.onSurface.withOpacity(0.68)),
             ),
           ),
@@ -597,8 +721,9 @@ class _ConversationPane extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline_rounded, size: 42),
               const SizedBox(height: 10),
-              const Text(
-                'Could not load messages',
+              Text(
+                l10n.choice(
+                    'Could not load messages', 'सन्देशहरू लोड गर्न सकिएन'),
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 6),
@@ -611,7 +736,7 @@ class _ConversationPane extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                label: Text(l10n.retry),
               ),
             ],
           ),
@@ -627,10 +752,10 @@ class _ConversationPane extends ConsumerWidget {
                     color: cs.onSurface.withOpacity(0.55),
                   ),
                   const SizedBox(height: 12),
-                  const Center(
+                  Center(
                     child: Text(
-                      'No messages yet',
-                      style: TextStyle(
+                      l10n.choice('No messages yet', 'अहिलेसम्म सन्देश छैन'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
                       ),
@@ -639,7 +764,10 @@ class _ConversationPane extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Center(
                     child: Text(
-                      'Say hello to ${activeContact.name}.',
+                      l10n.choice(
+                        'Say hello to ${activeContact.name}.',
+                        '${activeContact.name} लाई नमस्ते भन्नुहोस्।',
+                      ),
                       style: TextStyle(color: cs.onSurface.withOpacity(0.62)),
                     ),
                   ),
@@ -658,7 +786,28 @@ class _ConversationPane extends ConsumerWidget {
                 itemBuilder: (_, i) {
                   final message = ordered[i];
                   final mine = message.senderId == myUserId;
-                  return _MessageBubble(message: message, mine: mine);
+                  final senderName = _resolveSenderName(
+                    message: message,
+                    mine: mine,
+                    contact: activeContact,
+                    myDisplayName: myDisplayName,
+                    unknownUserLabel:
+                        l10n.choice('Unknown user', 'अज्ञात प्रयोगकर्ता'),
+                  );
+                  final senderPhotoUrl = _resolveSenderPhotoUrl(
+                    message: message,
+                    mine: mine,
+                    contact: activeContact,
+                    myProfilePhotoUrl: myProfilePhotoUrl,
+                  );
+                  return _MessageBubble(
+                    message: message,
+                    mine: mine,
+                    senderName: senderName,
+                    senderPhotoUrl: senderPhotoUrl,
+                    apiBase: apiBase,
+                    photoHeaders: mediaHeaders,
+                  );
                 },
               ),
             );
@@ -673,11 +822,15 @@ class _ContactTile extends StatelessWidget {
   const _ContactTile({
     required this.contact,
     required this.selected,
+    required this.apiBase,
+    required this.mediaHeaders,
     required this.onTap,
   });
 
   final ChatContact contact;
   final bool selected;
+  final String apiBase;
+  final Map<String, String>? mediaHeaders;
   final VoidCallback onTap;
 
   @override
@@ -714,18 +867,16 @@ class _ContactTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CircleAvatar(
+              _ContactAvatar(
+                name: contact.name,
+                photoUrl: contact.profileImageUrl,
+                apiBase: apiBase,
+                headers: mediaHeaders,
                 radius: 20,
                 backgroundColor: selected
                     ? cs.onPrimary.withOpacity(0.2)
                     : cs.primary.withOpacity(0.12),
-                child: Text(
-                  contact.name.isEmpty ? 'U' : contact.name[0].toUpperCase(),
-                  style: TextStyle(
-                    color: selected ? cs.onPrimary : cs.primary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                foregroundColor: selected ? cs.onPrimary : cs.primary,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -774,10 +925,18 @@ class _MobileConversationScreen extends ConsumerStatefulWidget {
   const _MobileConversationScreen({
     required this.contact,
     required this.myUserId,
+    required this.apiBase,
+    required this.mediaHeaders,
+    required this.myDisplayName,
+    required this.myProfilePhotoUrl,
   });
 
   final ChatContact contact;
   final String myUserId;
+  final String apiBase;
+  final Map<String, String>? mediaHeaders;
+  final String myDisplayName;
+  final String? myProfilePhotoUrl;
 
   @override
   ConsumerState<_MobileConversationScreen> createState() =>
@@ -818,8 +977,15 @@ class _MobileConversationScreenState
       await ref.read(messageConversationProvider.notifier).sendMessage(text);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       _composerController.text = text;
-      AppSnack.show(context, 'Failed to send message: $e');
+      AppSnack.show(
+        context,
+        l10n.choice(
+          'Failed to send message: $e',
+          'सन्देश पठाउन सकिएन: $e',
+        ),
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -832,22 +998,38 @@ class _MobileConversationScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(widget.contact.name),
-            Text(
-              widget.contact.subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSurface.withOpacity(0.6),
+            _ContactAvatar(
+              name: widget.contact.name,
+              photoUrl: widget.contact.profileImageUrl,
+              apiBase: widget.apiBase,
+              headers: widget.mediaHeaders,
+              radius: 16,
+              backgroundColor: cs.primary.withOpacity(0.12),
+              foregroundColor: cs.primary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.contact.name),
+                  Text(
+                    widget.contact.subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: AppLocalizations.of(context).retry,
             onPressed: () =>
                 ref.read(messageConversationProvider.notifier).refresh(),
             icon: const Icon(Icons.refresh_rounded),
@@ -861,6 +1043,10 @@ class _MobileConversationScreenState
               selectedContact: widget.contact,
               conversationAsync: conversationAsync,
               myUserId: widget.myUserId,
+              apiBase: widget.apiBase,
+              mediaHeaders: widget.mediaHeaders,
+              myDisplayName: widget.myDisplayName,
+              myProfilePhotoUrl: widget.myProfilePhotoUrl,
               onRetry: () =>
                   ref.read(messageConversationProvider.notifier).refresh(),
             ),
@@ -881,10 +1067,18 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.mine,
+    required this.senderName,
+    required this.senderPhotoUrl,
+    required this.apiBase,
+    required this.photoHeaders,
   });
 
   final ChatMessage message;
   final bool mine;
+  final String senderName;
+  final String? senderPhotoUrl;
+  final String apiBase;
+  final Map<String, String>? photoHeaders;
 
   String _formatTime(BuildContext context, DateTime value) {
     final local = value.toLocal();
@@ -901,55 +1095,282 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final time = _formatTime(context, message.createdAt);
+    final displayBody = message.isDeleted
+        ? l10n.choice(
+            'This message was deleted.',
+            'यो सन्देश हटाइएको छ।',
+          )
+        : message.body;
+    final bubbleColor = mine ? cs.primary : cs.surfaceVariant.withOpacity(0.48);
+    final bodyColor = mine ? cs.onPrimary : cs.onSurface;
+    final hasReply = message.replyTo != null;
+    final timeLabel = message.editedAt != null && !message.isDeleted
+        ? l10n.choice('$time | Edited', '$time | सम्पादन गरिएको')
+        : time;
 
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.68,
+    final bubble = Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(14),
+          topRight: const Radius.circular(14),
+          bottomLeft: Radius.circular(mine ? 14 : 4),
+          bottomRight: Radius.circular(mine ? 4 : 14),
         ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: mine ? cs.primary : cs.surfaceVariant.withOpacity(0.45),
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(14),
-              topRight: const Radius.circular(14),
-              bottomLeft: Radius.circular(mine ? 14 : 4),
-              bottomRight: Radius.circular(mine ? 4 : 14),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (hasReply) ...[
+            _ReplyPreview(
+              mine: mine,
+              senderName: message.replyTo!.senderName,
+              body: message.replyTo!.body,
             ),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            displayBody.isEmpty
+                ? l10n.choice('Message unavailable', 'सन्देश उपलब्ध छैन')
+                : displayBody,
+            style: TextStyle(
+              color: message.isDeleted ? bodyColor.withOpacity(0.8) : bodyColor,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+              fontStyle:
+                  message.isDeleted ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            timeLabel,
+            style: TextStyle(
+              color: mine
+                  ? cs.onPrimary.withOpacity(0.78)
+                  : cs.onSurface.withOpacity(0.56),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Row(
+      mainAxisAlignment: mine ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!mine) ...[
+          _ContactAvatar(
+            name: senderName,
+            photoUrl: senderPhotoUrl,
+            apiBase: apiBase,
+            headers: photoHeaders,
+            radius: 16,
+            backgroundColor: cs.primary.withOpacity(0.12),
+            foregroundColor: cs.primary,
+          ),
+          const SizedBox(width: 8),
+        ],
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.66,
           ),
           child: Column(
             crossAxisAlignment:
                 mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Text(
-                message.body,
+                senderName,
                 style: TextStyle(
-                  color: mine ? cs.onPrimary : cs.onSurface,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                time,
-                style: TextStyle(
-                  color: mine
-                      ? cs.onPrimary.withOpacity(0.78)
-                      : cs.onSurface.withOpacity(0.56),
+                  color: cs.onSurface.withOpacity(0.62),
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
+              bubble,
             ],
           ),
+        ),
+        if (mine) ...[
+          const SizedBox(width: 8),
+          _ContactAvatar(
+            name: senderName,
+            photoUrl: senderPhotoUrl,
+            apiBase: apiBase,
+            headers: photoHeaders,
+            radius: 16,
+            backgroundColor: cs.primary.withOpacity(0.12),
+            foregroundColor: cs.primary,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReplyPreview extends StatelessWidget {
+  const _ReplyPreview({
+    required this.mine,
+    required this.senderName,
+    required this.body,
+  });
+
+  final bool mine;
+  final String senderName;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final safeBody = body.trim().isEmpty
+        ? l10n.choice('This message was deleted', 'यो सन्देश हटाइएको छ')
+        : body.trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: mine
+            ? Colors.white.withOpacity(0.15)
+            : cs.onSurface.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: mine
+              ? Colors.white.withOpacity(0.18)
+              : cs.outlineVariant.withOpacity(0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            senderName.trim().isEmpty
+                ? l10n.choice('Unknown user', 'अज्ञात प्रयोगकर्ता')
+                : senderName,
+            style: TextStyle(
+              color: mine ? Colors.white : cs.onSurface,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            safeBody,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: mine
+                  ? Colors.white.withOpacity(0.92)
+                  : cs.onSurface.withOpacity(0.72),
+              fontSize: 11,
+              fontStyle:
+                  body.trim().isEmpty ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactAvatar extends StatelessWidget {
+  const _ContactAvatar({
+    required this.name,
+    required this.photoUrl,
+    required this.apiBase,
+    required this.headers,
+    this.radius = 20,
+    this.backgroundColor,
+    this.foregroundColor,
+  });
+
+  final String name;
+  final String? photoUrl;
+  final String apiBase;
+  final Map<String, String>? headers;
+  final double radius;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final resolvedPhotoUrl = resolveMediaUrl(apiBase, photoUrl);
+    final fallbackInitial =
+        name.trim().isEmpty ? 'U' : name.trim()[0].toUpperCase();
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: backgroundColor ?? cs.primary.withOpacity(0.12),
+      foregroundImage: resolvedPhotoUrl == null
+          ? null
+          : NetworkImage(
+              resolvedPhotoUrl,
+              headers: headers,
+            ),
+      child: Text(
+        fallbackInitial,
+        style: TextStyle(
+          color: foregroundColor ?? cs.primary,
+          fontWeight: FontWeight.w900,
+          fontSize: radius * 0.62,
         ),
       ),
     );
   }
+}
+
+String _displayNameFromEmail(String? email, {String fallback = 'You'}) {
+  final cleaned = (email ?? '').trim();
+  if (cleaned.isEmpty) return fallback;
+  final beforeAt = cleaned.split('@').first.trim();
+  if (beforeAt.isEmpty) return fallback;
+  final display = beforeAt
+      .split(RegExp(r'[^a-zA-Z0-9]+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+  return display.isEmpty ? fallback : display;
+}
+
+String _resolveSenderName({
+  required ChatMessage message,
+  required bool mine,
+  required ChatContact contact,
+  required String myDisplayName,
+  required String unknownUserLabel,
+}) {
+  final sender = message.senderName.trim();
+  if (sender.isNotEmpty && sender.toLowerCase() != 'unknown user') {
+    return sender;
+  }
+  if (mine) {
+    return myDisplayName.trim().isEmpty ? unknownUserLabel : myDisplayName;
+  }
+  return contact.name.trim().isEmpty ? unknownUserLabel : contact.name.trim();
+}
+
+String? _resolveSenderPhotoUrl({
+  required ChatMessage message,
+  required bool mine,
+  required ChatContact contact,
+  required String? myProfilePhotoUrl,
+}) {
+  final messagePhoto = message.senderProfileImageUrl;
+  if (messagePhoto != null && messagePhoto.trim().isNotEmpty) {
+    return messagePhoto;
+  }
+  if (mine) return myProfilePhotoUrl;
+  return contact.profileImageUrl;
 }
 
 class _ComposerBar extends StatelessWidget {
@@ -968,6 +1389,7 @@ class _ComposerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -983,8 +1405,11 @@ class _ComposerBar extends StatelessWidget {
               onSubmitted: (_) => onSend?.call(),
               decoration: InputDecoration(
                 hintText: enabled
-                    ? 'Type a message'
-                    : 'Select a contact to start chatting',
+                    ? l10n.choice('Type a message', 'सन्देश टाइप गर्नुहोस्')
+                    : l10n.choice(
+                        'Select a contact to start chatting',
+                        'च्याट सुरु गर्न सम्पर्क छान्नुहोस्',
+                      ),
                 filled: true,
                 fillColor: cs.surface,
                 contentPadding:
@@ -1019,7 +1444,7 @@ class _ComposerBar extends StatelessWidget {
               : FilledButton.icon(
                   onPressed: enabled ? onSend : null,
                   icon: const Icon(Icons.send_rounded),
-                  label: const Text('Send'),
+                  label: Text(l10n.choice('Send', 'पठाउनुहोस्')),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,

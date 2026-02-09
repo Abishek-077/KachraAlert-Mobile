@@ -3,10 +3,12 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const uploadsRoot = path.resolve(currentDir, "../../uploads");
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFilePath);
+const backendRootDir = path.resolve(currentDir, "..", "..");
 
-export const reportUploadsDir = path.join(uploadsRoot, "reports");
+export const reportUploadsDir = path.resolve(backendRootDir, "uploads", "reports");
+export const legacyReportUploadsDir = path.resolve(process.cwd(), "uploads", "reports");
 
 fs.mkdirSync(reportUploadsDir, { recursive: true });
 

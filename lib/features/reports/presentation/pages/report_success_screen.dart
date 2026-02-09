@@ -10,9 +10,10 @@ class ReportSuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayId = _normalizeReportId(reportId);
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F7),
+      backgroundColor: isDark ? cs.surface : const Color(0xFFF6F8F7),
       body: Stack(
         children: [
           const _SuccessBackground(),
@@ -26,12 +27,20 @@ class ReportSuccessScreen extends StatelessWidget {
                     width: 360,
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: isDark
+                          ? cs.surfaceContainerHigh.withValues(alpha: 0.92)
+                          : Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: const Color(0xFFE3ECE9)),
-                      boxShadow: const [
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(
+                          alpha: isDark ? 0.5 : 0.45,
+                        ),
+                      ),
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x1A000000),
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.35)
+                              : const Color(0x1A000000),
                           blurRadius: 24,
                           offset: Offset(0, 12),
                         ),
@@ -76,21 +85,21 @@ class ReportSuccessScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
+                        Text(
                           'Report Submitted!',
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF131A2A),
+                            color: cs.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Your issue has been logged and sent to the cleanup team.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Color(0xFF5D6473),
+                            color: cs.onSurface.withValues(alpha: 0.74),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -99,15 +108,18 @@ class ReportSuccessScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD5EEE5),
+                            color: isDark
+                                ? cs.primary.withValues(alpha: 0.2)
+                                : const Color(0xFFD5EEE5),
                             borderRadius: BorderRadius.circular(22),
                           ),
                           child: Text(
                             displayId,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF059669),
+                              color:
+                                  isDark ? cs.primary : const Color(0xFF059669),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -132,8 +144,11 @@ class ReportSuccessScreen extends StatelessWidget {
                     height: 56,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF18A97D), Color(0xFF155A66)],
+                        gradient: LinearGradient(
+                          colors: [
+                            cs.primary,
+                            cs.secondary.withValues(alpha: 0.8)
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
@@ -168,9 +183,12 @@ class ReportSuccessScreen extends StatelessWidget {
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () => context.go('/reports'),
-                      child: const Text(
+                      child: Text(
                         'View All Reports',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -189,14 +207,18 @@ class _SuccessBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFE9F8F3),
-            Color(0xFFF7FBFA),
+            isDark ? cs.surface : const Color(0xFFE9F8F3),
+            isDark
+                ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
+                : const Color(0xFFF7FBFA),
           ],
         ),
       ),
@@ -208,7 +230,8 @@ class _SuccessBackground extends StatelessWidget {
             left: -60,
             child: _SuccessOrb(
               size: 220,
-              color: const Color(0xFF7EE6C5).withValues(alpha: 0.45),
+              color: (isDark ? cs.primary : const Color(0xFF7EE6C5))
+                  .withValues(alpha: isDark ? 0.26 : 0.45),
             ),
           ),
           Positioned(
@@ -216,7 +239,8 @@ class _SuccessBackground extends StatelessWidget {
             top: 150,
             child: _SuccessOrb(
               size: 250,
-              color: const Color(0xFF8CD6F4).withValues(alpha: 0.36),
+              color: (isDark ? cs.secondary : const Color(0xFF8CD6F4))
+                  .withValues(alpha: isDark ? 0.2 : 0.36),
             ),
           ),
           Positioned(
@@ -224,7 +248,8 @@ class _SuccessBackground extends StatelessWidget {
             bottom: -100,
             child: _SuccessOrb(
               size: 240,
-              color: const Color(0xFFB2EFD6).withValues(alpha: 0.28),
+              color: (isDark ? cs.tertiary : const Color(0xFFB2EFD6))
+                  .withValues(alpha: isDark ? 0.16 : 0.28),
             ),
           ),
         ],

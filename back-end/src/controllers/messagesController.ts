@@ -1,7 +1,7 @@
 import type { Response, NextFunction } from "express";
 import type { AuthRequest } from "../middleware/auth.js";
 import { sendSuccess } from "../utils/response.js";
-import { emitChatMessage } from "../utils/socket.js";
+import { emitChatMessage, emitChatMessageUpdate } from "../utils/socket.js";
 import * as messageService from "../services/messageService.js";
 
 export async function listContacts(req: AuthRequest, res: Response, next: NextFunction) {
@@ -27,10 +27,40 @@ export async function sendMessage(req: AuthRequest, res: Response, next: NextFun
     const message = await messageService.sendMessage({
       senderId: req.user!.id,
       recipientId: req.params.contactId,
-      body: req.body.body
+      body: req.body.body,
+      replyToMessageId: req.body.replyToMessageId
     });
     emitChatMessage(message);
     return sendSuccess(res, "Message sent", message);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function editMessage(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const message = await messageService.editMessage({
+      requesterId: req.user!.id,
+      contactId: req.params.contactId,
+      messageId: req.params.messageId,
+      body: req.body.body
+    });
+    emitChatMessageUpdate(message);
+    return sendSuccess(res, "Message updated", message);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function deleteMessage(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const message = await messageService.deleteMessage({
+      requesterId: req.user!.id,
+      contactId: req.params.contactId,
+      messageId: req.params.messageId
+    });
+    emitChatMessageUpdate(message);
+    return sendSuccess(res, "Message deleted", message);
   } catch (err) {
     return next(err);
   }

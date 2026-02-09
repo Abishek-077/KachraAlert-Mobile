@@ -8,7 +8,7 @@ import 'package:smart_waste_app/app/theme/app_colors.dart';
 /// - Seeded ColorScheme (brand-driven)
 /// - Consistent shapes, spacing, and component theming
 class AppTheme {
-  static ThemeData light() {
+  static ThemeData light({Locale? locale}) {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.seed,
       brightness: Brightness.light,
@@ -19,13 +19,26 @@ class AppTheme {
       scheme: scheme,
       scaffoldBg: AppColors.background,
       surface: AppColors.surface,
+      locale: locale,
     );
   }
 
-  static ThemeData dark() {
+  static ThemeData dark({Locale? locale}) {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.seed,
       brightness: Brightness.dark,
+    ).copyWith(
+      primary: const Color(0xFF39D98A),
+      onPrimary: const Color(0xFF041D13),
+      secondary: const Color(0xFF56CCF2),
+      onSecondary: const Color(0xFF04141D),
+      surface: AppColors.darkSurface,
+      surfaceContainerHigh: const Color(0xFF1A2335),
+      surfaceContainerHighest: const Color(0xFF223043),
+      onSurface: AppColors.darkTextPrimary,
+      onSurfaceVariant: AppColors.darkTextSecondary,
+      outline: AppColors.darkBorder,
+      outlineVariant: AppColors.darkDivider,
     );
 
     return _base(
@@ -33,6 +46,7 @@ class AppTheme {
       scheme: scheme,
       scaffoldBg: AppColors.darkBackground,
       surface: AppColors.darkSurface,
+      locale: locale,
     );
   }
 
@@ -41,6 +55,7 @@ class AppTheme {
     required ColorScheme scheme,
     required Color scaffoldBg,
     required Color surface,
+    Locale? locale,
   }) {
     final isDark = brightness == Brightness.dark;
 
@@ -49,7 +64,10 @@ class AppTheme {
 
     final baseText = ThemeData(brightness: brightness).textTheme;
     // ✅ Use a single modern font across the app (high-contrast, premium)
-    final baseFontText = GoogleFonts.spaceGroteskTextTheme(baseText);
+    final isNepali = locale?.languageCode == 'ne';
+    final baseFontText = isNepali
+        ? GoogleFonts.notoSansDevanagariTextTheme(baseText)
+        : GoogleFonts.spaceGroteskTextTheme(baseText);
     final textTheme = baseFontText.copyWith(
       headlineSmall: baseFontText.headlineSmall?.copyWith(
         fontWeight: FontWeight.w800,
@@ -80,7 +98,6 @@ class AppTheme {
       scaffoldBackgroundColor: scaffoldBg,
       textTheme: textTheme,
       splashFactory: InkSparkle.splashFactory,
-
       appBarTheme: AppBarTheme(
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -91,7 +108,6 @@ class AppTheme {
           color: scheme.onSurface,
         ),
       ),
-
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -99,13 +115,11 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: radius),
         clipBehavior: Clip.antiAlias,
       ),
-
       dividerTheme: DividerThemeData(
         color: isDark ? AppColors.darkDivider : AppColors.divider,
         thickness: 1,
         space: 1,
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark ? AppColors.darkInputFill : AppColors.inputFill,
@@ -137,7 +151,6 @@ class AppTheme {
           borderSide: BorderSide(color: scheme.error, width: 1.6),
         ),
       ),
-
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 54),
@@ -148,7 +161,6 @@ class AppTheme {
           ),
         ),
       ),
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, 54),
@@ -160,13 +172,11 @@ class AppTheme {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -175,7 +185,6 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         backgroundColor: surface,
@@ -184,7 +193,6 @@ class AppTheme {
           color: scheme.onSurface,
         ),
       ),
-
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         elevation: 0,
@@ -193,25 +201,21 @@ class AppTheme {
           textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
-
       listTileTheme: ListTileThemeData(
         iconColor: scheme.onSurface.withOpacity(0.7),
         textColor: scheme.onSurface,
       ),
-
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: radius.topLeft),
         ),
       ),
-
       chipTheme: ChipThemeData(
         labelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
         side: BorderSide(color: scheme.outlineVariant.withOpacity(0.4)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
-
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,

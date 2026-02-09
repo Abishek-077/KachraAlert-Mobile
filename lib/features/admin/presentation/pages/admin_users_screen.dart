@@ -16,6 +16,7 @@ import '../providers/admin_user_providers.dart';
 import '../widgets/admin_side_panel.dart';
 
 const Color _kSoftCanvas = Color(0xFFF5F8F7);
+const Color _kDarkCanvas = Color(0xFF070D18);
 const List<BoxShadow> _kWhite3dShadow = [
   BoxShadow(
     color: Color(0x1A102218),
@@ -26,6 +27,19 @@ const List<BoxShadow> _kWhite3dShadow = [
     color: Color(0xEDFFFFFF),
     blurRadius: 10,
     offset: Offset(-4, -4),
+  ),
+];
+
+const List<BoxShadow> _kDark3dShadow = [
+  BoxShadow(
+    color: Color(0x73000000),
+    blurRadius: 30,
+    offset: Offset(0, 14),
+  ),
+  BoxShadow(
+    color: Color(0x1A22D3EE),
+    blurRadius: 14,
+    offset: Offset(0, 2),
   ),
 ];
 
@@ -41,6 +55,28 @@ const List<BoxShadow> _kWhiteSoftShadow = [
     offset: Offset(-2, -2),
   ),
 ];
+
+const List<BoxShadow> _kDarkSoftShadow = [
+  BoxShadow(
+    color: Color(0x59000000),
+    blurRadius: 16,
+    offset: Offset(0, 8),
+  ),
+];
+
+Color _panelBackground(ColorScheme cs, bool isDark) {
+  return isDark ? cs.surfaceContainerHigh.withOpacity(0.94) : Colors.white;
+}
+
+Color _chipBackground(ColorScheme cs, bool isDark) {
+  return isDark ? cs.surfaceContainerHighest.withOpacity(0.9) : Colors.white;
+}
+
+List<BoxShadow> _cardShadow(bool isDark) =>
+    isDark ? _kDark3dShadow : _kWhite3dShadow;
+
+List<BoxShadow> _softShadow(bool isDark) =>
+    isDark ? _kDarkSoftShadow : _kWhiteSoftShadow;
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
@@ -163,6 +199,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final usersAsync = ref.watch(adminUsersProvider);
     final lastSync = ref.watch(adminUsersLastSyncProvider);
     final apiBase = ref.watch(apiBaseUrlProvider);
@@ -172,7 +209,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
 
     return Scaffold(
-      backgroundColor: _kSoftCanvas,
+      backgroundColor: isDark ? _kDarkCanvas : _kSoftCanvas,
       drawer: const AdminSidePanel(currentRoute: '/admin/users'),
       body: Stack(
         children: [
@@ -215,8 +252,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                   DelayedReveal(
                     delay: const Duration(milliseconds: 140),
                     child: KCard(
-                      backgroundColor: Colors.white,
-                      boxShadow: _kWhite3dShadow,
+                      backgroundColor: _panelBackground(cs, isDark),
+                      boxShadow: _cardShadow(isDark),
                       padding: const EdgeInsets.all(18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +270,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                           Text(
                             'Manage residents and admin drivers with live backend data.',
                             style: TextStyle(
-                              color: cs.onSurface.withOpacity(0.65),
+                              color: cs.onSurface
+                                  .withOpacity(isDark ? 0.78 : 0.65),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -274,8 +312,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                   DelayedReveal(
                     delay: const Duration(milliseconds: 280),
                     child: KCard(
-                      backgroundColor: Colors.white,
-                      boxShadow: _kWhite3dShadow,
+                      backgroundColor: _panelBackground(cs, isDark),
+                      boxShadow: _cardShadow(isDark),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 6,
@@ -311,8 +349,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                       children: [
                         Expanded(
                           child: KCard(
-                            backgroundColor: Colors.white,
-                            boxShadow: _kWhite3dShadow,
+                            backgroundColor: _panelBackground(cs, isDark),
+                            boxShadow: _cardShadow(isDark),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 4,
@@ -356,7 +394,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                             return Text(
                               '${filtered.length} of ${users.length} users',
                               style: TextStyle(
-                                color: cs.onSurface.withOpacity(0.65),
+                                color: cs.onSurface
+                                    .withOpacity(isDark ? 0.75 : 0.65),
                                 fontWeight: FontWeight.w700,
                               ),
                             );
@@ -364,7 +403,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                           orElse: () => Text(
                             '0 users',
                             style: TextStyle(
-                              color: cs.onSurface.withOpacity(0.65),
+                              color: cs.onSurface
+                                  .withOpacity(isDark ? 0.75 : 0.65),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -466,13 +506,17 @@ class _LiveBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _chipBackground(cs, isDark),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: borderColor.withOpacity(0.28)),
-        boxShadow: _kWhiteSoftShadow,
+        border: Border.all(
+          color: borderColor.withOpacity(isDark ? 0.58 : 0.28),
+        ),
+        boxShadow: _softShadow(isDark),
       ),
       child: Text(
         label,
@@ -500,6 +544,7 @@ class _StatusFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -510,19 +555,21 @@ class _StatusFilterChip extends StatelessWidget {
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _chipBackground(cs, isDark),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected
-                  ? cs.primary.withOpacity(0.35)
-                  : cs.outlineVariant.withOpacity(0.35),
+                  ? cs.primary.withOpacity(isDark ? 0.7 : 0.35)
+                  : cs.outlineVariant.withOpacity(isDark ? 0.75 : 0.35),
             ),
-            boxShadow: _kWhiteSoftShadow,
+            boxShadow: _softShadow(isDark),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? cs.primary : cs.onSurface.withOpacity(0.72),
+              color: selected
+                  ? cs.primary
+                  : cs.onSurface.withOpacity(isDark ? 0.88 : 0.72),
               fontWeight: FontWeight.w800,
               fontSize: 13,
             ),
@@ -604,13 +651,16 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _panelBackground(cs, isDark),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
-        boxShadow: _kWhite3dShadow,
+        border: Border.all(
+          color: cs.outlineVariant.withOpacity(isDark ? 0.55 : 0.25),
+        ),
+        boxShadow: _cardShadow(isDark),
       ),
       child: Row(
         children: [
@@ -633,7 +683,7 @@ class _StatCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: cs.onSurface.withOpacity(0.65),
+                    color: cs.onSurface.withOpacity(isDark ? 0.8 : 0.65),
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
@@ -650,7 +700,7 @@ class _StatCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: cs.onSurface.withOpacity(0.55),
+                    color: cs.onSurface.withOpacity(isDark ? 0.7 : 0.55),
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
                   ),
@@ -686,12 +736,13 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = user.isBanned ? cs.error : cs.primary;
     final roleColor = user.isAdmin ? cs.secondary : cs.primary;
 
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: _kWhite3dShadow,
+      backgroundColor: _panelBackground(cs, isDark),
+      boxShadow: _cardShadow(isDark),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -720,7 +771,7 @@ class _UserCard extends StatelessWidget {
                     Text(
                       user.email,
                       style: TextStyle(
-                        color: cs.onSurface.withOpacity(0.65),
+                        color: cs.onSurface.withOpacity(isDark ? 0.78 : 0.65),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -772,7 +823,7 @@ class _UserCard extends StatelessWidget {
               Text(
                 'ID: ${user.id.substring(0, math.min(6, user.id.length))}',
                 style: TextStyle(
-                  color: cs.onSurface.withOpacity(0.5),
+                  color: cs.onSurface.withOpacity(isDark ? 0.65 : 0.5),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -840,15 +891,16 @@ class _UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final initial = name.trim().isNotEmpty
         ? name.trim().substring(0, 1).toUpperCase()
         : 'U';
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: _kWhiteSoftShadow,
+        color: _chipBackground(cs, isDark),
+        boxShadow: _softShadow(isDark),
       ),
       child: CircleAvatar(
         radius: 26,
@@ -879,13 +931,15 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _chipBackground(cs, isDark),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
-        boxShadow: _kWhiteSoftShadow,
+        border: Border.all(color: color.withOpacity(isDark ? 0.55 : 0.25)),
+        boxShadow: _softShadow(isDark),
       ),
       child: Text(
         label,
@@ -908,13 +962,16 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _chipBackground(cs, isDark),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.35)),
-        boxShadow: _kWhiteSoftShadow,
+        border: Border.all(
+          color: cs.outlineVariant.withOpacity(isDark ? 0.78 : 0.35),
+        ),
+        boxShadow: _softShadow(isDark),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -951,6 +1008,7 @@ class _ActionPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final fg = color ?? cs.primary;
     return InkWell(
       borderRadius: BorderRadius.circular(999),
@@ -958,10 +1016,10 @@ class _ActionPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _chipBackground(cs, isDark),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: fg.withOpacity(0.24)),
-          boxShadow: _kWhiteSoftShadow,
+          border: Border.all(color: fg.withOpacity(isDark ? 0.55 : 0.24)),
+          boxShadow: _softShadow(isDark),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -988,6 +1046,8 @@ class _StatsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
@@ -999,9 +1059,9 @@ class _StatsSkeleton extends StatelessWidget {
         4,
         (index) => Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _panelBackground(cs, isDark),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: _kWhite3dShadow,
+            boxShadow: _cardShadow(isDark),
           ),
         ),
       ),
@@ -1017,9 +1077,10 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: _kWhite3dShadow,
+      backgroundColor: _panelBackground(cs, isDark),
+      boxShadow: _cardShadow(isDark),
       child: Column(
         children: [
           Icon(
@@ -1036,7 +1097,9 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Create a user to start managing residents and drivers.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+            style: TextStyle(
+              color: cs.onSurface.withOpacity(isDark ? 0.78 : 0.65),
+            ),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -1065,9 +1128,10 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: _kWhite3dShadow,
+      backgroundColor: _panelBackground(cs, isDark),
+      boxShadow: _cardShadow(isDark),
       child: Column(
         children: [
           Icon(Icons.error_outline_rounded, size: 54, color: cs.error),
@@ -1080,7 +1144,9 @@ class _ErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+            style: TextStyle(
+              color: cs.onSurface.withOpacity(isDark ? 0.78 : 0.65),
+            ),
           ),
           const SizedBox(height: 14),
           SizedBox(

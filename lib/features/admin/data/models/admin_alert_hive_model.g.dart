@@ -22,13 +22,15 @@ class AdminAlertHiveModelAdapter extends TypeAdapter<AdminAlertHiveModel> {
       message: fields[2] as String,
       createdAt: fields[3] as int,
       updatedAt: fields[4] as int,
+      adminName: fields[5] as String?,
+      adminPhotoUrl: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AdminAlertHiveModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +40,11 @@ class AdminAlertHiveModelAdapter extends TypeAdapter<AdminAlertHiveModel> {
       ..writeByte(3)
       ..write(obj.createdAt)
       ..writeByte(4)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(5)
+      ..write(obj.adminName)
+      ..writeByte(6)
+      ..write(obj.adminPhotoUrl);
   }
 
   @override

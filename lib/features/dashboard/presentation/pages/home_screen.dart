@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_waste_app/core/api/api_client.dart';
+import 'package:smart_waste_app/core/localization/app_localizations.dart';
+import 'package:smart_waste_app/core/utils/media_url.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/widgets/k_widgets.dart';
@@ -17,15 +20,20 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final auth = ref.watch(authStateProvider).valueOrNull;
-    final userId = auth?.session?.userId;
+    final token = auth?.session?.accessToken;
+    final apiBase = ref.watch(apiBaseUrlProvider);
     final reportsAsync = ref.watch(reportsProvider);
     final settingsAsync = ref.watch(settingsProvider);
+    final mediaHeaders =
+        token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
 
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: isDark ? cs.surface : const Color(0xFFF8FAFB),
       body: Stack(
         children: [
           SafeArea(
@@ -36,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
                 DelayedReveal(
                   delay: const Duration(milliseconds: 80),
                   child: _DashboardHero(
-                    location: 'Kathmandu',
+                    location: l10n.choice('Kathmandu', 'काठमाडौं'),
                     onBellTap: () => context.go('/alerts'),
                   ),
                 ),
@@ -46,19 +54,6 @@ class HomeScreen extends ConsumerWidget {
                 DelayedReveal(
                   delay: const Duration(milliseconds: 160),
                   child: KCard(
-                    backgroundColor: Colors.white,
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A0B1E16),
-                        blurRadius: 22,
-                        offset: Offset(0, 12),
-                      ),
-                      BoxShadow(
-                        color: Color(0xE6FFFFFF),
-                        blurRadius: 10,
-                        offset: Offset(-3, -3),
-                      ),
-                    ],
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
@@ -70,7 +65,7 @@ class HomeScreen extends ConsumerWidget {
                           gradient: const LinearGradient(
                             colors: [Color(0xFF199A70), Color(0xFFC9E265)],
                           ),
-                          label: 'SCORE',
+                          label: l10n.choice('SCORE', 'स्कोर'),
                         ),
                         const SizedBox(width: 24),
                         Expanded(
@@ -83,7 +78,7 @@ class HomeScreen extends ConsumerWidget {
                                       size: 16, color: Color(0xFF199A70)),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'CITY SCORE',
+                                    l10n.choice('CITY SCORE', 'सहर स्कोर'),
                                     style: TextStyle(
                                       color: cs.onSurface.withOpacity(0.5),
                                       fontWeight: FontWeight.w900,
@@ -94,8 +89,8 @@ class HomeScreen extends ConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Kathmandu',
+                              Text(
+                                l10n.choice('Kathmandu', 'काठमाडौं'),
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900,
@@ -117,7 +112,7 @@ class HomeScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   Text(
-                                    'this week',
+                                    l10n.choice('this week', 'यो हप्ता'),
                                     style: TextStyle(
                                       color: cs.onSurface.withOpacity(0.4),
                                       fontWeight: FontWeight.w700,
@@ -142,14 +137,17 @@ class HomeScreen extends ConsumerWidget {
                   child: settingsAsync.when(
                     loading: () => _PickupCard(
                       enabled: true,
+                      l10n: l10n,
                       onChanged: (_) {},
                     ),
                     error: (_, __) => _PickupCard(
                       enabled: true,
+                      l10n: l10n,
                       onChanged: (_) {},
                     ),
                     data: (s) => _PickupCard(
                       enabled: s.pickupRemindersEnabled,
+                      l10n: l10n,
                       onChanged: (v) => ref
                           .read(settingsProvider.notifier)
                           .setPickupReminders(v),
@@ -164,14 +162,16 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _SectionTitle(label: 'Quick Actions'),
+                      _SectionTitle(
+                        label: l10n.choice('Quick Actions', 'छिटो कामहरू'),
+                      ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: _QuickAction(
                               icon: Icons.photo_camera_outlined,
-                              label: 'Report',
+                              label: l10n.choice('Report', 'रिपोर्ट'),
                               highlighted: true,
                               onTap: () => context.push('/reports/create'),
                             ),
@@ -179,25 +179,25 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _QuickAction(
-                              icon: Icons.map_outlined,
-                              label: 'Map',
-                              onTap: () => context.go('/map'),
+                              icon: Icons.assignment_outlined,
+                              label: l10n.reports,
+                              onTap: () => context.push('/reports'),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _QuickAction(
                               icon: Icons.calendar_month_outlined,
-                              label: 'Schedule',
+                              label: l10n.choice('Schedule', 'तालिका'),
                               onTap: () => context.go('/schedule'),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _QuickAction(
-                              icon: Icons.notifications_active_outlined,
-                              label: 'Alerts',
-                              onTap: () => context.go('/alerts'),
+                              icon: Icons.payments_outlined,
+                              label: l10n.payments,
+                              onTap: () => context.push('/payments'),
                             ),
                           ),
                         ],
@@ -213,7 +213,10 @@ class HomeScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _SectionTitle(label: 'Admin Control'),
+                        _SectionTitle(
+                          label:
+                              l10n.choice('Admin Control', 'एडमिन नियन्त्रण'),
+                        ),
                         const SizedBox(height: 12),
                         AnimatedGradientCard(
                           gradient: LinearGradient(
@@ -245,8 +248,9 @@ class HomeScreen extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'User Management',
+                                    Text(
+                                      l10n.choice('User Management',
+                                          'प्रयोगकर्ता व्यवस्थापन'),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w900,
@@ -254,7 +258,10 @@ class HomeScreen extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'Manage residents and admin drivers',
+                                      l10n.choice(
+                                        'Manage residents and admin drivers',
+                                        'बसोबासकर्ता र एडमिन ड्राइभर व्यवस्थापन गर्नुहोस्',
+                                      ),
                                       style: TextStyle(
                                         color: cs.onSurface.withOpacity(0.65),
                                         fontWeight: FontWeight.w600,
@@ -281,11 +288,14 @@ class HomeScreen extends ConsumerWidget {
                   delay: const Duration(milliseconds: 420),
                   child: Row(
                     children: [
-                      const _SectionTitle(label: 'Recent Reports'),
+                      _SectionTitle(
+                        label:
+                            l10n.choice('Recent Reports', 'हालका रिपोर्टहरू'),
+                      ),
                       const Spacer(),
                       TextButton.icon(
                         onPressed: () => context.push('/reports'),
-                        icon: const Text('View All'),
+                        icon: Text(l10n.choice('View All', 'सबै हेर्नुहोस्')),
                         label:
                             const Icon(Icons.arrow_forward_rounded, size: 18),
                       ),
@@ -311,16 +321,17 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: Text('Failed to load reports: $e'),
+                    child: Text(
+                      l10n.choice(
+                        'Failed to load reports: $e',
+                        'रिपोर्ट लोड गर्न सकिएन: $e',
+                      ),
+                    ),
                   ),
                   data: (all) {
-                    final mine = (userId == null)
-                        ? <dynamic>[]
-                        : all.where((r) => r.userId == userId).toList();
-
-                    final list = mine.isEmpty ? all : mine;
+                    final list = [...all];
                     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                    final recent = list.take(3).toList();
+                    final recent = list.take(5).toList();
 
                     if (recent.isEmpty) {
                       return Padding(
@@ -333,14 +344,18 @@ class HomeScreen extends ConsumerWidget {
                                   size: 46,
                                   color: cs.onSurface.withOpacity(0.55)),
                               const SizedBox(height: 10),
-                              const Text(
-                                'No reports yet',
+                              Text(
+                                l10n.choice(
+                                    'No reports yet', 'अहिलेसम्म रिपोर्ट छैन'),
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.w900),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Report waste to help keep your neighborhood clean.',
+                                l10n.choice(
+                                  'Report waste to help keep your neighborhood clean.',
+                                  'आफ्नो वरपर सफा राख्न फोहोर रिपोर्ट गर्नुहोस्।',
+                                ),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: cs.onSurface.withOpacity(0.62)),
@@ -351,7 +366,10 @@ class HomeScreen extends ConsumerWidget {
                                 child: FilledButton(
                                   onPressed: () =>
                                       context.push('/reports/create'),
-                                  child: const Text('Report Waste'),
+                                  child: Text(
+                                    l10n.choice('Report Waste',
+                                        'फोहोर रिपोर्ट गर्नुहोस्'),
+                                  ),
                                 ),
                               ),
                             ],
@@ -364,11 +382,15 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         for (final r in recent) ...[
                           _ReportRow(
-                            title: r.category,
+                            title: _localizedCategory(r.category, l10n),
                             code: 'RPT-${r.createdAt % 10000}'.padLeft(4, '0'),
                             location: r.location,
-                            time: _timeAgo(r.createdAt),
+                            time: _timeAgo(context, r.createdAt),
                             status: r.status,
+                            l10n: l10n,
+                            attachmentUrl:
+                                resolveMediaUrl(apiBase, r.attachmentUrl),
+                            attachmentHeaders: mediaHeaders,
                             onTap: () => context.push('/reports'),
                           ),
                           const SizedBox(height: 12),
@@ -501,27 +523,21 @@ class _BellButton extends StatelessWidget {
 }
 
 class _PickupCard extends StatelessWidget {
-  const _PickupCard({required this.enabled, required this.onChanged});
+  const _PickupCard({
+    required this.enabled,
+    required this.onChanged,
+    required this.l10n,
+  });
   final bool enabled;
   final ValueChanged<bool> onChanged;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x1A0B1E16),
-          blurRadius: 22,
-          offset: Offset(0, 12),
-        ),
-        BoxShadow(
-          color: Color(0xE6FFFFFF),
-          blurRadius: 10,
-          offset: Offset(-3, -3),
-        ),
-      ],
+      backgroundColor: isDark ? cs.surfaceContainerHigh : null,
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
@@ -529,19 +545,21 @@ class _PickupCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5EE),
+              color: isDark
+                  ? cs.primary.withValues(alpha: 0.16)
+                  : const Color(0xFFE8F5EE),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.calendar_month_outlined,
                 color: Color(0xFF199A70), size: 28),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'NEXT PICKUP',
+                  l10n.choice('NEXT PICKUP', 'अर्को संकलन'),
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
@@ -551,7 +569,7 @@ class _PickupCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Tomorrow, 7:00 AM',
+                  l10n.choice('Tomorrow, 7:00 AM', 'भोलि, बिहान ७:०० बजे'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -596,10 +614,14 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = highlighted
-        ? const Color(0xFF199A70).withOpacity(0.12)
-        : const Color(0xFFF1F5F9);
-    final fg = highlighted ? const Color(0xFF199A70) : const Color(0xFF475569);
+        ? cs.primary.withValues(alpha: isDark ? 0.22 : 0.12)
+        : (isDark ? cs.surfaceContainerHighest : const Color(0xFFF1F5F9));
+    final fg = highlighted
+        ? cs.primary
+        : (isDark ? cs.onSurface : const Color(0xFF475569));
 
     return InkWell(
       onTap: onTap,
@@ -616,11 +638,11 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? cs.surface : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -651,7 +673,10 @@ class _ReportRow extends StatelessWidget {
     required this.location,
     required this.time,
     required this.status,
+    required this.attachmentUrl,
+    required this.attachmentHeaders,
     required this.onTap,
+    required this.l10n,
   });
 
   final String title;
@@ -659,11 +684,15 @@ class _ReportRow extends StatelessWidget {
   final String location;
   final String time;
   final String status;
+  final String? attachmentUrl;
+  final Map<String, String>? attachmentHeaders;
   final VoidCallback onTap;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Color statusColor;
     switch (status.toLowerCase()) {
@@ -683,19 +712,7 @@ class _ReportRow extends StatelessWidget {
     }
 
     return KCard(
-      backgroundColor: Colors.white,
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x1A0B1E16),
-          blurRadius: 22,
-          offset: Offset(0, 12),
-        ),
-        BoxShadow(
-          color: Color(0xE6FFFFFF),
-          blurRadius: 10,
-          offset: Offset(-3, -3),
-        ),
-      ],
+      backgroundColor: isDark ? cs.surfaceContainerHigh : null,
       padding: const EdgeInsets.all(12),
       onTap: onTap,
       child: Row(
@@ -704,10 +721,21 @@ class _ReportRow extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? cs.surface : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.image_outlined, color: Color(0xFF94A3B8)),
+            clipBehavior: Clip.antiAlias,
+            child: attachmentUrl == null
+                ? const Icon(Icons.image_outlined, color: Color(0xFF94A3B8))
+                : Image.network(
+                    attachmentUrl!,
+                    fit: BoxFit.cover,
+                    headers: attachmentHeaders,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -790,7 +818,7 @@ class _ReportRow extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      status.replaceAll('_', ' ').toUpperCase(),
+                      _localizedStatus(status, l10n),
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 10,
@@ -811,14 +839,60 @@ class _ReportRow extends StatelessWidget {
   }
 }
 
-String _timeAgo(int millis) {
+String _timeAgo(BuildContext context, int millis) {
+  final l10n = AppLocalizations.of(context);
   try {
     final dt = DateTime.fromMillisecondsSinceEpoch(millis);
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    if (diff.inMinutes < 60) {
+      return l10n.choice(
+        '${diff.inMinutes}m ago',
+        '${diff.inMinutes} मिनेट अघि',
+      );
+    }
+    if (diff.inHours < 24) {
+      return l10n.choice(
+        '${diff.inHours}h ago',
+        '${diff.inHours} घण्टा अघि',
+      );
+    }
+    return l10n.choice(
+      '${diff.inDays}d ago',
+      '${diff.inDays} दिन अघि',
+    );
   } catch (e) {
-    return 'some time ago';
+    return l10n.choice('some time ago', 'केही समय अघि');
+  }
+}
+
+String _localizedCategory(String category, AppLocalizations l10n) {
+  switch (category.trim().toLowerCase()) {
+    case 'missed pickup':
+      return l10n.missedPickup;
+    case 'overflow':
+    case 'overflowing bin':
+      return l10n.overflowingBin;
+    case 'bad smell':
+      return l10n.badSmell;
+    case 'other':
+      return l10n.other;
+    default:
+      return category;
+  }
+}
+
+String _localizedStatus(String raw, AppLocalizations l10n) {
+  final status = raw.trim().toLowerCase().replaceAll(' ', '_');
+  switch (status) {
+    case 'verified':
+      return l10n.reportFiltersVerified;
+    case 'in_progress':
+      return l10n.reportFiltersInProgress;
+    case 'cleaned':
+    case 'resolved':
+      return l10n.reportFiltersCleaned;
+    case 'pending':
+    default:
+      return l10n.choice('Pending', 'पेन्डिङ');
   }
 }
