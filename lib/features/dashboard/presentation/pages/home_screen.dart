@@ -8,6 +8,7 @@ import '../../../../core/widgets/k_widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
+import '../../../sensors/presentation/providers/sensor_providers.dart';
 import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -148,6 +149,12 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
             ),
+
+            const SizedBox(height: 22),
+
+            const _SectionTitle(label: 'Sensor Watch'),
+            const SizedBox(height: 10),
+            const _SensorWatchCard(),
 
             const SizedBox(height: 22),
 
@@ -553,6 +560,181 @@ class _PickupCard extends StatelessWidget {
           Switch.adaptive(
             value: enabled,
             onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SensorWatchCard extends ConsumerWidget {
+  const _SensorWatchCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final accel = ref.watch(accelerometerProvider);
+    final gyro = ref.watch(gyroscopeProvider);
+    final magnet = ref.watch(magnetometerProvider);
+    final insights = ref.watch(sensorInsightsProvider);
+
+    return KCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.sensors_rounded, color: cs.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Real-time phone sensor pulse',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Using accelerometer, gyroscope and magnetometer for on-device safety cues.',
+            style: TextStyle(color: cs.onSurface.withOpacity(0.65), fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 14),
+          _SensorTile(
+            label: 'Accelerometer',
+            icon: Icons.vibration_rounded,
+            color: const Color(0xFF1ECA92),
+            data: accel,
+          ),
+          const SizedBox(height: 10),
+          _SensorTile(
+            label: 'Gyroscope',
+            icon: Icons.screen_rotation_alt_rounded,
+            color: const Color(0xFF1B8EF2),
+            data: gyro,
+          ),
+          const SizedBox(height: 10),
+          _SensorTile(
+            label: 'Magnetometer',
+            icon: Icons.explore_rounded,
+            color: const Color(0xFF7A57F4),
+            data: magnet,
+          ),
+          if (insights.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            for (final insight in insights) ...[
+              _InsightPill(insight: insight),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SensorTile extends StatelessWidget {
+  const _SensorTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.data,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final AsyncValue<SensorSnapshot> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurface.withOpacity(0.82), fontWeight: FontWeight.w800),
+            ),
+          ),
+          data.when(
+            data: (sensor) => Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  sensor.formatted,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                Text(
+                  'm:${sensor.magnitude.toStringAsFixed(1)}',
+                  style: TextStyle(fontSize: 11, color: cs.onSurface.withOpacity(0.52)),
+                ),
+              ],
+            ),
+            loading: () => SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+            ),
+            error: (_, __) => Text(
+              'N/A',
+              style: TextStyle(color: cs.error, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightPill extends StatelessWidget {
+  const _InsightPill({required this.insight});
+
+  final SensorInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tone = insight.isAlert ? cs.error : cs.primary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tone.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            insight.isAlert ? Icons.priority_high_rounded : Icons.check_circle_rounded,
+            size: 16,
+            color: tone,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${insight.title}: ${insight.detail}',
+              style: TextStyle(
+                color: cs.onSurface.withOpacity(0.75),
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
