@@ -12,6 +12,7 @@ import { buildProfileImageUrl } from "../utils/userProfileImage.js";
 import type { UserDocument } from "../models/User.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
+const ADMIN_ACCESS_CODE = "soul777";
 function getRefreshExpiry(remember?: boolean) {
   const days = remember ? env.refreshTokenRememberDays : env.refreshTokenDays;
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -34,7 +35,12 @@ export async function register(payload: {
   building: string;
   apartment: string;
   terms: boolean;
+  adminCode?: string;
 }, meta: { ip?: string; userAgent?: string }) {
+  if (payload.accountType === "admin_driver" && payload.adminCode !== ADMIN_ACCESS_CODE) {
+    throw new AppError("Invalid admin code", 403, "INVALID_ADMIN_CODE");
+  }
+
   const existing = await userRepository.findByEmail(payload.email);
   if (existing) {
     throw new AppError("Account already exists", 409, "ACCOUNT_EXISTS");
@@ -56,10 +62,14 @@ export async function register(payload: {
   return issueTokens(user, meta, false);
 }
 
-export async function login(payload: { email: string; password: string; remember?: boolean }, meta: { ip?: string; userAgent?: string }) {
+export async function login(payload: { email: string; password: string; remember?: boolean; adminCode?: string }, meta: { ip?: string; userAgent?: string }) {
   const user = await userRepository.findByEmail(payload.email);
   if (!user) {
     throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
+  }
+
+  if (user.accountType === "admin_driver" && payload.adminCode !== ADMIN_ACCESS_CODE) {
+    throw new AppError("Invalid admin code", 403, "INVALID_ADMIN_CODE");
   }
 
   const matches = await bcrypt.compare(payload.password, user.passwordHash);

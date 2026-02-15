@@ -20,6 +20,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _pass = TextEditingController();
+  final _adminCode = TextEditingController();
   final _society = TextEditingController();
   final _building = TextEditingController();
   final _apartment = TextEditingController();
@@ -48,6 +49,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     _email.dispose();
     _phone.dispose();
     _pass.dispose();
+    _adminCode.dispose();
     _society.dispose();
     _building.dispose();
     _apartment.dispose();
@@ -63,6 +65,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     if (_pass.text.isEmpty) return 'Password is required';
     final passwordError = _passwordStrengthError(_pass.text);
     if (passwordError != null) return passwordError;
+    if (_role == 'admin_driver' && _adminCode.text.trim().isEmpty) {
+      return 'Admin access code is required for Admin/Driver account';
+    }
     return null;
   }
 
@@ -110,6 +115,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           building: _building.text.trim(),
           apartment: _apartment.text.trim(),
           termsAccepted: _agreeTerms,
+          adminCode: _adminCode.text.trim(),
         );
 
     if (!mounted) return;
@@ -477,6 +483,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           label: 'Password',
           enabled: !loading,
         ),
+        if (_role == 'admin_driver') ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            scheme: scheme,
+            controller: _adminCode,
+            label: 'Admin Access Code',
+            icon: Icons.admin_panel_settings_outlined,
+            enabled: !loading,
+          ),
+        ],
         const SizedBox(height: 24),
         _buildAuthButton(
           scheme: scheme,
@@ -619,7 +635,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   }) {
     final isSelected = _role == value;
     return InkWell(
-      onTap: loading ? null : () => setState(() => _role = value),
+      onTap: loading
+          ? null
+          : () => setState(() {
+              _role = value;
+              if (value != 'admin_driver') {
+                _adminCode.clear();
+              }
+            }),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
