@@ -17,13 +17,23 @@ export const registerSchema = z.object({
   society: z.string().min(2),
   building: z.string().min(1),
   apartment: z.string().min(1),
-  terms: z.boolean().refine((v) => v === true, "Terms must be accepted")
+  terms: z.boolean().refine((v) => v === true, "Terms must be accepted"),
+  adminCode: z.string().optional()
+}).superRefine((payload, ctx) => {
+  if (payload.accountType === "admin_driver" && payload.adminCode !== "soul777") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["adminCode"],
+      message: "Invalid admin code"
+    });
+  }
 });
 
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  remember: z.boolean().optional()
+  remember: z.boolean().optional(),
+  adminCode: z.string().optional()
 });
 
 export const refreshSchema = z.object({});

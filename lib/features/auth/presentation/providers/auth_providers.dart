@@ -60,6 +60,11 @@ class PasswordTooWeakException extends AuthException {
   const PasswordTooWeakException(super.message);
 }
 
+class InvalidAdminCodeException extends AuthException {
+  const InvalidAdminCodeException()
+      : super('Invalid admin code for admin access.');
+}
+
 /// ✅ Auth state with errorMessage (SnackBar uses this)
 class AuthState {
   final bool isLoggedIn;
@@ -149,6 +154,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     required String building,
     required String apartment,
     required bool termsAccepted,
+    String? adminCode,
   }) async {
     state = const AsyncValue.loading();
 
@@ -175,6 +181,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       if (cleanApartment.isEmpty) {
         throw const InvalidInputException('Apartment');
       }
+      if (role == 'admin_driver' && (adminCode == null || adminCode.trim().isEmpty)) {
+        throw const InvalidAdminCodeException();
+      }
 
       final user = await _authApi.signup(
         email: cleanEmail,
@@ -186,6 +195,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         building: cleanBuilding,
         apartment: cleanApartment,
         termsAccepted: termsAccepted,
+        adminCode: adminCode,
       );
 
       if ((user.accessToken ?? '').trim().isEmpty) {
@@ -241,6 +251,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     required String email,
     required String password,
     String role = 'resident',
+    String? adminCode,
   }) async {
     state = const AsyncValue.loading();
 
@@ -252,6 +263,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       if (cleanEmail.isEmpty) throw const InvalidInputException('Email');
       if (cleanPassword.isEmpty) throw const InvalidInputException('Password');
       if (cleanPassword.length < 8) throw const PasswordTooShortException();
+      if (role == 'admin_driver' && (adminCode == null || adminCode.trim().isEmpty)) {
+        throw const InvalidAdminCodeException();
+      }
 
       final previous = box.get('session');
 
@@ -259,6 +273,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         email: cleanEmail,
         password: cleanPassword,
         role: role,
+        adminCode: adminCode,
       );
 
       if ((user.accessToken ?? '').trim().isEmpty) {

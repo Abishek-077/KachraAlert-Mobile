@@ -18,6 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  final _adminCode = TextEditingController();
   bool _hide = true;
   String _role = 'resident';
 
@@ -38,6 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void dispose() {
     _email.dispose();
     _pass.dispose();
+    _adminCode.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -49,6 +51,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     if (email.isEmpty) return 'Email is required';
     if (pass.isEmpty) return 'Password is required';
     if (pass.length < 8) return 'Password must be at least 8 characters';
+    if (_role == 'admin_driver' && _adminCode.text.trim().isEmpty) {
+      return 'Admin code is required for admin login';
+    }
     return null;
   }
 
@@ -63,7 +68,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     await ref
         .read(authStateProvider.notifier)
-        .login(email: _email.text.trim(), password: _pass.text, role: _role);
+        .login(
+          email: _email.text.trim(),
+          password: _pass.text,
+          role: _role,
+          adminCode: _adminCode.text.trim(),
+        );
 
     if (!mounted) return;
     final auth = ref.read(authStateProvider).valueOrNull;
@@ -264,6 +274,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       label: 'Password',
                                       enabled: !loading,
                                     ),
+                                    if (_role == 'admin_driver') ...[
+                                      const SizedBox(height: 16),
+                                      _buildTextField(
+                                        scheme: scheme,
+                                        controller: _adminCode,
+                                        label: 'Admin Access Code',
+                                        icon: Icons.admin_panel_settings_outlined,
+                                        enabled: !loading,
+                                      ),
+                                    ],
                                     const SizedBox(height: 24),
                                     _buildAuthButton(
                                       scheme: scheme,
@@ -368,7 +388,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }) {
     final isSelected = _role == value;
     return InkWell(
-      onTap: loading ? null : () => setState(() => _role = value),
+      onTap: loading
+          ? null
+          : () => setState(() {
+              _role = value;
+              if (value != 'admin_driver') {
+                _adminCode.clear();
+              }
+            }),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

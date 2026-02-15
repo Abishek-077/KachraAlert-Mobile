@@ -34,6 +34,7 @@ class AuthApiService {
     required bool termsAccepted,
     required String fullName,
     required String role,
+    String? adminCode,
   }) async {
     final response = await _client.postJson(ApiEndpoints.signup, {
       'email': email,
@@ -46,6 +47,7 @@ class AuthApiService {
       'building': building,
       'apartment': apartment,
       'terms': termsAccepted,
+      if (adminCode != null && adminCode.trim().isNotEmpty) 'adminCode': adminCode.trim(),
     });
 
     return _parseUser(
@@ -59,10 +61,12 @@ class AuthApiService {
     required String email,
     required String password,
     required String role,
+    String? adminCode,
   }) async {
     final response = await _client.postJson(ApiEndpoints.login, {
       'email': email,
       'password': password,
+      if (adminCode != null && adminCode.trim().isNotEmpty) 'adminCode': adminCode.trim(),
     });
 
     return _parseUser(response, fallbackEmail: email, fallbackRole: role);
