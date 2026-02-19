@@ -241,16 +241,16 @@ class AppColors {
   static const Color darkBorder = Color(0xFF243244);
   static const Color darkDivider = Color(0xFF1C2636);
 
-  /// Dark primary gradient (midnight + cyan glow)
+  /// Dark primary gradient (deep navy, no green tint)
   static const LinearGradient darkPrimaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0B1020),
-      Color(0xFF0A7A57),
-      Color(0xFF22D3EE),
+      Color(0xFF0A1326),
+      Color(0xFF0A1730),
+      Color(0xFF081224),
     ],
-    stops: [0.0, 0.6, 1.0],
+    stops: [0.0, 0.52, 1.0],
   );
 
   // =========================

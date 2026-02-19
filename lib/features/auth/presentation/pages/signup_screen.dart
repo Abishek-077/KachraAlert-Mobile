@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:ui';
 
 import 'package:smart_waste_app/app/theme/app_colors.dart';
+import 'package:smart_waste_app/core/motion/app_motion.dart';
+import 'package:smart_waste_app/core/motion/motion_profile.dart';
 import 'package:smart_waste_app/core/ui/snackbar.dart';
 import 'package:smart_waste_app/core/widgets/floating_particles.dart';
 import 'package:smart_waste_app/core/widgets/animated_text_field.dart';
@@ -41,7 +43,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   late final AnimationController _logoController;
   late final Animation<double> _logoScaleAnimation;
   late final Animation<double> _logoRotationAnimation;
-  
+  MotionProfile? _lastProfile;
+
   bool _initialized = false;
 
   @override
@@ -67,6 +70,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
     _logoController.forward();
     _initialized = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _controller.duration = AppMotion.scaled(profile, AppMotion.long);
+    _logoController.duration = AppMotion.scaled(profile, AppMotion.medium);
+
+    if (profile.reduceMotion) {
+      _controller.value = 1;
+      _logoController.value = 1;
+      _controller.stop();
+      _logoController.stop();
+    } else {
+      if (_controller.value == 0 && !_controller.isAnimating) {
+        _controller.forward();
+      }
+      if (_logoController.value == 0 && !_logoController.isAnimating) {
+        _logoController.forward();
+      }
+    }
   }
 
   @override
@@ -145,7 +173,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     if (auth?.isLoggedIn == true) {
       setState(() => _signupSuccess = true);
       showConfetti(context);
-      await Future.delayed(const Duration(milliseconds: 2500));
+      await Future.delayed(
+        AppMotion.scaled(
+          context.motionProfile,
+          const Duration(milliseconds: 2500),
+        ),
+      );
       if (mounted) context.go('/home');
     }
   }
@@ -191,12 +224,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     );
     final slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-        );
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final profile = context.motionProfile;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -223,9 +257,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             ),
           ),
           // Floating particles
-          const Positioned.fill(
-            child: FloatingParticles(particleCount: 30),
-          ),
+          if (!profile.reduceMotion)
+            const Positioned.fill(
+              child: FloatingParticles(particleCount: 30),
+            ),
           // Glow orbs
           Positioned(
             right: -100,
@@ -257,9 +292,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: IconButton(
-                          onPressed: loading
-                              ? null
-                              : () => context.go('/auth/login'),
+                          onPressed:
+                              loading ? null : () => context.go('/auth/login'),
                           icon: Icon(
                             Icons.arrow_back_rounded,
                             color: scheme.onSurface,
@@ -389,8 +423,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                         switchInCurve: Curves.easeOut,
                                         switchOutCurve: Curves.easeIn,
                                         child: _step == 0
-                                            ? _buildAccountStep(
-                                                scheme, loading)
+                                            ? _buildAccountStep(scheme, loading)
                                             : _buildAddressStep(
                                                 scheme, loading),
                                       ),
@@ -494,9 +527,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         color: isActive ? null : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isActive
-              ? Colors.transparent
-              : scheme.outlineVariant,
+          color: isActive ? Colors.transparent : scheme.outlineVariant,
           width: 1.5,
         ),
         boxShadow: isActive
@@ -577,9 +608,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           suffixIcon: IconButton(
             onPressed: () => setState(() => _hide = !_hide),
             icon: Icon(
-              _hide
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _hide ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               size: 20,
               color: scheme.onSurfaceVariant.withOpacity(0.6),
             ),
@@ -801,8 +830,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    gradient:
-                        isSelected ? AppColors.purplePinkGradient : null,
+                    gradient: isSelected ? AppColors.purplePinkGradient : null,
                     color: isSelected ? null : scheme.surface,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: isSelected

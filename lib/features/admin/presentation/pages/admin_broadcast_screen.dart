@@ -1,7 +1,7 @@
-// lib/features/admin/presentation/pages/admin_broadcast_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/k_widgets.dart';
 import '../providers/admin_alert_providers.dart';
 import '../widgets/admin_side_panel.dart';
 
@@ -28,73 +28,69 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
   Widget build(BuildContext context) {
     final alerts = ref.watch(adminAlertsProvider);
 
-    return Scaffold(
+    return MotionScaffold(
       drawer: const AdminSidePanel(currentRoute: '/admin/broadcast'),
       appBar: AppBar(title: const Text('Admin Broadcast')),
+      safeAreaBody: true,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Text(
-                    'Send alert to residents',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _title,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _msg,
-                    maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Message'),
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.send_rounded),
-                      label: const Text('Send Broadcast'),
-                      onPressed: () async {
-                        // ✅ capture messenger BEFORE await (fixes lint)
-                        final messenger = ScaffoldMessenger.of(context);
+          KCard(
+            child: Column(
+              children: [
+                const Text(
+                  'Send alert to residents',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _title,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _msg,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Message'),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.send_rounded),
+                    label: const Text('Send Broadcast'),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
 
-                        final title = _title.text.trim();
-                        final message = _msg.text.trim();
+                      final title = _title.text.trim();
+                      final message = _msg.text.trim();
 
-                        if (title.isEmpty || message.isEmpty) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Title and message are required'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        await ref
-                            .read(adminAlertsProvider.notifier)
-                            .broadcast(title: title, message: message);
-
-                        if (!mounted) return;
-
-                        _title.clear();
-                        _msg.clear();
-
-                        // ✅ no context usage after await
+                      if (title.isEmpty || message.isEmpty) {
                         messenger.showSnackBar(
-                          const SnackBar(content: Text('Broadcast sent ✅')),
+                          const SnackBar(
+                            content: Text('Title and message are required'),
+                          ),
                         );
-                      },
-                    ),
+                        return;
+                      }
+
+                      await ref
+                          .read(adminAlertsProvider.notifier)
+                          .broadcast(title: title, message: message);
+
+                      if (!mounted) return;
+
+                      _title.clear();
+                      _msg.clear();
+
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Broadcast sent')),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -113,13 +109,12 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                     .map(
                       (a) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: Card(
+                        child: KCard(
                           child: ListTile(
                             title: Text(
                               a.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800),
                             ),
                             subtitle: Text(a.message),
                           ),

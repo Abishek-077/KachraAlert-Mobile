@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
 
 class AmbientBackground extends StatefulWidget {
   const AmbientBackground({super.key});
@@ -15,14 +17,29 @@ class AmbientBackground extends StatefulWidget {
 class _AmbientBackgroundState extends State<AmbientBackground>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _isTickerEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 12000),
+      duration: AppMotion.hero * 15,
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shouldAnimate = !context.motionProfile.reduceMotion;
+    if (_isTickerEnabled == shouldAnimate) return;
+    _isTickerEnabled = shouldAnimate;
+    if (shouldAnimate) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.stop();
+      _controller.value = 0.5;
+    }
   }
 
   @override
@@ -35,14 +52,41 @@ class _AmbientBackgroundState extends State<AmbientBackground>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final orbPrimary = isDark
+        ? [
+            const Color(0xFF3D5AFE).withValues(alpha: 0.2),
+            const Color(0xFF3D5AFE).withValues(alpha: 0.0),
+          ]
+        : [
+            cs.primary.withValues(alpha: 0.45),
+            cs.primary.withValues(alpha: 0.05),
+          ];
+    final orbSecondary = isDark
+        ? [
+            const Color(0xFF2563EB).withValues(alpha: 0.14),
+            const Color(0xFF2563EB).withValues(alpha: 0.0),
+          ]
+        : [
+            cs.secondary.withValues(alpha: 0.35),
+            cs.secondary.withValues(alpha: 0.05),
+          ];
+    final orbTertiary = isDark
+        ? [
+            const Color(0xFF93C5FD).withValues(alpha: 0.12),
+            Colors.transparent,
+          ]
+        : [
+            AppColors.accentGold.withValues(alpha: 0.25),
+            Colors.transparent,
+          ];
 
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           final t = _controller.value * 2 * math.pi;
-          final dx = math.sin(t) * 18;
-          final dy = math.cos(t) * 18;
+          final dx = _isTickerEnabled ? math.sin(t) * 18 : 0.0;
+          final dy = _isTickerEnabled ? math.cos(t) * 18 : 0.0;
 
           return Stack(
             fit: StackFit.expand,
@@ -59,10 +103,7 @@ class _AmbientBackgroundState extends State<AmbientBackground>
                 top: -60 + dy,
                 child: _Orb(
                   size: 220,
-                  colors: [
-                    cs.primary.withOpacity(0.45),
-                    cs.primary.withOpacity(0.05),
-                  ],
+                  colors: orbPrimary,
                 ),
               ),
               Positioned(
@@ -70,10 +111,7 @@ class _AmbientBackgroundState extends State<AmbientBackground>
                 top: 120 + dy * 0.4,
                 child: _Orb(
                   size: 260,
-                  colors: [
-                    cs.secondary.withOpacity(0.35),
-                    cs.secondary.withOpacity(0.05),
-                  ],
+                  colors: orbSecondary,
                 ),
               ),
               Positioned(
@@ -81,20 +119,21 @@ class _AmbientBackgroundState extends State<AmbientBackground>
                 bottom: -80 + dy,
                 child: _Orb(
                   size: 200,
-                  colors: [
-                    AppColors.accentGold.withOpacity(0.25),
-                    Colors.transparent,
-                  ],
+                  colors: orbTertiary,
                 ),
               ),
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    color: Colors.transparent,
+              if (_isTickerEnabled)
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: isDark ? 16 : 20,
+                      sigmaY: isDark ? 16 : 20,
+                    ),
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },

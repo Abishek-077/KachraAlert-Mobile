@@ -1,11 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/extensions/async_value_extensions.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/services/feedback/feedback_service.dart';
 import '../../../../core/ui/snackbar.dart';
 import '../../../../core/utils/media_permissions.dart';
 import '../../../../core/widgets/k_widgets.dart';
@@ -84,7 +86,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
-    HapticFeedback.selectionClick();
+    await ref.read(feedbackServiceProvider).selection();
+    if (!mounted) return;
     await MediaPermissions.requestPhotoVideoAccess(context);
     if (!mounted) return;
     final picked = await ImagePicker().pickImage(
@@ -203,8 +206,9 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         : Icons.chevron_right_rounded;
     final canPress = _canGoNext && !_saving;
 
-    return Scaffold(
+    return MotionScaffold(
       backgroundColor: isDark ? cs.surface : const Color(0xFFF6F8F7),
+      useAmbientBackground: false,
       body: Stack(
         children: [
           const AmbientBackground(),

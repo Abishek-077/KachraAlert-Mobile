@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
+import '../services/feedback/feedback_service.dart';
+import 'k_pressable.dart';
 
 /// Minimal premium dock with centered home action.
-class KBottomNavDock extends StatelessWidget {
+class KBottomNavDock extends ConsumerWidget {
   const KBottomNavDock({
     super.key,
     required this.currentIndex,
@@ -15,9 +20,22 @@ class KBottomNavDock extends StatelessWidget {
   final VoidCallback onFabTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final profile = context.motionProfile;
+    final feedback = ref.watch(feedbackServiceProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Future<void> selectIndex(int index) async {
+      await feedback.selection();
+      onIndexChanged(index);
+    }
+
+    Future<void> triggerFab() async {
+      await feedback.mediumImpact();
+      onFabTap();
+    }
+
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -63,20 +81,16 @@ class KBottomNavDock extends StatelessWidget {
                       child: _DockIcon(
                         icon: Icons.calendar_month_outlined,
                         selected: currentIndex == 1,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onIndexChanged(1);
-                        },
+                        duration: AppMotion.scaled(profile, AppMotion.short),
+                        onTap: () => selectIndex(1),
                       ),
                     ),
                     Expanded(
                       child: _DockIcon(
                         icon: Icons.chat_bubble_outline_rounded,
                         selected: currentIndex == 2,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onIndexChanged(2);
-                        },
+                        duration: AppMotion.scaled(profile, AppMotion.short),
+                        onTap: () => selectIndex(2),
                       ),
                     ),
                     const SizedBox(width: 84),
@@ -84,20 +98,16 @@ class KBottomNavDock extends StatelessWidget {
                       child: _DockIcon(
                         icon: Icons.notifications_none_rounded,
                         selected: currentIndex == 3,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onIndexChanged(3);
-                        },
+                        duration: AppMotion.scaled(profile, AppMotion.short),
+                        onTap: () => selectIndex(3),
                       ),
                     ),
                     Expanded(
                       child: _DockIcon(
                         icon: Icons.person_outline_rounded,
                         selected: currentIndex == 4,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onIndexChanged(4);
-                        },
+                        duration: AppMotion.scaled(profile, AppMotion.short),
+                        onTap: () => selectIndex(4),
                       ),
                     ),
                   ],
@@ -106,14 +116,9 @@ class KBottomNavDock extends StatelessWidget {
             ),
             _CenterHomeButton(
               selected: currentIndex == 0,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onIndexChanged(0);
-              },
-              onLongPress: () {
-                HapticFeedback.mediumImpact();
-                onFabTap();
-              },
+              duration: AppMotion.scaled(profile, AppMotion.short),
+              onTap: () => selectIndex(0),
+              onLongPress: triggerFab,
             ),
           ],
         ),
@@ -126,41 +131,41 @@ class _DockIcon extends StatelessWidget {
   const _DockIcon({
     required this.icon,
     required this.selected,
+    required this.duration,
     required this.onTap,
   });
 
   final IconData icon;
   final bool selected;
+  final Duration duration;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: selected
-                  ? cs.primary.withValues(alpha: isDark ? 0.22 : 0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              size: 27,
-              color: selected
-                  ? cs.primary
-                  : cs.onSurface.withValues(alpha: isDark ? 0.78 : 0.62),
-            ),
+    return KPressable(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      haptic: PressHaptic.none,
+      child: Center(
+        child: AnimatedContainer(
+          duration: duration,
+          curve: Curves.easeOut,
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: selected
+                ? cs.primary.withValues(alpha: isDark ? 0.22 : 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 27,
+            color: selected
+                ? cs.primary
+                : cs.onSurface.withValues(alpha: isDark ? 0.78 : 0.62),
           ),
         ),
       ),
@@ -171,11 +176,13 @@ class _DockIcon extends StatelessWidget {
 class _CenterHomeButton extends StatelessWidget {
   const _CenterHomeButton({
     required this.selected,
+    required this.duration,
     required this.onTap,
     required this.onLongPress,
   });
 
   final bool selected;
+  final Duration duration;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -183,42 +190,40 @@ class _CenterHomeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF3B52DE), Color(0xFF4A3FC8)],
-            ),
-            border: Border.all(
-              color: isDark
-                  ? cs.surface.withValues(alpha: 0.95)
-                  : Colors.white.withValues(alpha: 0.92),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3B52DE).withValues(
-                  alpha: selected ? 0.36 : 0.22,
-                ),
-                blurRadius: selected ? 18 : 10,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return KPressable(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      onLongPress: onLongPress,
+      haptic: PressHaptic.none,
+      child: AnimatedContainer(
+        duration: duration,
+        curve: Curves.easeOut,
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF3B52DE), Color(0xFF4A3FC8)],
           ),
-          child: const Icon(Icons.home_rounded, color: Colors.white, size: 30),
+          border: Border.all(
+            color: isDark
+                ? cs.surface.withValues(alpha: 0.95)
+                : Colors.white.withValues(alpha: 0.92),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3B52DE).withValues(
+                alpha: selected ? 0.36 : 0.22,
+              ),
+              blurRadius: selected ? 18 : 10,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
+        child: const Icon(Icons.home_rounded, color: Colors.white, size: 30),
       ),
     );
   }

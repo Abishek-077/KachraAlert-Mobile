@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smart_waste_app/app/theme/app_colors.dart';
+import 'package:smart_waste_app/core/widgets/k_widgets.dart';
 
 import '../../../schedule/data/models/schedule_hive_model.dart';
 import '../../../schedule/presentation/providers/schedule_providers.dart';
@@ -14,7 +15,7 @@ class AdminScheduleManageScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final schedulesAsync = ref.watch(schedulesProvider);
 
-    return Scaffold(
+    return MotionScaffold(
       drawer: const AdminSidePanel(currentRoute: '/admin/schedule'),
       appBar: AppBar(title: const Text('Manage Schedule')),
       floatingActionButton: FloatingActionButton.extended(

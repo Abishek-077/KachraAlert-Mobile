@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
+import 'k_pressable.dart';
+
 /// A premium soft card used across the app.
 /// Matches the rounded, low-elevation look in the reference UI.
 class KCard extends StatelessWidget {
@@ -23,10 +27,13 @@ class KCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final profile = context.motionProfile;
     final surface = backgroundColor ?? cs.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final card = Container(
+    final card = AnimatedContainer(
+      duration: AppMotion.scaled(profile, AppMotion.short),
+      curve: profile.entryCurve,
       decoration: BoxDecoration(
         gradient: backgroundColor == null && !isDark
             ? LinearGradient(
@@ -34,14 +41,14 @@ class KCard extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   surface,
-                  cs.surfaceVariant.withOpacity(0.45),
+                  cs.surfaceVariant.withValues(alpha: 0.45),
                 ],
               )
             : null,
         color: backgroundColor ?? surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: cs.outlineVariant.withOpacity(isDark ? 0.2 : 0.35),
+          color: cs.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.35),
         ),
         boxShadow: boxShadow ??
             [
@@ -49,14 +56,14 @@ class KCard extends StatelessWidget {
                 blurRadius: 26,
                 spreadRadius: 0,
                 offset: const Offset(0, 12),
-                color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
               ),
               if (!isDark)
                 BoxShadow(
                   blurRadius: 12,
                   spreadRadius: 0,
                   offset: const Offset(-6, -6),
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                 ),
             ],
       ),
@@ -65,13 +72,11 @@ class KCard extends StatelessWidget {
 
     if (onTap == null) return card;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(radius),
-        onTap: onTap,
-        child: card,
-      ),
+    return KPressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(radius),
+      haptic: PressHaptic.light,
+      child: card,
     );
   }
 }

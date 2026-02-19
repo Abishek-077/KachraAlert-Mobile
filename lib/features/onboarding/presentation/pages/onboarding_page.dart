@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:smart_waste_app/app/theme/app_colors.dart';
+import 'package:smart_waste_app/core/motion/app_motion.dart';
+import 'package:smart_waste_app/core/motion/motion_profile.dart';
 import 'package:smart_waste_app/core/widgets/floating_particles.dart';
 
 import '../../../settings/presentation/providers/settings_providers.dart';
@@ -25,6 +27,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
   late final AnimationController _ctaController;
   int _index = 0;
   bool _isFinishing = false;
+  MotionProfile? _lastProfile;
 
   @override
   void initState() {
@@ -53,6 +56,37 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _sceneController.duration = profile.scaleMs(18000);
+    _pulseController.duration = profile.scaleMs(4400);
+    _ctaController.duration = profile.scaleMs(1800);
+
+    if (profile.reduceMotion) {
+      _sceneController.stop();
+      _pulseController.stop();
+      _ctaController.stop();
+      _sceneController.value = 0.5;
+      _pulseController.value = 0.5;
+      _ctaController.value = 0.5;
+    } else {
+      if (!_sceneController.isAnimating) {
+        _sceneController.repeat();
+      }
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat(reverse: true);
+      }
+      if (!_ctaController.isAnimating) {
+        _ctaController.repeat(reverse: true);
+      }
+    }
+  }
+
   Future<void> _finish() async {
     if (_isFinishing) return;
     setState(() => _isFinishing = true);
@@ -65,7 +99,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
     if (_isFinishing) return;
     if (_index < pages.length - 1) {
       await _page.nextPage(
-        duration: const Duration(milliseconds: 520),
+        duration: AppMotion.scaled(context.motionProfile, AppMotion.long),
         curve: Curves.easeOutCubic,
       );
     } else {
@@ -79,6 +113,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final profile = context.motionProfile;
 
     return Scaffold(
       body: AnimatedBuilder(
@@ -92,6 +127,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
           final pageValue = _page.hasClients
               ? (_page.page ?? _index.toDouble())
               : _index.toDouble();
+          final sceneValue =
+              profile.reduceMotion ? 0.5 : _sceneController.value;
+          final pulseValue =
+              profile.reduceMotion ? 0.5 : _pulseController.value;
+          final ctaValue = profile.reduceMotion ? 0.5 : _ctaController.value;
           final scenePalette = _ScenePalette.lerp(pages, pageValue, theme);
 
           return Stack(
@@ -99,25 +139,26 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
             children: [
               _CinematicBackground(
                 palette: scenePalette,
-                sceneValue: _sceneController.value,
-                pulseValue: _pulseController.value,
+                sceneValue: sceneValue,
+                pulseValue: pulseValue,
                 isDark: isDark,
               ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: isDark ? 0.35 : 0.5,
-                    child: FloatingParticles(
-                      particleCount: 38,
-                      minSize: 1.8,
-                      maxSize: 6,
-                      color: scenePalette.primary.withValues(
-                        alpha: isDark ? 0.85 : 0.55,
+              if (!profile.reduceMotion)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: isDark ? 0.35 : 0.5,
+                      child: FloatingParticles(
+                        particleCount: 38,
+                        minSize: 1.8,
+                        maxSize: 6,
+                        color: scenePalette.primary.withValues(
+                          alpha: isDark ? 0.85 : 0.55,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               SafeArea(
                 child: Column(
                   children: [
@@ -126,7 +167,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                       child: Row(
                         children: [
                           _BrandPulsePill(
-                            sceneValue: _sceneController.value,
+                            sceneValue: sceneValue,
                             isDark: isDark,
                             accent: scenePalette.primary,
                           ),
@@ -158,8 +199,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                           return _OnboardingSlide(
                             data: p,
                             pageOffset: (pageValue - i).clamp(-1.0, 1.0),
-                            sceneValue: _sceneController.value,
-                            pulseValue: _pulseController.value,
+                            sceneValue: sceneValue,
+                            pulseValue: pulseValue,
                             colorScheme: cs,
                             isDark: isDark,
                           );
@@ -200,7 +241,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                             : Icons.arrow_forward_rounded,
                         primary: scenePalette.primary,
                         secondary: scenePalette.secondary,
-                        pulse: _ctaController.value,
+                        pulse: ctaValue,
                         loading: _isFinishing,
                       ),
                     ),

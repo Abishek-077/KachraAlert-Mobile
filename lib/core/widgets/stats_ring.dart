@@ -106,8 +106,8 @@ class _StatsRingState extends State<StatsRing>
                   LinearGradient(
                     colors: [cs.primary, cs.secondary],
                   ),
-              backgroundColor: widget.backgroundColor ??
-                  cs.outlineVariant.withOpacity(0.3),
+              backgroundColor:
+                  widget.backgroundColor ?? cs.outlineVariant.withOpacity(0.3),
             ),
             child: widget.showLabel
                 ? Center(

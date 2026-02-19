@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:ui';
 
 import 'package:smart_waste_app/app/theme/app_colors.dart';
+import 'package:smart_waste_app/core/motion/app_motion.dart';
+import 'package:smart_waste_app/core/motion/motion_profile.dart';
 import 'package:smart_waste_app/core/ui/snackbar.dart';
 import 'package:smart_waste_app/core/widgets/floating_particles.dart';
 import 'package:smart_waste_app/core/widgets/animated_text_field.dart';
@@ -29,9 +31,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   late final AnimationController _animationController;
   late final AnimationController _logoController;
- late final Animation<double> _logoScaleAnimation;
+  late final Animation<double> _logoScaleAnimation;
   late final Animation<double> _logoRotationAnimation;
-  
+  MotionProfile? _lastProfile;
+
   bool _initialized = false;
 
   @override
@@ -56,8 +59,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
 
     _logoController.forward();
-    
+
     _initialized = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _animationController.duration = AppMotion.scaled(profile, AppMotion.long);
+    _logoController.duration = AppMotion.scaled(profile, AppMotion.medium);
+
+    if (profile.reduceMotion) {
+      _animationController.value = 1;
+      _logoController.value = 1;
+      _animationController.stop();
+      _logoController.stop();
+    } else {
+      if (_animationController.value == 0 &&
+          !_animationController.isAnimating) {
+        _animationController.forward();
+      }
+      if (_logoController.value == 0 && !_logoController.isAnimating) {
+        _logoController.forward();
+      }
+    }
   }
 
   @override
@@ -96,7 +125,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final auth = ref.read(authStateProvider).valueOrNull;
     if (auth?.isLoggedIn == true) {
       setState(() => _loginSuccess = true);
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future.delayed(
+        AppMotion.scaled(context.motionProfile, AppMotion.hero),
+      );
       if (mounted) context.go('/home');
     }
   }
@@ -123,12 +154,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
     final slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final profile = context.motionProfile;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -155,9 +187,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
           // Floating particles
-          const Positioned.fill(
-            child: FloatingParticles(particleCount: 30),
-          ),
+          if (!profile.reduceMotion)
+            const Positioned.fill(
+              child: FloatingParticles(particleCount: 30),
+            ),
           // Glow orbs
           Positioned(
             right: -100,
@@ -226,7 +259,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       FadeTransition(
                         opacity: fadeAnimation,
                         child: ShaderMask(
-                          shaderCallback: (bounds) => AppColors.tealEmeraldGradient
+                          shaderCallback: (bounds) => AppColors
+                              .tealEmeraldGradient
                               .createShader(bounds),
                           child: const Text(
                             'Welcome Back',
@@ -285,7 +319,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                                      color: Colors.black
+                                          .withOpacity(isDark ? 0.3 : 0.08),
                                       blurRadius: 30,
                                       offset: const Offset(0, 10),
                                     ),
@@ -294,7 +329,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 child: Padding(
                                   padding: const EdgeInsets.all(28),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       _buildRoleSelector(loading, scheme),
                                       const SizedBox(height: 24),
@@ -303,10 +339,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         label: 'Email Address',
                                         icon: Icons.email_outlined,
                                         enabled: !loading,
-                                        keyboardType: TextInputType.emailAddress,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
                                         validator: (value) {
-                                          if (value.isEmpty) return 'Email is required';
-                                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                          if (value.isEmpty)
+                                            return 'Email is required';
+                                          if (!RegExp(
+                                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                                               .hasMatch(value)) {
                                             return 'Enter a valid email';
                                           }
@@ -321,17 +360,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         obscureText: _hide,
                                         enabled: !loading,
                                         suffixIcon: IconButton(
-                                          onPressed: () => setState(() => _hide = !_hide),
+                                          onPressed: () =>
+                                              setState(() => _hide = !_hide),
                                           icon: Icon(
                                             _hide
                                                 ? Icons.visibility_off_outlined
                                                 : Icons.visibility_outlined,
                                             size: 20,
-                                            color: scheme.onSurfaceVariant.withOpacity(0.6),
+                                            color: scheme.onSurfaceVariant
+                                                .withOpacity(0.6),
                                           ),
                                         ),
                                         validator: (value) {
-                                          if (value.isEmpty) return 'Password is required';
+                                          if (value.isEmpty)
+                                            return 'Password is required';
                                           if (value.length < 8) {
                                             return 'Password must be at least 8 characters';
                                           }
@@ -363,10 +405,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                   color: scheme.primary,
                                                   fontWeight: FontWeight.w700,
                                                 ),
-                                                recognizer: TapGestureRecognizer()
-                                                  ..onTap = loading
-                                                      ? null
-                                                      : () => context.go('/auth/signup'),
+                                                recognizer:
+                                                    TapGestureRecognizer()
+                                                      ..onTap = loading
+                                                          ? null
+                                                          : () => context.go(
+                                                              '/auth/signup'),
                                               ),
                                             ],
                                           ),
@@ -443,7 +487,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     required ColorScheme scheme,
   }) {
     final isSelected = _role == value;
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
@@ -487,9 +531,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? AppColors.tealEmeraldGradient
-                        : null,
+                    gradient: isSelected ? AppColors.tealEmeraldGradient : null,
                     color: isSelected ? null : scheme.surface,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: isSelected

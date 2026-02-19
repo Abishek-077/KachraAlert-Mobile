@@ -12,6 +12,8 @@ const _kDarkMode = 'darkMode';
 const _kPickupReminders = 'pickupReminders';
 const _kSplashShownAt = 'splashShownAt';
 const _kLanguageCode = 'languageCode';
+const _kReduceMotion = 'reduceMotion';
+const _kHapticsEnabled = 'hapticsEnabled';
 
 class SettingsState {
   final bool onboarded;
@@ -19,6 +21,8 @@ class SettingsState {
   final bool pickupRemindersEnabled;
   final DateTime? splashShownAt;
   final String languageCode;
+  final bool reduceMotion;
+  final bool hapticsEnabled;
 
   const SettingsState({
     required this.onboarded,
@@ -26,6 +30,8 @@ class SettingsState {
     required this.pickupRemindersEnabled,
     this.splashShownAt,
     required this.languageCode,
+    required this.reduceMotion,
+    required this.hapticsEnabled,
   });
 
   ThemeMode get themeMode => isDarkMode ? ThemeMode.dark : ThemeMode.light;
@@ -37,6 +43,8 @@ class SettingsState {
     bool? pickupRemindersEnabled,
     DateTime? splashShownAt,
     String? languageCode,
+    bool? reduceMotion,
+    bool? hapticsEnabled,
   }) {
     return SettingsState(
       onboarded: onboarded ?? this.onboarded,
@@ -45,6 +53,8 @@ class SettingsState {
           pickupRemindersEnabled ?? this.pickupRemindersEnabled,
       splashShownAt: splashShownAt ?? this.splashShownAt,
       languageCode: languageCode ?? this.languageCode,
+      reduceMotion: reduceMotion ?? this.reduceMotion,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
     );
   }
 }
@@ -99,6 +109,10 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           (_box.get(_kPickupReminders, defaultValue: true) as bool);
       final languageCode =
           (_box.get(_kLanguageCode, defaultValue: 'en') as String);
+      final reduceMotion =
+          (_box.get(_kReduceMotion, defaultValue: false) as bool);
+      final hapticsEnabled =
+          (_box.get(_kHapticsEnabled, defaultValue: true) as bool);
 
       final splashMillis = _box.get(_kSplashShownAt) as int?;
       final splashShownAt = splashMillis == null
@@ -112,6 +126,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           pickupRemindersEnabled: pickupRemindersEnabled,
           splashShownAt: splashShownAt,
           languageCode: languageCode,
+          reduceMotion: reduceMotion,
+          hapticsEnabled: hapticsEnabled,
         ),
       );
     } catch (_) {
@@ -123,6 +139,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           pickupRemindersEnabled: true,
           splashShownAt: null,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         ),
       );
     }
@@ -138,6 +156,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     state = AsyncValue.data(current.copyWith(onboarded: true));
@@ -153,6 +173,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     state = AsyncValue.data(current.copyWith(onboarded: false));
@@ -167,6 +189,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     final next = !current.isDarkMode;
@@ -184,6 +208,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     await _box.put(_kPickupReminders, enabled);
@@ -203,6 +229,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     state = AsyncValue.data(current.copyWith(splashShownAt: now));
@@ -217,10 +245,46 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
           isDarkMode: false,
           pickupRemindersEnabled: true,
           languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
         );
 
     await _box.put(_kLanguageCode, languageCode);
     state = AsyncValue.data(current.copyWith(languageCode: languageCode));
+  }
+
+  Future<void> setReduceMotion(bool enabled) async {
+    await _init();
+
+    final current = state.valueOrNull ??
+        const SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+          languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
+        );
+
+    await _box.put(_kReduceMotion, enabled);
+    state = AsyncValue.data(current.copyWith(reduceMotion: enabled));
+  }
+
+  Future<void> setHapticsEnabled(bool enabled) async {
+    await _init();
+
+    final current = state.valueOrNull ??
+        const SettingsState(
+          onboarded: false,
+          isDarkMode: false,
+          pickupRemindersEnabled: true,
+          languageCode: 'en',
+          reduceMotion: false,
+          hapticsEnabled: true,
+        );
+
+    await _box.put(_kHapticsEnabled, enabled);
+    state = AsyncValue.data(current.copyWith(hapticsEnabled: enabled));
   }
 }
 

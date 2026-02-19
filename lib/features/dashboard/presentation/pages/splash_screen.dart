@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:smart_waste_app/app/theme/app_colors.dart';
+import 'package:smart_waste_app/core/motion/app_motion.dart';
+import 'package:smart_waste_app/core/motion/motion_profile.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,13 +16,14 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
+  MotionProfile? _lastProfile;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: AppMotion.hero,
     )..repeat(reverse: true);
     _scaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
@@ -28,6 +31,22 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeAnimation = Tween<double>(begin: 0.85, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _controller.duration = AppMotion.scaled(profile, AppMotion.hero);
+    if (profile.reduceMotion) {
+      _controller.stop();
+      _controller.value = 0.5;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override
@@ -39,9 +58,14 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final profile = context.motionProfile;
+    final scaleAnimation = profile.reduceMotion
+        ? const AlwaysStoppedAnimation<double>(1.0)
+        : _scaleAnimation;
+    final fadeAnimation = profile.reduceMotion
+        ? const AlwaysStoppedAnimation<double>(1.0)
+        : _fadeAnimation;
 
-    // ⚠️ No manual navigation from Splash.
-    // GoRouter redirect decides where to go once providers finish loading.
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
@@ -52,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
               top: -20,
               child: _GlowCircle(
                 size: 220,
-                color: Colors.white.withOpacity(0.12),
+                color: Colors.white.withValues(alpha: 0.12),
               ),
             ),
             Positioned(
@@ -60,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
               bottom: 40,
               child: _GlowCircle(
                 size: 180,
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
             Positioned(
@@ -68,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
               bottom: 120,
               child: _GlowCircle(
                 size: 120,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
             SafeArea(
@@ -77,22 +101,22 @@ class _SplashScreenState extends State<SplashScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ScaleTransition(
-                      scale: _scaleAnimation,
+                      scale: scaleAnimation,
                       child: FadeTransition(
-                        opacity: _fadeAnimation,
+                        opacity: fadeAnimation,
                         child: Container(
                           width: 110,
                           height: 110,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(32),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.28),
+                              color: Colors.white.withValues(alpha: 0.28),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 blurRadius: 24,
                                 offset: const Offset(0, 12),
                               ),
@@ -129,7 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.82),
+                        color: Colors.white.withValues(alpha: 0.82),
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -139,14 +163,14 @@ class _SplashScreenState extends State<SplashScreen>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
+                            color: Colors.black.withValues(alpha: 0.12),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -169,7 +193,7 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             'Preparing your dashboard',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.2,

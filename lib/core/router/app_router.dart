@@ -3,24 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 // Admin pages
+import 'package:smart_waste_app/features/admin/data/models/admin_alert_hive_model.dart';
+import 'package:smart_waste_app/features/admin/data/models/admin_user_model.dart';
+import 'package:smart_waste_app/features/admin/presentation/pages/admin_alert_form_screen.dart';
 import 'package:smart_waste_app/features/admin/presentation/pages/admin_broadcast_screen.dart';
 import 'package:smart_waste_app/features/admin/presentation/pages/admin_schedule_manage_screen.dart';
-import 'package:smart_waste_app/features/admin/presentation/pages/admin_alert_form_screen.dart';
-import 'package:smart_waste_app/features/admin/data/models/admin_alert_hive_model.dart';
-import 'package:smart_waste_app/features/admin/presentation/pages/admin_users_screen.dart';
 import 'package:smart_waste_app/features/admin/presentation/pages/admin_user_form_screen.dart';
-import 'package:smart_waste_app/features/admin/data/models/admin_user_model.dart';
+import 'package:smart_waste_app/features/admin/presentation/pages/admin_users_screen.dart';
+import 'package:smart_waste_app/features/admin/presentation/pages/announcements_screen.dart';
 
 // Alerts
+import 'package:smart_waste_app/features/alerts/presentation/pages/alert_list_screen.dart';
 import 'package:smart_waste_app/features/alerts/presentation/pages/alerts_hub_screen.dart';
-
-// Reports
-import 'package:smart_waste_app/features/reports/presentation/pages/report_form_screen.dart';
-import 'package:smart_waste_app/features/reports/presentation/pages/report_success_screen.dart';
-import 'package:smart_waste_app/features/reports/presentation/pages/reports_screen.dart';
-import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
+import 'package:smart_waste_app/features/alerts/presentation/pages/create_alert_screen.dart';
 
 // Auth
+import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
+import 'package:smart_waste_app/core/motion/app_motion.dart';
+import 'package:smart_waste_app/core/motion/motion_profile.dart';
 import 'package:smart_waste_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:smart_waste_app/features/auth/presentation/pages/signup_screen.dart';
 import 'package:smart_waste_app/features/auth/presentation/providers/auth_providers.dart';
@@ -28,6 +28,7 @@ import 'package:smart_waste_app/features/auth/presentation/providers/auth_provid
 // Dashboard
 import 'package:smart_waste_app/features/dashboard/presentation/pages/dashboard_shell.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/home_screen.dart';
+import 'package:smart_waste_app/features/dashboard/presentation/pages/map_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/profile_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/schedule_screen.dart';
 import 'package:smart_waste_app/features/dashboard/presentation/pages/splash_screen.dart';
@@ -38,7 +39,12 @@ import 'package:smart_waste_app/features/payments/presentation/pages/payments_sc
 import 'package:smart_waste_app/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:smart_waste_app/features/settings/presentation/pages/settings_screen.dart';
 import 'package:smart_waste_app/features/settings/presentation/providers/settings_providers.dart';
-import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
+
+// Reports
+import 'package:smart_waste_app/features/reports/data/models/report_hive_model.dart';
+import 'package:smart_waste_app/features/reports/presentation/pages/report_form_screen.dart';
+import 'package:smart_waste_app/features/reports/presentation/pages/report_success_screen.dart';
+import 'package:smart_waste_app/features/reports/presentation/pages/reports_screen.dart';
 
 /// App Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -46,6 +52,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final onboardedAsync = ref.watch(isOnboardedProvider);
   final splashDelayAsync = ref.watch(splashDelayProvider);
   final startupTimeoutAsync = ref.watch(startupTimeoutProvider);
+
+  GoRoute motionRoute({
+    required String path,
+    required Widget Function(BuildContext context, GoRouterState state) builder,
+  }) {
+    return GoRoute(
+      path: path,
+      pageBuilder: (context, state) => _buildMotionPage(
+        context: context,
+        state: state,
+        child: builder(context, state),
+      ),
+    );
+  }
 
   return GoRouter(
     initialLocation: '/splash',
@@ -61,6 +81,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isReportsCreate = loc == '/reports/create';
       final isReportsList = loc == '/reports';
       final isReportsSuccess = loc.startsWith('/reports/success/');
+      final isLegacyAlertsCreate = loc == '/alerts/legacy/create';
+      final isLegacyAlertsList = loc == '/alerts/legacy/list';
+      final isMap = loc == '/map';
 
       final isShell = loc == '/home' ||
           loc == '/schedule' ||
@@ -73,8 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isSettings = loc == '/settings';
       final isPayments = loc == '/payments';
 
-      // 0) Gate startup: if auth/onboarding/splash-delay are still loading,
-      // keep the user on splash unless timeout has been reached.
+      // Gate startup. If providers are still loading, keep user on splash unless timeout has been reached.
       final timeoutReached =
           startupTimeoutAsync.hasValue || startupTimeoutAsync.hasError;
       final stillLoading = (authAsync.isLoading ||
@@ -101,68 +123,92 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
-      // 1) Not onboarded -> force onboarding (and block everything else)
+      // Not onboarded -> force onboarding.
       if (!onboarded) {
         return isOnboarding ? null : '/onboarding';
       }
 
-      // 2) Onboarded but not logged in -> force login
+      // Onboarded but not logged in -> force login.
       if (!loggedIn) {
         return isAuth ? null : '/auth/login';
       }
 
-      // 3) Logged in -> block onboarding/auth pages
+      // Logged in -> block onboarding/auth pages.
       if (isOnboarding || isAuth) {
         return '/home';
       }
 
-      // 4) Admin route protection
+      // Admin route protection.
       if (isAdmin && !userIsAdmin) return '/home';
       if (isAlertsCreate && !userIsAdmin) return '/home';
 
-      // 5) Allowed routes
+      // Allowed routes.
       final allowed = isShell ||
           isSettings ||
           isPayments ||
           isReportsList ||
           isReportsCreate ||
           isReportsSuccess ||
+          isLegacyAlertsCreate ||
+          isLegacyAlertsList ||
+          isMap ||
           (isAdmin && userIsAdmin) ||
           isAlertsCreate;
 
       if (allowed) return null;
 
-      // 6) Unknown route fallback
+      // Unknown route fallback.
       return '/home';
     },
     routes: [
-      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingPage()),
-      GoRoute(path: '/auth/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/auth/signup', builder: (_, __) => const SignupScreen()),
-      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
-      GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
-      GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
-      GoRoute(
+      motionRoute(
+        path: '/splash',
+        builder: (_, __) => const SplashScreen(),
+      ),
+      motionRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingPage(),
+      ),
+      motionRoute(
+        path: '/auth/login',
+        builder: (_, __) => const LoginScreen(),
+      ),
+      motionRoute(
+        path: '/auth/signup',
+        builder: (_, __) => const SignupScreen(),
+      ),
+      motionRoute(
+        path: '/settings',
+        builder: (_, __) => const SettingsScreen(),
+      ),
+      motionRoute(
+        path: '/payments',
+        builder: (_, __) => const PaymentsScreen(),
+      ),
+      motionRoute(
+        path: '/reports',
+        builder: (_, __) => const ReportsScreen(),
+      ),
+      motionRoute(
         path: '/reports/success/:reportId',
         builder: (_, state) {
           final reportId = state.pathParameters['reportId'] ?? '';
           return ReportSuccessScreen(reportId: reportId);
         },
       ),
-      GoRoute(
+      motionRoute(
         path: '/admin/broadcast',
         builder: (_, __) => const AdminBroadcastScreen(),
       ),
-      GoRoute(
+      motionRoute(
         path: '/admin/schedule',
         builder: (_, __) => const AdminScheduleManageScreen(),
       ),
-      GoRoute(
+      motionRoute(
         path: '/admin/users',
         builder: (_, __) => const AdminUsersScreen(),
       ),
-      GoRoute(
+      motionRoute(
         path: '/admin/users/form',
         builder: (context, state) {
           final extra = state.extra;
@@ -171,7 +217,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(
+      motionRoute(
+        path: '/admin/announcements',
+        builder: (_, __) => const AnnouncementsScreen(),
+      ),
+      motionRoute(
         path: '/alerts/create',
         builder: (context, state) {
           final extra = state.extra;
@@ -180,7 +230,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(
+      motionRoute(
+        path: '/alerts/legacy/create',
+        builder: (_, __) => const CreateAlertScreen(),
+      ),
+      motionRoute(
+        path: '/alerts/legacy/list',
+        builder: (_, __) => const AlertListScreen(),
+      ),
+      motionRoute(
+        path: '/map',
+        builder: (_, __) => const MapScreen(),
+      ),
+      motionRoute(
         path: '/reports/create',
         builder: (context, state) {
           final extra = state.extra;
@@ -198,14 +260,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+              GoRoute(
+                path: '/home',
+                pageBuilder: (context, state) => _buildMotionPage(
+                  context: context,
+                  state: state,
+                  child: const HomeScreen(),
+                ),
+              ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/schedule',
-                builder: (_, __) => const ScheduleScreen(),
+                pageBuilder: (context, state) => _buildMotionPage(
+                  context: context,
+                  state: state,
+                  child: const ScheduleScreen(),
+                ),
               ),
             ],
           ),
@@ -213,7 +286,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/messages',
-                builder: (_, __) => const MessagesScreen(),
+                pageBuilder: (context, state) => _buildMotionPage(
+                  context: context,
+                  state: state,
+                  child: const MessagesScreen(),
+                ),
               ),
             ],
           ),
@@ -221,7 +298,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/alerts',
-                builder: (_, __) => const AlertsHubScreen(),
+                pageBuilder: (context, state) => _buildMotionPage(
+                  context: context,
+                  state: state,
+                  child: const AlertsHubScreen(),
+                ),
               ),
             ],
           ),
@@ -229,7 +310,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (_, __) => const ProfileScreen(),
+                pageBuilder: (context, state) => _buildMotionPage(
+                  context: context,
+                  state: state,
+                  child: const ProfileScreen(),
+                ),
               ),
             ],
           ),
@@ -238,6 +323,60 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+CustomTransitionPage<void> _buildMotionPage({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  final profile = MotionProfileScope.of(context);
+  final transitionDuration = profile.reduceMotion
+      ? profile.scaleMs(90)
+      : AppMotion.scaled(profile, AppMotion.medium);
+  final reverseDuration = profile.reduceMotion
+      ? profile.scaleMs(70)
+      : AppMotion.scaled(profile, AppMotion.short);
+
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    transitionDuration: transitionDuration,
+    reverseTransitionDuration: reverseDuration,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (profile.reduceMotion) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.linear),
+          child: child,
+        );
+      }
+
+      final fade = CurvedAnimation(
+        parent: animation,
+        curve: profile.entryCurve,
+        reverseCurve: profile.exitCurve,
+      );
+      final slide = Tween<Offset>(
+        begin: const Offset(0.02, 0.035),
+        end: Offset.zero,
+      ).animate(fade);
+      final scale = Tween<double>(begin: 0.985, end: 1.0).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: profile.emphasisCurve,
+          reverseCurve: profile.exitCurve,
+        ),
+      );
+
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: ScaleTransition(scale: scale, child: child),
+        ),
+      );
+    },
+  );
+}
 
 /// Notifies GoRouter to re-run redirect logic when relevant providers change.
 class GoRouterRefreshNotifier extends ChangeNotifier {

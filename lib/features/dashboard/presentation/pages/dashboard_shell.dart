@@ -17,7 +17,7 @@ class DashboardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MotionScaffold(
       body: navigationShell,
       bottomNavigationBar: KBottomNavDock(
         currentIndex: navigationShell.currentIndex,

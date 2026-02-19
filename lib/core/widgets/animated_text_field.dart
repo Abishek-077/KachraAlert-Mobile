@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Premium animated text field with floating labels and validation states
-class AnimatedTextField extends StatefulWidget {
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
+import '../services/feedback/feedback_service.dart';
+
+/// Premium animated text field with floating labels and validation states.
+class AnimatedTextField extends ConsumerStatefulWidget {
   const AnimatedTextField({
     super.key,
     required this.controller,
@@ -29,24 +33,25 @@ class AnimatedTextField extends StatefulWidget {
   final bool? isValid;
 
   @override
-  State<AnimatedTextField> createState() => _AnimatedTextFieldState();
+  ConsumerState<AnimatedTextField> createState() => _AnimatedTextFieldState();
 }
 
-class _AnimatedTextFieldState extends State<AnimatedTextField>
+class _AnimatedTextFieldState extends ConsumerState<AnimatedTextField>
     with SingleTickerProviderStateMixin {
   final FocusNode _focusNode = FocusNode();
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _labelAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _labelAnimation;
 
   bool _isFocused = false;
   String? _errorText;
+  MotionProfile? _lastProfile;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       vsync: this,
     );
 
@@ -58,18 +63,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    _focusNode.addListener(() {
-      setState(() {
-        _isFocused = _focusNode.hasFocus;
-        if (_isFocused) {
-          _controller.forward();
-          HapticFeedback.selectionClick();
-        } else {
-          _controller.reverse();
-          _validate();
-        }
-      });
-    });
+    _focusNode.addListener(_onFocusChanged);
 
     widget.controller.addListener(() {
       if (mounted) setState(() {});
@@ -77,7 +71,36 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _controller.duration = AppMotion.scaled(profile, AppMotion.short);
+    if (profile.reduceMotion && _controller.value != 0) {
+      _controller.value = 0;
+    }
+  }
+
+  void _onFocusChanged() {
+    setState(() {
+      _isFocused = _focusNode.hasFocus;
+      if (_isFocused) {
+        if (!context.motionProfile.reduceMotion) {
+          _controller.forward();
+        }
+        ref.read(feedbackServiceProvider).selection();
+      } else {
+        _controller.reverse();
+        _validate();
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChanged);
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -89,7 +112,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
         _errorText = widget.validator!(widget.controller.text);
       });
       if (_errorText != null) {
-        HapticFeedback.lightImpact();
+        ref.read(feedbackServiceProvider).lightImpact();
       }
     }
   }
@@ -97,6 +120,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final profile = context.motionProfile;
     final hasText = widget.controller.text.isNotEmpty;
     final isValid = widget.isValid ?? (_errorText == null && hasText);
     final hasError = _errorText != null;
@@ -105,12 +129,13 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
       animation: _controller,
       builder: (context, child) {
         final labelProgress = hasText ? 1.0 : _labelAnimation.value;
+        final scaleValue = profile.reduceMotion ? 1.0 : _scaleAnimation.value;
+
         return Transform.scale(
-          scale: _scaleAnimation.value,
+          scale: scaleValue,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Floating label
               Opacity(
                 opacity: labelProgress,
                 child: Transform.translate(
@@ -124,7 +149,8 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: _isFocused ? cs.primary : cs.onSurfaceVariant,
+                            color:
+                                _isFocused ? cs.primary : cs.onSurfaceVariant,
                           ),
                         ),
                         if (isValid && !hasError) ...[
@@ -140,7 +166,6 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                   ),
                 ),
               ),
-              // Text field
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -152,7 +177,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                             offset: const Offset(0, 4),
                           ),
                         ]
-                      : [],
+                      : const [],
                 ),
                 child: TextField(
                   controller: widget.controller,
@@ -174,7 +199,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                       fontWeight: FontWeight.w400,
                     ),
                     prefixIcon: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                      duration: AppMotion.scaled(profile, AppMotion.short),
                       child: Icon(
                         widget.icon,
                         size: 20,
@@ -218,7 +243,6 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
                   ),
                 ),
               ),
-              // Error text
               if (hasError)
                 Padding(
                   padding: const EdgeInsets.only(left: 16, top: 6),

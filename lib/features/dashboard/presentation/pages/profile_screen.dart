@@ -177,8 +177,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         (_scrollOffset / (_headerExpandedHeight - _headerCollapsedHeight))
             .clamp(0.0, 1.0);
 
-    return Scaffold(
+    return MotionScaffold(
       backgroundColor: isDark ? cs.surface : _premiumSoftCanvas,
+      useAmbientBackground: false,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [

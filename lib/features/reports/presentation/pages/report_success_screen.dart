@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_waste_app/core/widgets/k_widgets.dart';
 
 class ReportSuccessScreen extends StatelessWidget {
   const ReportSuccessScreen({super.key, required this.reportId});
@@ -12,8 +13,9 @@ class ReportSuccessScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
+    return MotionScaffold(
       backgroundColor: isDark ? cs.surface : const Color(0xFFF6F8F7),
+      useAmbientBackground: false,
       body: Stack(
         children: [
           const _SuccessBackground(),

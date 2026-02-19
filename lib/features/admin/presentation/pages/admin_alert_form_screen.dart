@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/ui/snackbar.dart';
-import '../providers/admin_alert_providers.dart';
+import '../../../../core/widgets/k_widgets.dart';
 import '../../data/models/admin_alert_hive_model.dart';
+import '../providers/admin_alert_providers.dart';
 
 class AdminAlertFormScreen extends ConsumerStatefulWidget {
   const AdminAlertFormScreen({
@@ -70,7 +72,9 @@ class _AdminAlertFormScreenState extends ConsumerState<AdminAlertFormScreen> {
 
       AppSnack.show(
         context,
-        existing == null ? 'Alert created successfully' : 'Alert updated successfully',
+        existing == null
+            ? 'Alert created successfully'
+            : 'Alert updated successfully',
         error: false,
       );
       context.pop();
@@ -86,32 +90,30 @@ class _AdminAlertFormScreenState extends ConsumerState<AdminAlertFormScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
 
-    return Scaffold(
+    return MotionScaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Alert' : 'Create Alert'),
       ),
+      safeAreaBody: true,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isEdit ? 'Update Alert' : 'Create New Alert',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'This alert will be broadcast to all residents',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+          KCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isEdit ? 'Update Alert' : 'Create New Alert',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This alert will be broadcast to all residents',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

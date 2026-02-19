@@ -32,7 +32,7 @@ class _AlertsHubScreenState extends ConsumerState<AlertsHubScreen> {
         token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
     final alertsAsync = ref.watch(adminAlertsProvider);
 
-    return Scaffold(
+    return MotionScaffold(
       body: SafeArea(
         bottom: false,
         child: Column(

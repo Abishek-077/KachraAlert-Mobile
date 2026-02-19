@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:smart_waste_app/core/widgets/k_widgets.dart';
 
 /// Map tab.
@@ -11,10 +12,10 @@ class MapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return MotionScaffold(
+      useAmbientBackground: false,
       body: Stack(
         children: [
-          // Background "map" placeholder (soft grid)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -22,17 +23,17 @@ class MapScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    cs.surface.withOpacity(0.92),
+                    cs.surface.withValues(alpha: 0.92),
                     cs.surface,
                   ],
                 ),
               ),
               child: CustomPaint(
-                painter: _GridPainter(color: cs.outlineVariant.withOpacity(0.28)),
+                painter: _GridPainter(
+                    color: cs.outlineVariant.withValues(alpha: 0.28)),
               ),
             ),
           ),
-
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -56,8 +57,6 @@ class MapScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          // Pins
           Positioned(
             left: 78,
             top: 210,
@@ -78,8 +77,6 @@ class MapScreen extends StatelessWidget {
             top: 520,
             child: _Pin(color: const Color(0xFF1B8EF2)),
           ),
-
-          // Right-side controls
           Positioned(
             right: 16,
             top: 420,
@@ -100,12 +97,10 @@ class MapScreen extends StatelessWidget {
               ],
             ),
           ),
-
-          // Bottom info card
           Positioned(
             left: 16,
             right: 16,
-            bottom: 92, // keep above bottom dock
+            bottom: 92,
             child: KCard(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
               child: Row(
@@ -116,12 +111,14 @@ class MapScreen extends StatelessWidget {
                       children: [
                         const Text(
                           'Kathmandu Metro',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '5 active reports in view',
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.62)),
+                          style: TextStyle(
+                              color: cs.onSurface.withValues(alpha: 0.62)),
                         ),
                       ],
                     ),
@@ -149,27 +146,25 @@ class _CircleIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: cs.surface,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: cs.onSurface.withOpacity(0.72)),
+    return KPressable(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      haptic: PressHaptic.selection,
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: cs.surface,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.10),
+            ),
+          ],
         ),
+        child: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
       ),
     );
   }
@@ -184,7 +179,7 @@ class _Pin extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
+        color: color.withValues(alpha: 0.18),
         shape: BoxShape.circle,
       ),
       child: Container(
@@ -210,7 +205,11 @@ class _CountBubble extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         count,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -236,5 +235,6 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GridPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _GridPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

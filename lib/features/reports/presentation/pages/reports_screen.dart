@@ -39,8 +39,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         resolveMediaUrl(apiBase, auth?.session?.profilePhotoUrl);
     final stats = _ReportStats.from(reportsAsync.valueOrNull ?? const []);
 
-    return Scaffold(
+    return MotionScaffold(
       extendBodyBehindAppBar: true,
+      useAmbientBackground: false,
       appBar: AppBar(
         title: Text(l10n.reports),
         actions: [

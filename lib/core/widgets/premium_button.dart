@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Premium button with multiple states and animations
-class PremiumButton extends StatefulWidget {
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
+import '../services/feedback/feedback_service.dart';
+
+/// Premium button with multiple states and animations.
+class PremiumButton extends ConsumerStatefulWidget {
   const PremiumButton({
     super.key,
     required this.onPressed,
@@ -23,35 +27,36 @@ class PremiumButton extends StatefulWidget {
   final IconData? icon;
 
   @override
-  State<PremiumButton> createState() => _PremiumButtonState();
+  ConsumerState<PremiumButton> createState() => _PremiumButtonState();
 }
 
-class _PremiumButtonState extends State<PremiumButton>
+class _PremiumButtonState extends ConsumerState<PremiumButton>
     with TickerProviderStateMixin {
-  late AnimationController _shimmerController;
-  late AnimationController _scaleController;
-  late AnimationController _successController;
+  late final AnimationController _shimmerController;
+  late final AnimationController _scaleController;
+  late final AnimationController _successController;
 
   late Animation<double> _shimmerAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _successAnimation;
+  MotionProfile? _lastProfile;
 
   @override
   void initState() {
     super.initState();
 
     _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: AppMotion.hero,
       vsync: this,
     );
 
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: AppMotion.quick,
       vsync: this,
     );
 
     _successController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: AppMotion.long,
       vsync: this,
     );
 
@@ -70,18 +75,43 @@ class _PremiumButtonState extends State<PremiumButton>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    if (_lastProfile == profile) return;
+    _lastProfile = profile;
+
+    _shimmerController.duration = AppMotion.scaled(profile, AppMotion.hero);
+    _scaleController.duration = AppMotion.scaled(profile, AppMotion.quick);
+    _successController.duration = AppMotion.scaled(profile, AppMotion.long);
+
+    if (profile.reduceMotion) {
+      _shimmerController.stop();
+      _shimmerController.value = 0;
+      _scaleController.value = 0;
+      if (widget.loading) {
+        _successController.value = 0;
+      }
+    } else if (widget.loading) {
+      _shimmerController.repeat();
+    }
+  }
+
+  @override
   void didUpdateWidget(PremiumButton oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final profile = context.motionProfile;
 
-    if (widget.loading && !oldWidget.loading) {
+    if (widget.loading && !oldWidget.loading && !profile.reduceMotion) {
       _shimmerController.repeat();
     } else if (!widget.loading && oldWidget.loading) {
       _shimmerController.stop();
+      _shimmerController.value = 0;
     }
 
     if (widget.success && !oldWidget.success) {
-      _successController.forward();
-      HapticFeedback.mediumImpact();
+      _successController.forward(from: 0);
+      ref.read(feedbackServiceProvider).mediumImpact();
     }
   }
 
@@ -94,10 +124,13 @@ class _PremiumButtonState extends State<PremiumButton>
   }
 
   void _handleTapDown(TapDownDetails details) {
-    if (widget.enabled && !widget.loading && !widget.success) {
+    final profile = context.motionProfile;
+    if (!widget.enabled || widget.loading || widget.success) return;
+
+    if (!profile.reduceMotion) {
       _scaleController.forward();
-      HapticFeedback.lightImpact();
     }
+    ref.read(feedbackServiceProvider).lightImpact();
   }
 
   void _handleTapUp(TapUpDetails details) {
@@ -111,14 +144,17 @@ class _PremiumButtonState extends State<PremiumButton>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final profile = context.motionProfile;
     final gradient = widget.gradient ??
         LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: widget.success
-              ? [const Color(0xFF10B981), const Color(0xFF059669)]
-              : [cs.primary, cs.primary.withOpacity(0.8)],
+              ? const [Color(0xFF10B981), Color(0xFF059669)]
+              : [cs.primary, cs.primary.withValues(alpha: 0.8)],
         );
+
+    final switchDuration = AppMotion.scaled(profile, AppMotion.short);
 
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -130,10 +166,13 @@ class _PremiumButtonState extends State<PremiumButton>
           _successAnimation,
         ]),
         builder: (context, child) {
+          final scaleValue = profile.reduceMotion
+              ? 1.0
+              : (widget.success
+                  ? (1.0 + _successAnimation.value * 0.1)
+                  : _scaleAnimation.value);
           return Transform.scale(
-            scale: widget.success
-                ? (1.0 + _successAnimation.value * 0.1)
-                : _scaleAnimation.value,
+            scale: scaleValue,
             child: Opacity(
               opacity: widget.enabled ? 1.0 : 0.5,
               child: Container(
@@ -146,7 +185,7 @@ class _PremiumButtonState extends State<PremiumButton>
                       color: (widget.success
                               ? const Color(0xFF10B981)
                               : cs.primary)
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                       spreadRadius: widget.success ? 2 : 0,
@@ -163,8 +202,7 @@ class _PremiumButtonState extends State<PremiumButton>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Shimmer overlay when loading
-                        if (widget.loading)
+                        if (widget.loading && !profile.reduceMotion)
                           AnimatedBuilder(
                             animation: _shimmerAnimation,
                             builder: (context, child) {
@@ -196,9 +234,8 @@ class _PremiumButtonState extends State<PremiumButton>
                               );
                             },
                           ),
-                        // Content
                         AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
+                          duration: switchDuration,
                           child: widget.success
                               ? const Icon(
                                   Icons.check_circle,

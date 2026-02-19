@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:smart_waste_app/core/localization/app_localizations.dart';
 import 'package:smart_waste_app/core/extensions/async_value_extensions.dart';
+import 'package:smart_waste_app/core/localization/app_localizations.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/services/feedback/feedback_service.dart';
 import '../../../../core/ui/snackbar.dart';
 import '../../../../core/utils/media_url.dart';
 import '../../../../core/widgets/k_widgets.dart';
@@ -111,7 +111,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
     setState(() => _sending = true);
     _composerController.clear();
-    HapticFeedback.selectionClick();
+    ref.read(feedbackServiceProvider).selection();
 
     try {
       await ref.read(messageConversationProvider.notifier).sendMessage(text);
@@ -971,7 +971,7 @@ class _MobileConversationScreenState
 
     setState(() => _sending = true);
     _composerController.clear();
-    HapticFeedback.selectionClick();
+    ref.read(feedbackServiceProvider).selection();
 
     try {
       await ref.read(messageConversationProvider.notifier).sendMessage(text);

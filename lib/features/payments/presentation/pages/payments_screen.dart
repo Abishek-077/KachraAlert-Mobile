@@ -48,7 +48,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final invoicesAsync = ref.watch(invoicesProvider);
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return MotionScaffold(
       appBar: AppBar(
         title: const Text('Payments'),
         centerTitle: true,
@@ -76,7 +76,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               _PaymentMethodsCard(
                 options: _paymentOptions,
                 selected: _selectedProvider,
-                onSelected: (value) => setState(() => _selectedProvider = value),
+                onSelected: (value) =>
+                    setState(() => _selectedProvider = value),
               ),
               const SizedBox(height: 18),
               Text(
@@ -90,7 +91,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               ),
               const SizedBox(height: 12),
               if (invoices.isEmpty)
-                _EmptyInvoicesCard(onRefresh: () => ref.read(invoicesProvider.notifier).load())
+                _EmptyInvoicesCard(
+                    onRefresh: () => ref.read(invoicesProvider.notifier).load())
               else
                 ...invoices.map(
                   (invoice) => Padding(
@@ -112,7 +114,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     );
   }
 
-  Future<void> _confirmPayment(BuildContext context, InvoiceModel invoice) async {
+  Future<void> _confirmPayment(
+      BuildContext context, InvoiceModel invoice) async {
     final option = _paymentOptions.firstWhere(
       (element) => element.key == _selectedProvider,
       orElse: () => _paymentOptions.first,
@@ -385,7 +388,8 @@ class _InvoiceCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   invoice.period,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 16),
                 ),
               ),
               _StatusPill(label: invoice.status, color: statusColor),
@@ -404,12 +408,14 @@ class _InvoiceCard extends StatelessWidget {
             children: [
               Text(
                 'NPR ${invoice.amountNPR.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
               ),
               const Spacer(),
               if (invoice.isPaid)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1ECA92).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
@@ -434,7 +440,9 @@ class _InvoiceCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.credit_card_rounded, size: 18),
-                    label: Text(isPaying ? 'Processing' : 'Pay with ${_titleCase(provider)}'),
+                    label: Text(isPaying
+                        ? 'Processing'
+                        : 'Pay with ${_titleCase(provider)}'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       backgroundColor: cs.primary,
@@ -531,7 +539,9 @@ class _EmptyInvoicesCard extends StatelessWidget {
           Text(
             'Once invoices are generated for your account, they will show here.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -619,7 +629,8 @@ class _ErrorState extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              const Icon(Icons.error_outline, size: 44, color: Colors.redAccent),
+              const Icon(Icons.error_outline,
+                  size: 44, color: Colors.redAccent),
               const SizedBox(height: 12),
               const Text(
                 'Unable to load invoices',
@@ -629,7 +640,11 @@ class _ErrorState extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6)),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(

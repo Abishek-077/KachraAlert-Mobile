@@ -21,7 +21,7 @@ class ScheduleScreen extends ConsumerWidget {
 
     final schedulesAsync = ref.watch(schedulesProvider);
 
-    return Scaffold(
+    return MotionScaffold(
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(

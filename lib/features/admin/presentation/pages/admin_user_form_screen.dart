@@ -51,7 +51,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
     _passwordController = TextEditingController();
     _societyController = TextEditingController(text: existing?.society ?? '');
     _buildingController = TextEditingController(text: existing?.building ?? '');
-    _apartmentController = TextEditingController(text: existing?.apartment ?? '');
+    _apartmentController =
+        TextEditingController(text: existing?.apartment ?? '');
   }
 
   @override
@@ -136,12 +137,14 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
         building.isEmpty ||
         apartment.isEmpty ||
         (!isEdit && password.isEmpty)) {
-      AppSnack.show(context, 'Please fill in all required fields.', error: true);
+      AppSnack.show(context, 'Please fill in all required fields.',
+          error: true);
       return;
     }
 
     if (!isEdit && password.length < 6) {
-      AppSnack.show(context, 'Password must be at least 6 characters.', error: true);
+      AppSnack.show(context, 'Password must be at least 6 characters.',
+          error: true);
       return;
     }
 
@@ -206,7 +209,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
       widget.existing?.profileImageUrl,
     );
 
-    return Scaffold(
+    return MotionScaffold(
+      useAmbientBackground: false,
       body: Stack(
         children: [
           const AmbientBackground(),
@@ -249,8 +253,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                             gradient: AppColors.tealEmeraldGradient,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child:
-                              const Icon(Icons.person_rounded, color: Colors.white),
+                          child: const Icon(Icons.person_rounded,
+                              color: Colors.white),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -258,7 +262,9 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isEdit ? 'Update account' : 'Create new account',
+                                isEdit
+                                    ? 'Update account'
+                                    : 'Create new account',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
@@ -282,7 +288,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                 _SectionLabel(label: 'Account type'),
                 const SizedBox(height: 8),
                 KCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: DropdownButtonFormField<String>(
                     value: _accountType,
                     decoration: const InputDecoration(border: InputBorder.none),
@@ -335,8 +342,9 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                 const SizedBox(height: 8),
                 _TextFieldCard(
                   controller: _passwordController,
-                  hint:
-                      isEdit ? 'Leave blank to keep current' : 'Create a password',
+                  hint: isEdit
+                      ? 'Leave blank to keep current'
+                      : 'Create a password',
                   icon: Icons.lock_outline,
                   obscure: true,
                 ),
@@ -392,7 +400,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                                 children: [
                                   const Text(
                                     'Tap to upload photo',
-                                    style: TextStyle(fontWeight: FontWeight.w800),
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w800),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -491,7 +500,8 @@ class _AdminUserFormScreenState extends ConsumerState<AdminUserFormScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(isEdit ? Icons.check_rounded : Icons.arrow_forward_rounded),
+                Icon(
+                    isEdit ? Icons.check_rounded : Icons.arrow_forward_rounded),
               ],
             ),
           ),

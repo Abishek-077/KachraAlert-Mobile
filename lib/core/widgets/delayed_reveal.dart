@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../motion/app_motion.dart';
+import '../motion/motion_profile.dart';
+
 class DelayedReveal extends StatefulWidget {
   const DelayedReveal({
     super.key,
@@ -23,6 +26,7 @@ class _DelayedRevealState extends State<DelayedReveal>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  bool _scheduled = false;
 
   @override
   void initState() {
@@ -41,10 +45,27 @@ class _DelayedRevealState extends State<DelayedReveal>
         curve: Curves.easeOutCubic,
       ),
     );
+  }
 
-    Future<void>.delayed(widget.delay, () {
-      if (mounted) _controller.forward();
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final profile = context.motionProfile;
+    _controller.duration = AppMotion.scaled(profile, widget.duration);
+
+    if (profile.reduceMotion) {
+      _controller.value = 1;
+      return;
+    }
+
+    if (_scheduled) return;
+    _scheduled = true;
+    Future<void>.delayed(
+      AppMotion.scaled(profile, widget.delay),
+      () {
+        if (mounted) _controller.forward();
+      },
+    );
   }
 
   @override

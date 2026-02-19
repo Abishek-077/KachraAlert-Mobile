@@ -32,7 +32,7 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
+    return MotionScaffold(
       backgroundColor: isDark ? cs.surface : const Color(0xFFF8FAFB),
       body: Stack(
         children: [
@@ -54,6 +54,8 @@ class HomeScreen extends ConsumerWidget {
                 DelayedReveal(
                   delay: const Duration(milliseconds: 160),
                   child: KCard(
+                    backgroundColor:
+                        isDark ? Colors.white.withValues(alpha: 0.1) : null,
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
@@ -337,6 +339,9 @@ class HomeScreen extends ConsumerWidget {
                       return Padding(
                         padding: const EdgeInsets.only(top: 14),
                         child: KCard(
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : null,
                           child: Column(
                             children: [
                               const SizedBox(height: 6),
@@ -420,6 +425,7 @@ class _DashboardHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
@@ -438,7 +444,7 @@ class _DashboardHero extends StatelessWidget {
           const SizedBox(width: 4),
           Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: cs.onSurface.withOpacity(0.4),
+            color: cs.onSurface.withValues(alpha: isDark ? 0.72 : 0.4),
           ),
           const Spacer(),
           _BellButton(
@@ -479,6 +485,7 @@ class _BellButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
@@ -486,13 +493,18 @@ class _BellButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: cs.surface,
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : cs.surface,
           shape: BoxShape.circle,
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.16)
+                : cs.outlineVariant.withValues(alpha: 0.2),
+          ),
           boxShadow: [
             BoxShadow(
               blurRadius: 22,
               offset: const Offset(0, 12),
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.08),
             ),
           ],
         ),
@@ -500,7 +512,7 @@ class _BellButton extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Icon(Icons.notifications_none_rounded,
-                color: cs.onSurface.withOpacity(0.72)),
+                color: cs.onSurface.withValues(alpha: isDark ? 0.95 : 0.72)),
             if (hasDot)
               Positioned(
                 right: 12,
@@ -511,7 +523,12 @@ class _BellButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: cs.error,
                     shape: BoxShape.circle,
-                    border: Border.all(color: cs.surface, width: 2),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : cs.surface,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -537,7 +554,7 @@ class _PickupCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return KCard(
-      backgroundColor: isDark ? cs.surfaceContainerHigh : null,
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
@@ -546,9 +563,14 @@ class _PickupCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: isDark
-                  ? cs.primary.withValues(alpha: 0.16)
+                  ? Colors.white.withValues(alpha: 0.08)
                   : const Color(0xFFE8F5EE),
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.transparent,
+              ),
             ),
             child: const Icon(Icons.calendar_month_outlined,
                 color: Color(0xFF199A70), size: 28),
@@ -581,8 +603,11 @@ class _PickupCard extends StatelessWidget {
           ),
           Row(
             children: [
-              Icon(Icons.access_time_rounded,
-                  size: 18, color: cs.onSurface.withOpacity(0.3)),
+              Icon(
+                Icons.access_time_rounded,
+                size: 18,
+                color: cs.onSurface.withOpacity(0.3),
+              ),
               const SizedBox(width: 4),
               Text(
                 '14h',
@@ -617,10 +642,14 @@ class _QuickAction extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = highlighted
-        ? cs.primary.withValues(alpha: isDark ? 0.22 : 0.12)
-        : (isDark ? cs.surfaceContainerHighest : const Color(0xFFF1F5F9));
+        ? (isDark
+            ? Colors.white.withValues(alpha: 0.14)
+            : cs.primary.withValues(alpha: 0.12))
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.1)
+            : const Color(0xFFF1F5F9));
     final fg = highlighted
-        ? cs.primary
+        ? (isDark ? const Color(0xFF34D399) : cs.primary)
         : (isDark ? cs.onSurface : const Color(0xFF475569));
 
     return InkWell(
@@ -631,6 +660,9 @@ class _QuickAction extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(20),
+          border: isDark
+              ? Border.all(color: Colors.white.withValues(alpha: 0.12))
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -638,11 +670,16 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? cs.surface : Colors.white,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.09)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: isDark
+                    ? Border.all(color: Colors.white.withValues(alpha: 0.1))
+                    : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.04),
+                    color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -712,7 +749,7 @@ class _ReportRow extends StatelessWidget {
     }
 
     return KCard(
-      backgroundColor: isDark ? cs.surfaceContainerHigh : null,
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
       padding: const EdgeInsets.all(12),
       onTap: onTap,
       child: Row(
@@ -721,8 +758,13 @@ class _ReportRow extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: isDark ? cs.surface : const Color(0xFFF1F5F9),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
+              border: isDark
+                  ? Border.all(color: Colors.white.withValues(alpha: 0.1))
+                  : null,
             ),
             clipBehavior: Clip.antiAlias,
             child: attachmentUrl == null

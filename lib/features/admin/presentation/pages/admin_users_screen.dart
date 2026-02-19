@@ -208,8 +208,9 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     final avatarHeaders =
         token?.isNotEmpty == true ? {'Authorization': 'Bearer $token'} : null;
 
-    return Scaffold(
+    return MotionScaffold(
       backgroundColor: isDark ? _kDarkCanvas : _kSoftCanvas,
+      useAmbientBackground: false,
       drawer: const AdminSidePanel(currentRoute: '/admin/users'),
       body: Stack(
         children: [
