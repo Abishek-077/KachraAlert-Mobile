@@ -1,5 +1,5 @@
 # Kachra Alert ♻️  
-**Smart Waste Management & Alert System (Flutter + Admin Panel + API Ready)**
+**Smart Waste Management & Alert System (Flutter + Admin Panel + API Ready)** production ready app
 
 Kachra Alert is a **Smart Waste Management & Alert System** built with **Flutter** using **Clean Architecture** principles.  
 The app helps citizens report waste issues, view alerts, track report status, and manage profiles — while an admin panel manages incoming reports and updates their statuses.
