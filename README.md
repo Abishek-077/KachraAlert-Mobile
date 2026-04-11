@@ -37,7 +37,7 @@ The app helps citizens report waste issues, view alerts, track report status, an
 - **Hive** (Local DB / Offline persistence)
 - **SharedPreferences** (Lightweight local session config)
 - **Google Fonts** (Premium typography / UI consistency)
-
+1212112
 ### Backend (Planned)
 - **Node.js + TypeScript**
 - **Express.js**
