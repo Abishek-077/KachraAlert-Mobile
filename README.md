@@ -44,7 +44,7 @@ The app helps citizens report waste issues, view alerts, track report status, an
 - **JWT Auth**
 - **MongoDB (Mongoose)**
 - Clean Architecture / Layered services
-- REST APIs for reports, alerts, users, admin status updates
+- REST APIs for reports, alerts, users, admin status updates xoxoxoxo
 
 ---
 
